@@ -1,6 +1,5 @@
 # operadar
-python3 operad.py
-Compute dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome or MesoNH model using existing Tmatrix tables
+Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome or MesoNH model using existing Tmatrix tables
 input: Tmatrix tables and model file (Arome fa or MesoNH netcdf)
 output: netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt 
 
@@ -10,7 +9,12 @@ output: netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt
             list_types_tot=['rr','ii','ss','gg','wg']
 !!! ICE4 => list_types=['vv','cc','rr','ii','ss','gg','hh']
             list_types_tot=['rr','ii','ss','gg','wg','wh']
-!! not available for LIMA with AROME
+
+MesoNH only:
+LIMA => list_types=['vv','cc','rr','ii','ss','gg']
+            list_types_tot=['rr','ii','ss','gg','wg']
+LIMH => list_types=['vv','cc','rr','ii','ss','gg','hh']
+            list_types_tot=['rr','ii','ss','gg','wg','wh']
 
 ==> select radar option (band)
 
@@ -22,7 +26,7 @@ output: netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt
 
 ===================================
 @todo
-- find the ice concentration in AROME file ?
-- implement the LIMA option is for AROME (need rain and cloud water concentration) 
-- add the radar geometry option (with elevations)
-- link this project with tmatrix DPOLSIMUL git
+- find a way to read the ice concentration in AROME file ?
+- implement the LIMA/LIMH options for AROME (need rain and cloud water concentration) 
+- add the radar geometry option (with elevations and beam filtering with gaussian)
+- link this project with tmatrix DPOLSIMUL git (which produces the required tables !)

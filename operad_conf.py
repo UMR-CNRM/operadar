@@ -26,9 +26,8 @@ singletype=False #False #True # if True: computes dpol var for each type
 
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
-
 # ==========  Radar options =============== 
-band="S"
+band="C"
 distmax_rad = 255.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
 alt_max = 12000. # Altitude max des données radar utilisées pour le calcul des pseudo-observations
 radarloc="center" # radar location: center or latlon (if latlon ==> to be defined below buy user)
@@ -53,11 +52,12 @@ while deb <= fin :
 # Model files
 pathmodel="/cnrm/precip/users/davidcl/GN51_20220816_aro00Z_ICE4/"
 filestart="historic.arome.franmg-01km30+00" #08:00.fa"
+#pathmodel="/home/augros/DONNEES/MESONH/SUPERCELL/SIMU550/"+micro+'/'
+#filestart="SU500.1.EXP01."
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-#repTmat="/cnrm/precip/users/augros/DONNEES/TMATRIX" #"." 
-repTmat="/home/augros/Programmes/OPERADAR/"
+repTmat="/home/augros/Programmes/TMATRIX" 
 
 # Output files
 pathfick=pathmodel+'k'+MixedPhase+'/OPOU-MCLA-NIME/'
@@ -66,4 +66,8 @@ pathTmat=repTmat+"/OUTPUT/"
 
 # ========== Constants =======================
 RT = 6371.229*10**3 # Earth radius
+
+
+
+         
 

@@ -39,7 +39,7 @@ filestart="SU500.1.EXP01."
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-repTmat="." 
+repTmat="/home/augros/Programmes/TMATRIX" 
 
 # Output files
 pathfick=pathmodel+'k'+MixedPhase+'/'
