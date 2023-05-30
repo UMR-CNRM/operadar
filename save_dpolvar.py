@@ -20,7 +20,7 @@ output: file saved
 def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick):
     
     # ============= Save in npz file : tab_fick 
-    IKE=Tc.shape[0]
+    IKE=Tc.shape[0] 
     IJE=Tc.shape[1]
     IIE=Tc.shape[2]
     nb_lin=IKE*IJE*IIE
@@ -51,20 +51,25 @@ def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick):
                     Kdp=(["level","y","x"],Vm_k["Kdp"]),
                     Rhohv=(["level","y","x"],Vm_k["Rhohv"]),
                     T=(["level","y","x"],Tc),
-                    Alt=(["level","y","x"],Z),                
+                    Alt=(["level","y","x"],Z),
+
                         #             "Kdp":(["lat","lon","alt"],Vm_k["Kdp"]),
     #             "Rhohv":(["lat","lon","alt"],Vm_k["Rhohv"]),},
             ),
             coords=dict(
+                   y=(["y"], np.arange(Tc.shape[1])),
+                   x=(["x"], np.arange(Tc.shape[2])),
                    lon=(["y","x"], lon),
                    lat=(["y","x"], lat),
-                   level=(["level"], np.arange(Tc.shape[0])),
+                   level=(["level"], np.arange(Tc.shape[0])),              
      ),
      )    
     ds.to_netcdf(fick+".nc")
+    ds.close()
+    del ds
     
     # =========== Plot Zh at first level to test ==================
-    ds.Zh.sel(level=89).plot(x="lon",y="lat",cmap="viridis",vmin=0)   
+    #ds.Zh.sel(level=89).plot(x="lon",y="lat",cmap="viridis",vmin=0)   
 
 # ============================================================================    
 

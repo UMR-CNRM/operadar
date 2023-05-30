@@ -7,13 +7,16 @@ Created on Apr 4 2023
 
 Configuration file for operad.py
 """
+import pandas as pd
+import datetime as dt
 
 # ==========  Model simulation options ===============
-model='MesoNH'
-micro = "ICE3" # CLOE ICE3 / LIMA_SG / LIMA_AG / ICE4
+model='Arome' # 'MesoNH'
+micro = "ICE4" # CLOE ICE3 / LIMA_SG / LIMA_AG / ICE4
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
-list_types=['vv','cc','rr','ii','ss','gg']
-list_types_tot=['rr','ii','ss','gg','wg']
+CCIconst=800.
+list_types=['vv','cc','rr','ii','ss','gg','hh']
+list_types_tot = ['rr','ii','ss','gg','wg','wh']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
  
@@ -31,18 +34,33 @@ radarloc="center" # radar location: center or latlon (if latlon ==> to be define
 #latrad=
 #lonrad=
 
-# ========== Directories / files name options =========
-timelist=[18] #range(1,36) #[5,6,7,8] #ech=[20] #[36]
+# ========= Zoom ==========================
+lat_min,lat_max=42,45
+lon_min,lon_max=1,5
 
-pathmodel="/home/augros/DONNEES/MESONH/SUPERCELL/SIMU550/"+micro+'/'
-filestart="SU500.1.EXP01."
+
+# ========== Directories / files name options =========
+# Time list
+deb = pd.Timestamp('14:00')
+fin = pd.Timestamp('23:45')
+step = dt.timedelta(minutes=15)
+timelist=[]
+while deb <= fin :
+    timelist += [deb.strftime('%H:%M')]
+    deb += step
+
+# Model files
+pathmodel="/cnrm/precip/users/davidcl/GN51_20220816_aro00Z_ICE4/"
+filestart="historic.arome.franmg-01km30+00" #08:00.fa"
+#pathmodel="/home/augros/DONNEES/MESONH/SUPERCELL/SIMU550/"+micro+'/'
+#filestart="SU500.1.EXP01."
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
 repTmat="/home/augros/Programmes/TMATRIX" 
 
 # Output files
-pathfick=pathmodel+'k'+MixedPhase+'/'
+pathfick=pathmodel+'k'+MixedPhase+'/OPOU-MCLA-NIME/'
 pathTmat=repTmat+"/OUTPUT/"
 
 

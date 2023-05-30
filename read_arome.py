@@ -43,7 +43,7 @@ def read_arome(micro,timestr):
     
     epygram.init_env()
     # ======== Open file 
-    modelfile=cf.pathmodel+cf.filestart+timestr+":00.fa"
+    modelfile=cf.pathmodel+cf.filestart+timestr+".fa"
     
     
     print("Reading AROME fa file: ",modelfile)
