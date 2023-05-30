@@ -11,7 +11,7 @@ import pandas as pd
 import datetime as dt
 
 # ==========  Model simulation options ===============
-model='Arome'
+model='Arome' # 'MesoNH'
 micro = "ICE4" # CLOE ICE3 / LIMA_SG / LIMA_AG / ICE4
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
