@@ -53,6 +53,8 @@ while deb <= fin :
 
 # Model files
 pathmodel="/cnrm/precip/users/davidcl/GN49_20220816_aro00Z_ICE3/"
+pathmodel="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
+#pathmodel="/cnrm/precip/users/augros/DONNEES/AROME/"
 filestart="historic.arome.franmg-01km30+00" #08:00.fa"
 
 # Tmatrix directory
