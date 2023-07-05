@@ -137,8 +137,9 @@ print("End reading Tmatrix tables")
 # ----------------------------------------------------------------------------
 # ----------------------- Loop over timesteps -----------------------------
 # ----------------------------------------------------------------------------
-for time in cf.timelist: 
+for time in cf.datetimelist: 
     print("-------",time,"-------")
+    time = time.strftime('%H:%M')
     fick = cf.pathfick+"k_"+cf.model+"_"+ cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_2"
     
     if Path(fick+".nc").exists():
@@ -252,7 +253,7 @@ for time in cf.timelist:
             fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+t
                
             if (cf.model=="Arome"):
-                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick)
+                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,time)
             elif (cf.model=="MesoNH"):
                 save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick)
             else:
@@ -279,7 +280,7 @@ for time in cf.timelist:
     # ============= Save dpol var for all hydromet in txt or npz file
     
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick)
+        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time)
     elif (cf.model=="MesoNH"):
         save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick)
     else:

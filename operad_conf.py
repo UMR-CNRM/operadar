@@ -41,12 +41,12 @@ lon_min,lon_max=1,5
 
 # ========== Directories / files name options =========
 # Time list
-deb = pd.Timestamp('14:00')
-fin = pd.Timestamp('23:45')
-step = dt.timedelta(minutes=15)
-timelist=[]
+deb = pd.Timestamp('2022-08-16 14:00')
+fin = pd.Timestamp('2022-08-16 23:45')
+step = dt.timedelta(minutes=5)
+datetimelist=[]
 while deb <= fin :
-    timelist += [deb.strftime('%H:%M')]
+    datetimelist += [deb]
     deb += step
 
 # Model files

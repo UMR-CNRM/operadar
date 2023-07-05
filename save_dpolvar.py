@@ -17,7 +17,7 @@ Save Arome dpol variables in txt, npz or netcdf file
 input: Vm_k, Tc, Z, lat, lon , fick
 output: file saved
 """
-def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick):
+def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time):
     
     # ============= Save in npz file : tab_fick 
     IKE=Tc.shape[0] 
@@ -61,7 +61,8 @@ def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick):
                    x=(["x"], np.arange(Tc.shape[2])),
                    lon=(["y","x"], lon),
                    lat=(["y","x"], lat),
-                   level=(["level"], np.arange(Tc.shape[0])),              
+                   level=(["level"], np.arange(Tc.shape[0])),
+                   time=(time),             
      ),
      )    
     ds.to_netcdf(fick+".nc")
