@@ -98,7 +98,8 @@ if (os.path.exists(cf.pathfick)):
     print ('pathfick exists : '+cf.pathfick)            
 else:
     try:
-        os.system("mkdir "+cf.pathfick)
+        os.system("mkdir -p "+cf.pathfick)
+        print ('creating pathfick : '+cf.pathfick)
     except:    
         print ('error in creation of '+cf.pathfick)
         sys.exit()
