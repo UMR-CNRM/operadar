@@ -82,16 +82,19 @@ from pathlib import Path
 
 #============= Parameters to configure =========================
 
-configfile="operad_conf_AROME_ICE4.py"
+"""configfile="operad_conf_AROME_ICE4.py"
 #configfile="operad_conf_MesoNH_ICE3idpx.py"
 
 os.system("cp "+configfile+" operad_conf.py")
 
+"""
 
-import operad_conf as cf
+import operad_conf_AROME_ICE4 as cf
 
 
 #============= Programm ====================================
+save_npz=True
+save_netcdf=True
 
 # ----- Test existence of pathfick => if not: creation of directory
 if (os.path.exists(cf.pathfick)): 
@@ -118,11 +121,11 @@ liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 print("Reading Tmatrix tables")
 
 if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
-    [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
- Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, 
- Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
- Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t,
- ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t]=read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
+    [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,
+     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep,
+     Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax,
+     Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t,
+     ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t]=read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
 
 else:        
     [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
@@ -253,9 +256,9 @@ for time in cf.datetimelist:
             fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+t
                
             if (cf.model=="Arome"):
-                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,time)
+                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,time,save_npz,save_netcdf)
             elif (cf.model=="MesoNH"):
-                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick)
+                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,save_npz,save_netcdf)
             else:
                 print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
             
@@ -280,9 +283,9 @@ for time in cf.datetimelist:
     # ============= Save dpol var for all hydromet in txt or npz file
     
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time)
+        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time,save_npz,save_netcdf)
     elif (cf.model=="MesoNH"):
-        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick)
+        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick,save_npz,save_netcdf)
     else:
         print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
 
