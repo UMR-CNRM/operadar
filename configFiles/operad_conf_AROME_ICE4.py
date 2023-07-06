@@ -57,7 +57,7 @@ while deb <= fin :
     deb += step
 
 #pathmodel="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
-pathmodel="/cnrm/precip/users/davidcl/20220816_aro00Z_ICE4/"
+pathmodel=f"/cnrm/precip/users/davidcl/{deb.strftime('%Y%m%d')}_aro{run}Z_{micro}/"
 filestart="historic.arome.franmg-01km30+00" #08:00.fa"
 
 # Tmatrix directory
