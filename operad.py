@@ -82,19 +82,17 @@ from pathlib import Path
 
 #============= Parameters to configure =========================
 
-"""configfile="operad_conf_AROME_ICE4.py"
-#configfile="operad_conf_MesoNH_ICE3idpx.py"
-
+"""
+configfile="operad_conf_AROME_ICE4.py"
 os.system("cp "+configfile+" operad_conf.py")
-
 """
 
-import operad_conf_AROME_ICE4 as cf
+import configFiles.operad_conf_AROME_ICE4 as cf
 
 
 #============= Programm ====================================
-save_npz=True
-save_netcdf=True
+save_npz    = False
+save_netcdf = True
 
 # ----- Test existence of pathfick => if not: creation of directory
 if (os.path.exists(cf.pathfick)): 
