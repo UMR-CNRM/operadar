@@ -60,7 +60,7 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
         nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
     
-        print("reading min/step/max in : ", nomfileCoefInt)
+        print("  Reading min/step/max for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
         LAMmin[t]= np.copy(df["LAMmin"])[0]
         LAMstep[t]= np.copy(df["LAMmin"])[0]
@@ -86,7 +86,7 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
         del df
         
         
-        print("reading scattering coef in : ", nomfileCoefInt)
+        print("  Reading scattering coef for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         #df = pandas.read_csv(nomfileCoefInt, sep=";",names=["Tc_t", "ELEV_t", "Fw_t", "M_t", "S11carre_t", "S22carre_t", "ReS22S11_t", "ImS22S11_t", "ReS22fmS11f_t", "ImS22ft_t", "ImS11ft_t", "RRint_t"])
         Tc_t[t] = np.copy(df['Tc'])
