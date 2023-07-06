@@ -9,14 +9,21 @@ Configuration file for operad.py
 """
 import pandas as pd
 import datetime as dt
+import common_settings as settings
+
 
 # ==========  Model simulation options ===============
 model='Arome'
-micro = "ICE4" # CLOE ICE3 / LIMA_SG / LIMA_AG / ICE4
+micro = "ICE3"
+run  = settings.run
+deb = settings.deb
+fin = settings.fin
+step = settings.step
+
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
-list_types=['vv','cc','rr','ii','ss','gg','hh']
-list_types_tot = ['rr','ii','ss','gg','wg','wh']
+list_types=['vv','cc','rr','ii','ss','gg']
+list_types_tot = ['rr','ii','ss','gg','wg']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
  
@@ -36,33 +43,30 @@ radarloc="center" # radar location: center or latlon (if latlon ==> to be define
 #lonrad=
 
 # ========= Zoom ==========================
-lat_min,lat_max=42,45
-lon_min,lon_max=1,5
-
+#lat_min,lat_max=42,45
+#lon_min,lon_max=1,5
+lat_min = settings.lat_min ; lat_max = settings.lat_max
+lon_min = settings.lon_min ; lon_max = settings.lon_max
 
 # ========== Directories / files name options =========
 # Time list
-deb = pd.Timestamp('2022-08-16 14:00')
-fin = pd.Timestamp('2022-08-16 23:45')
-step = dt.timedelta(minutes=5)
 datetimelist=[]
 while deb <= fin :
     datetimelist += [deb]
     deb += step
 
-#pathmodel="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
-pathmodel="/cnrm/precip/users/davidcl/GN51_20220816_aro00Z_ICE4/"
+# Model files
+pathmodel=f"/cnrm/precip/users/davidcl/{deb.strftime('%Y%m%d')}_aro{run}Z_{micro}/"
 filestart="historic.arome.franmg-01km30+00" #08:00.fa"
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-repTmat="/cnrm/precip/users/augros/DONNEES/TMATRIX" #"." 
+repTmat="/cnrm/precip/users/augros/DONNEES/TMATRIX"
 
 # Output files
-pathfick=pathmodel+'k'+MixedPhase+'/OPOU-MCLA-NIME/'
+pathfick=pathmodel+'k'+MixedPhase+'/'+settings.radar_ids+'/'
 pathTmat=repTmat+"/OUTPUT/"
 
 
 # ========== Constants =======================
 RT = 6371.229*10**3 # Earth radius
-
