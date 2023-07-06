@@ -89,7 +89,7 @@ save_npz    = False
 save_netcdf = True
 
 # ===== Testing existence of the output directory (or creates it) ===== #
-output_dir = Path(cf.pathfick) ; print(output_dir)
+output_dir = Path(cf.pathfick)
 if not output_dir.exists():
     try:
         output_dir.mkdir(exist_ok=True, parents=True)
@@ -100,15 +100,11 @@ else:
     print ('Output directories exist :',output_dir)            
 
 
-
 liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
 liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 
 
-
-# -----------------------------------------------------------------------------
-# ---------------------- Reading Tmatrix tables -------------------------------
-#------------------------------------------------------------------------------
+# ===== Reading Tmatrix tables ===== #
 print("Reading Tmatrix tables")
 
 if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
@@ -117,7 +113,6 @@ if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
      Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax,
      Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t,
      ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t]=read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
-
 else:        
     [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
      Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, 
@@ -128,28 +123,31 @@ LAM=LAMmin["rr"]/1000.
 print("End reading Tmatrix tables")
 
 
-# ----------------------------------------------------------------------------
-# ----------------------- Loop over timesteps -----------------------------
-# ----------------------------------------------------------------------------
+# ===== Loop over timesteps ===== #
 for datetime in cf.datetimelist: 
     print("-------",datetime,"-------")
     time = datetime.strftime('%H:%M')
-    fick = cf.pathfick+"k_"+cf.model+"_"+ cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_2"
-    
-    if Path(fick+".nc").exists():
-        print("operad netcdf file for",time,"already exists")
+    outFile = cf.pathfick + f"/k_{cf.model}_{cf.band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
+
+    # ----- Testing existence of the output file ----- #
+    if Path(outFile + ".nc").exists():
+        print("netcdf file for",time,"already exists")
         continue   
     
-    # =========== Reading model variables =============
+    # ----- Reading model variables ----- #
     print("Reading model variables")    
     
     # Return 3D model variables + coordinates
     if (cf.model=="MesoNH"):
         [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,time)
-    
     elif (cf.model=="Arome"):
         modelfile=cf.pathmodel+cf.filestart+time+".fa"
-        [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(modelfile,cf.micro)
+        [M, Tc, CC, CCI, lon, lat, Z] = aro.read_arome(modelfile = modelfile,
+                                                       microphysics = cf.micro,
+                                                       lonmin = cf.lon_min, lonmax = cf.lon_max,
+                                                       latmin = cf.lat_min, latmax = cf.lat_max,
+                                                       hydrometeors_list = cf.list_types,
+                                                       )
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
       
@@ -272,12 +270,12 @@ for datetime in cf.datetimelist:
     
 
     
-    # ============= Save dpol var for all hydromet in txt or npz file
+    # ============= Save dpol var for all hydromet in netcdf and/or npz file
     
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,datetime,save_npz,save_netcdf)
+        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,outFile,datetime,save_npz,save_netcdf)
     elif (cf.model=="MesoNH"):
-        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick,save_npz,save_netcdf)
+        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,save_npz,save_netcdf)
     else:
         print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
 
