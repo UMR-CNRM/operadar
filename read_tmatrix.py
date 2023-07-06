@@ -34,11 +34,11 @@ min/step/max parameters
 
 def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
 
-    # Choice of the right table depending on the microphysics 		# CLOE
-    if schema_micro == "ICE3" or schema_micro == "ICE4" :		# CLOE
-        schema_micro = "ICE3"						# CLOE
-    elif schema_micro == "LIMA_SG" or schema_micro == "LIMA_AG" :	# CLOE
-        schema_micro = "LIMA"						# CLOE
+    # Choice of the right table depending on the microphysics
+    if schema_micro == "ICE3" or schema_micro == "ICE4" :
+        schema_micro = "ICE3"
+    elif schema_micro == "LIMASG" or schema_micro == "LIMAAG" or schema_micro == "LIMA" :
+        schema_micro = "LIMA"
 
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
