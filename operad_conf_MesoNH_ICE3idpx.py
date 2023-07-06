@@ -10,7 +10,7 @@ Configuration file for operad.py
 
 # ==========  Model simulation options ===============
 model='MesoNH'
-micro = "ICE3" # CLOE ICE3 / LIMA_SG / LIMA_AG / ICE4
+micro = "ICE3" # ICE3 / LIMASG / LIMAAG / ICE4
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 list_types=['vv','cc','rr','ii','ss','gg']
 list_types_tot=['rr','ii','ss','gg','wg']

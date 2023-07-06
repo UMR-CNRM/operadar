@@ -53,7 +53,7 @@ def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fw
 Compute nmoments
 """
 def compute_nmoments(micro,t):
-    if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMA_SG" or micro =="LIMA_AG") and (t =='rr'))):
+    if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG") and (t =='rr'))):
         NMOMENTS=2             
     else:
         NMOMENTS=1
@@ -80,7 +80,7 @@ def singletype_mask(Mt, el, Tc, Fw, mask_precip_dist, expMmin,micro,t):
     M_temp=Mt[mask_tot]
     
     
-    # if((t =='ii') or ((cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMA_SG" or cf.micro =="LIMA_AG") and (t =='rr'))):
+    # if((t =='ii') or ((cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMASG" or cf.micro =="LIMAAG") and (t =='rr'))):
     #     NMOMENTS=2
     #     if (t =='rr'):
     #         CC_temp=CC[mask_tot]
@@ -131,7 +131,7 @@ Compute precipitation + maxdistance mask
 """
 def mask_precip(mask_distmax,M,expMmin):
     Mtot=np.copy(M['rr'])
-    if(cf.micro =="LIMA_AG" or cf.micro =="ICE4"):
+    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
         Mtot=M['rr']+M['gg']+M['ss']+M['ii']+M['hh']	
     else :											
         Mtot=M['rr']+M['gg']+M['ss']+M['ii']							
@@ -158,7 +158,7 @@ def compute_mixedphase(M,MixedPhase,expMmin):
     
     # Bright band (or mixed phase) mask 
    # Mtot=np.copy(M['rr'])
-    if(cf.micro =="LIMA_AG" or cf.micro =="ICE4"):
+    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
         #Mtot=M['rr']+M['gg']+M['ss']+M['ii']+M['hh']	
         maskBB=((M["rr"] > 10**expMmin) & ((M["gg"]> 10**expMmin) | (M["hh"]> 10**expMmin)))
     else :											
@@ -168,20 +168,20 @@ def compute_mixedphase(M,MixedPhase,expMmin):
     print("Calculation of Fw for wet graupel")
     Fw = np.zeros(np.shape(M["rr"]))                          
  
-    if(cf.micro =="LIMA_AG" or cf.micro =="ICE4"):		# CLOE
-         Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]+M["hh"]))[maskBB]	# CLOE
-         M["wh"] = np.copy(M["hh"])					# CLOE
-    else :     								# CLOE
-         Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]))[maskBB]		# CLOE
+    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+         Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]+M["hh"]))[maskBB]
+         M["wh"] = np.copy(M["hh"])
+    else :
+         Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]))[maskBB]
     
     M["wg"] = np.copy(M["gg"])
     
-    # cf.MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0      # CLOE => idem for hail           
+    # cf.MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0   # => idem for hail           
     if (cf.MixedPhase=="Tpos"):  
         M["wg"][Tc < 0] = 0
         M["gg"][Tc >= 0] = 0
-        M["wh"][Tc < 0] = 0	# CLOE
-        M["hh"][Tc >= 0] = 0	# CLOE
+        M["wh"][Tc < 0] = 0
+        M["hh"][Tc >= 0] = 0
 
     # cf.MixedPhase=="Fwpos" => Graupel is transferred to melting graupel if Fw>=0     
     if (cf.MixedPhase=="Fwpos"):
@@ -191,17 +191,17 @@ def compute_mixedphase(M,MixedPhase,expMmin):
         M["rr"][maskBB] = 0        # and removed from the rain content  
         M["gg"][maskBB] = 0
        
-        if(cf.micro =="LIMA_AG" or cf.micro =="ICE4"):		# CLOE
-            M["wh"] = M["hh"] + ( (M["rr"]*M["hh"])/(M["hh"]+M["gg"]) )	# CLOE d'après Wolfensberger, 2018
+        if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+            M["wh"] = M["hh"] + ( (M["rr"]*M["hh"])/(M["hh"]+M["gg"]) )	# d'après Wolfensberger, 2018
 
     if (cf.MixedPhase=="Fwposg"):
         M["wg"][Fw == 0] = 0
         M["wg"][maskBB] = M["gg"][maskBB]
         M["gg"][maskBB] = 0
        
-        if(cf.micro =="LIMA_AG" or cf.micro =="ICE4"):	# CLOE
-            M["wh"][Fw == 0] = 0				# CLOE
-            M["wh"][maskBB] = M["hh"][maskBB]			# CLOE
+        if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+            M["wh"][Fw == 0] = 0
+            M["wh"][maskBB] = M["hh"][maskBB]
             M["hh"][maskBB] = 0 # addition Clotilde (in the mixed phase, there is no dry hail)
             
     return M, Fw

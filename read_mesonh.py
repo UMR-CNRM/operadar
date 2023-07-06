@@ -71,7 +71,7 @@ def read_mesonh(micro,time):
         CCI=ncfile1.variables['CIT'][0,:,:,:]
         CCI[CCI==999.]=float('nan')
         CC=np.empty(Tc.shape)
-    if(cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMA_SG" or cf.micro =="LIMA_AG"):
+    if(cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMASG" or cf.micro =="LIMAAG"):
         CC=ncfile1.variables['CRAINT'][0,:,:,:]
         CC[CC==999.]=float('nan')
         CCI=ncfile1.variables['CICET'][0,:,:,:]
