@@ -2,8 +2,6 @@ import numpy as np
 import epygram
 
 
-import operad_conf as cf
-
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
 Horizontal, vertical coordinates, pressure 
@@ -48,29 +46,34 @@ def get_geometry(ficA,ficsubdo):
 
 # ==============================================================================
 
+def link_varname_with_realname ():
+    list_t_full=['vv','cc','rr','ii','ss','gg','hh']
+    list_hydro=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
+    
+    name_hydro_linked={}
+    for it,t in enumerate(list_t_full):
+        name_hydro_linked[t]=list_hydro[it]
+        
+    return name_hydro_linked, list_t_full
+
 
 # ========== Hydrometeor contents and temperature =============================
 """
    Hydrometeor contents and temperature
-   get_contents_t
+   get_contents_and_T
    input: ficsubdo, p
    output: M, T, R 
 """
-def get_contents_t(ficsubdo, p):
-    list_t_full=['vv','cc','rr','ii','ss','gg','hh']
-    list_hydro=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
-    q_cur={}
-    q={}
-    name_hydro={}
+def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
     
+    name_hydro , list_t_full = link_varname_with_realname()
 
     # Arrays initialisation
+    q={}
     for it,t in enumerate(list_t_full):
-        name_hydro[t]=list_hydro[it]
         q[t]=np.zeros(p.shape)
         
     T = np.zeros(p.shape)
-    
     # 3D specific content q and temperature T 
     IKE=p.shape[0]
     for k in range(IKE): #going downward
@@ -79,11 +82,12 @@ def get_contents_t(ficsubdo, p):
         T_cur.sp2gp()
         T[k,:,:] = T_cur.getdata()
         del T_cur    
-    
-        for t in cf.list_types:
-            q_cur[t]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[t])
-            q[t][k,:,:] = q_cur[t].getdata()
-            del q_cur[t]
+        # Hydrometeors
+        q_cur={}
+        for htype in hydrometeor_type :
+            q_cur[htype]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[htype])
+            q[htype][k,:,:] = q_cur[htype].getdata()
+            del q_cur[htype]
         
     # Calcul de la "constante" des gaz parfaits du mélange air sec/vapeur 
     # Constante des gaz parfait pour l'air sec
@@ -94,14 +98,33 @@ def get_contents_t(ficsubdo, p):
     R = Rd + q["vv"]*(Rv-Rd) - Rd*(q["cc"]+q["ii"]+q["rr"]+q["ss"]+q["gg"])
     
     M={}
-    for t in cf.list_types:
+    for t in hydrometeor_type:
         M[t]=q[t]*p/(R*T)
 
     return M,T,R
 # ===============================================================================
 
-
-
+def get_concentrations(ficsubdo, p, Tc, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800):
+    
+    cc_rain = np.empty(Tc.shape)
+    cc_ice = iceCC_cst*np.ones(Tc.shape)
+               
+    if microphysics[0:4] == "LIMA":
+        name_hydro , list_t_full = link_varname_with_realname()
+        """
+        # Arrays initialisation
+        q={}
+        for it,t in enumerate(list_t_full):
+            q[t]=np.zeros(p.shape)
+        IKE=p.shape[0]
+        for k in range(IKE):
+            q_cur={}
+            for htype in hydrometeor_type:
+                q_cur[htype]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[htype])
+                q[htype][k,:,:] = q_cur[htype].getdata()
+                del q_cur[htype]
+        """   
+    return cc_rain, cc_ice
 
 # =============== Altitude ======================================================
 """
