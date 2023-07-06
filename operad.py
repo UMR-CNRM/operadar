@@ -12,7 +12,7 @@ calculation of dpol radar variables for each model grid point
     * the scattering coefficients tables (output files of Tmatrix) recorded for
     a range of T, M, CC (if 2 moments) 
 - OUTPUT : 
-    * ascii or .npz file with modele points i,j,k and dpol var Zh, Zdr, Kdp, Rhohv 
+    * netcdf or .npz file with modele points i,j,k and dpol var Zh, Zdr, Kdp, Rhohv 
     
 The modifications are recorded via git:
     git status (to see the modified and not recorded files)
@@ -60,18 +60,17 @@ The modifications are recorded via git:
 # C. Augros 19/04/2023
 # Code ok for Arome (ICE3/ICE4?) and MesoNH
 # output = netcdf file (dataset with xarray)                
-# implemented on github  https://github.com/augros/operadar               
+# implemented on github, see last changes on : https://github.com/UMR-CNRM/operadar/               
 #=====================================================================================
 
 
-
+# External modules
 import sys
 import os
 import math
 import numpy as np
 
-
-# operad modules
+# Operad modules
 import operad_lib as ope_lib
 import read_arome as aro
 import read_mesonh as meso
@@ -80,32 +79,26 @@ import save_dpolvar as save
 from pathlib import Path
 
 
-#============= Parameters to configure =========================
-
-"""
-configfile="operad_conf_AROME_ICE4.py"
-os.system("cp "+configfile+" operad_conf.py")
-"""
-
+# ===== Configuration file ===== #
+"""configfile="operad_conf_AROME_ICE4.py"
+os.system("cp "+configfile+" operad_conf.py")"""
 import configFiles.operad_conf_AROME_ICE4 as cf
 
-
-#============= Programm ====================================
+# ===== Output files (make a choice) ===== #
 save_npz    = False
 save_netcdf = True
 
-# ----- Test existence of pathfick => if not: creation of directory
-if (os.path.exists(cf.pathfick)): 
-    print ('pathfick exists : '+cf.pathfick)            
-else:
+# ===== Testing existence of the output directory (or creates it) ===== #
+output_dir = Path(cf.pathfick) ; print(output_dir)
+if not output_dir.exists():
     try:
-        os.system("mkdir -p "+cf.pathfick)
-        print ('creating pathfick : '+cf.pathfick)
+        output_dir.mkdir(exist_ok=True, parents=True)
+        print ('Creating output directories :',output_dir)
     except:    
-        print ('error in creation of '+cf.pathfick)
-        sys.exit()
+        print ('Error in creation of',output_dir) ; sys.exit()
+else:
+    print ('Output directories exist :',output_dir)            
 
-# ----------------------
 
 
 liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
@@ -138,9 +131,9 @@ print("End reading Tmatrix tables")
 # ----------------------------------------------------------------------------
 # ----------------------- Loop over timesteps -----------------------------
 # ----------------------------------------------------------------------------
-for time in cf.datetimelist: 
-    print("-------",time,"-------")
-    time = time.strftime('%H:%M')
+for datetime in cf.datetimelist: 
+    print("-------",datetime,"-------")
+    time = datetime.strftime('%H:%M')
     fick = cf.pathfick+"k_"+cf.model+"_"+ cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_2"
     
     if Path(fick+".nc").exists():
@@ -155,7 +148,8 @@ for time in cf.datetimelist:
         [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,time)
     
     elif (cf.model=="Arome"):
-        [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(cf.micro,time)
+        modelfile=cf.pathmodel+cf.filestart+time+".fa"
+        [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(modelfile,cf.micro)
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
       
@@ -254,7 +248,7 @@ for time in cf.datetimelist:
             fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+t
                
             if (cf.model=="Arome"):
-                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,time,save_npz,save_netcdf)
+                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,save_npz,save_netcdf)
             elif (cf.model=="MesoNH"):
                 save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,save_npz,save_netcdf)
             else:
@@ -281,7 +275,7 @@ for time in cf.datetimelist:
     # ============= Save dpol var for all hydromet in txt or npz file
     
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time,save_npz,save_netcdf)
+        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,datetime,save_npz,save_netcdf)
     elif (cf.model=="MesoNH"):
         save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick,save_npz,save_netcdf)
     else:
