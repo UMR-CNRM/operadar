@@ -39,7 +39,7 @@ filestart="SU500.1.EXP01."
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-repTmat="/home/augros/Programmes/TMATRIX" 
+repTmat="/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
 
 # Output files
 pathfick=pathmodel+'k'+MixedPhase+'/'

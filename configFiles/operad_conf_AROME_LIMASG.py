@@ -61,7 +61,7 @@ filestart="historic.arome.franmg-01km30+00" #08:00.fa"
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-repTmat="/cnrm/precip/users/augros/DONNEES/TMATRIX"
+repTmat="/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
 
 # Output files
 pathfick=pathmodel+'k'+MixedPhase+'/'+settings.radar_ids+'/'
