@@ -16,7 +16,6 @@ def get_geometry(ficA,ficsubdo):
 
     (lon,lat) = ps.geometry.get_lonlat_grid(subzone='C')
 
-
     # Vertical levels values
     A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
     B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
@@ -49,11 +48,7 @@ def get_geometry(ficA,ficsubdo):
 def link_varname_with_realname ():
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
-    
-    name_hydro_linked={}
-    for it,t in enumerate(list_t_full):
-        name_hydro_linked[t]=list_hydro[it]
-        
+    name_hydro_linked={t:list_hydro[it] for it,t in enumerate(list_t_full)}
     return name_hydro_linked, list_t_full
 
 
@@ -69,11 +64,9 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
     name_hydro , list_t_full = link_varname_with_realname()
 
     # Arrays initialisation
-    q={}
-    for it,t in enumerate(list_t_full):
-        q[t]=np.zeros(p.shape)
-        
+    q = {t:np.zeros(p.shape) for t in list_t_full}
     T = np.zeros(p.shape)
+    
     # 3D specific content q and temperature T 
     IKE=p.shape[0]
     for k in range(IKE): #going downward
@@ -90,20 +83,16 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
             del q_cur[htype]
         
     # Calcul de la "constante" des gaz parfaits du mélange air sec/vapeur 
-    # Constante des gaz parfait pour l'air sec
-    Rd = epygram.profiles.Rd
+    Rd = epygram.profiles.Rd # air sec
+    Rv = epygram.profiles.Rv # vapeur d'eau
+    R  = Rd + q["vv"]*(Rv-Rd) - Rd*(q["cc"]+q["ii"]+q["rr"]+q["ss"]+q["gg"])
     
-    # Constante des gaz parfait pour la vapeur d'eau
-    Rv = epygram.profiles.Rv        
-    R = Rd + q["vv"]*(Rv-Rd) - Rd*(q["cc"]+q["ii"]+q["rr"]+q["ss"]+q["gg"])
-    
-    M={}
-    for t in hydrometeor_type:
-        M[t]=q[t]*p/(R*T)
+    M  = {t:q[t]*p/(R*T) for t in hydrometeor_type}
 
     return M,T,R
-# ===============================================================================
 
+
+# ========== Hydrometeor concentrations =============================
 def get_concentrations(ficsubdo, p, Tc, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800):
     
     cc_rain = np.empty(Tc.shape)
@@ -111,7 +100,7 @@ def get_concentrations(ficsubdo, p, Tc, microphysics: str, hydrometeor_type: lis
                
     if microphysics[0:4] == "LIMA":
         name_hydro , list_t_full = link_varname_with_realname()
-        """
+        """"""  
         # Arrays initialisation
         q={}
         for it,t in enumerate(list_t_full):
@@ -123,7 +112,7 @@ def get_concentrations(ficsubdo, p, Tc, microphysics: str, hydrometeor_type: lis
                 q_cur[htype]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[htype])
                 q[htype][k,:,:] = q_cur[htype].getdata()
                 del q_cur[htype]
-        """   
+         
     return cc_rain, cc_ice
 
 # =============== Altitude ======================================================

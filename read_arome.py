@@ -52,12 +52,12 @@ def read_arome(modelfile: str,
     
     
     # ======== Horizontal, vertical coordinates, pressure
-    [p, psurf, pdep, phis, A, B, lon, lat]=arolib.get_geometry(ficA,ficsubdo)
+    [p, psurf, pdep, phis, A, B, lon, lat] = arolib.get_geometry(ficA,ficsubdo)
       
     # ======== Hydrometeor contents and temperature
-    [M, T, R]=arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
+    [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15
-    [CC , CCI] = arolib.get_concentrations(ficsubdo, p, Tc,microphysics,hydrometeors_list)
+    [CC , CCI] = arolib.get_concentrations(ficsubdo, p,microphysics,hydrometeors_list)
     
         
     # ========= Altitude z of each level
