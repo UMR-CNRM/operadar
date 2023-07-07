@@ -105,18 +105,18 @@ liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 print("Reading Tmatrix tables")
 
 if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
-    [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,
-     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep,
-     Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax,
-     Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t,
-     ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t]=read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
+    [LAMmin, LAMstep, LAMmax,ELEVmin, ELEVstep, ELEVmax,
+     Tcmin, Tcstep, Tcmax,Fwmin, Fwstep,Fwmax,
+     expMmin, expMstep, expMmax,expCCmin, expCCstep, expCCmax,
+     Tc_t, ELEV_t, Fw_t, M_t,S11carre_t, S22carre_t,
+     ReS22S11_t, ImS22S11_t,ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
 else:        
-    [LAMmin,LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
-     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, 
-     Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
-     Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t,
-     ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t]=read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,cf.micro,cf.table_ind)
-LAM=LAMmin["rr"]/1000.
+    [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
+     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
+     expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
+     Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
+     ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,cf.micro,cf.table_ind)
+LAM = LAMmin["rr"]/1000.
 print("End reading Tmatrix tables")
 
 
@@ -132,11 +132,11 @@ for datetime in cf.datetimelist:
         continue   
     
     # ----- Reading model variables ----- #
+    # return 3D model variables + coordinates
     print("Reading model variables")    
     
-    # Return 3D model variables + coordinates
     if (cf.model=="MesoNH"):
-        [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,time)
+        [M, Tc, CC, CCI, X, Y, Z] = meso.read_mesonh(cf.micro,time) 
     elif (cf.model=="Arome"):
         modelfile=cf.pathmodel+cf.filestart+time+".fa"
         [M, Tc, CC, CCI, lon, lat, Z] = aro.read_arome(modelfile = modelfile,
@@ -148,68 +148,70 @@ for datetime in cf.datetimelist:
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
       
-    # =========== Compute radar geometry variables =====
+    # ----- Compute radar geometry variables ----- #
     print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)")
     # TODO: add latlon2XY function in ope_lib
     # else: 
     #     X0,Y0=ope_lib.latlon2XY(cf.latrad,cf.lonrad)
     # ----------------
     if (cf.model=="Arome"):
-        el=np.zeros(Tc.shape)
-        mask_distmax=(el >= 0.)
+        el = np.zeros(Tc.shape)
+        mask_distmax = (el >= 0.)
     
     elif (cf.model=="MesoNH"):
         if (cf.radarloc=="center"):
-            X0=np.nanmean(X)
-            Y0=np.nanmean(Y)        
-        [mask_distmax,el]=ope_lib.compute_radargeo(X,Y,Z,X0,Y0,cf.distmax_rad,cf.RT,ELEVmax["rr"])
+            X0 = np.nanmean(X)
+            Y0 = np.nanmean(Y)        
+        [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z, X0, Y0,
+                                                      cf.distmax_rad,
+                                                      cf.RT,ELEVmax["rr"],
+                                                     )
 
-    # ============= Precip mask ========================= 
-    mask_precip_dist=ope_lib.mask_precip(mask_distmax,M,expMmin) 
-
-
-    # ============= Mixed phase parametrization ========    
-    [M,Fw]=ope_lib.compute_mixedphase(M,cf.MixedPhase,expMmin)
+    mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin) # precip mask
+    [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin) # mixed phase parametrization
   
-    
-    #  ============ Initialization of the dictionnary Vm_k 
-    # contains all 3D dpol variables (all hydrometeor included)
-    Vm_k={}
-    for var in liste_var_calc:
-        Vm_k[var]=np.zeros(Tc.shape)  
+    # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
+    Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
         
-    # ==================== Loop over hydromet types ===========================
+    # ----- Loop over hydromet types ----- #
     print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot)
-    for t in cf.list_types_tot:
+    for hydromet in cf.list_types_tot:
         if (cf.singletype):
-            Vm_t={}
-            for var in liste_var_calc:
-                Vm_t[var]=np.zeros(Tc.shape) 
+            Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
          
-        #============== Compute NMOMENTS ========================
-        NMOMENTS=ope_lib.compute_nmoments(cf.micro,t)
+        # Compute NMOMENTS
+        NMOMENTS = ope_lib.compute_nmoments(cf.micro,hydromet)
         
+        # Compute single type mask
+        [mask_tot, M_temp,
+         el_temp, Tc_temp, Fw_temp] = ope_lib.singletype_mask(M[hydromet], el, Tc,
+                                                              Fw,mask_precip_dist,
+                                                              expMmin, cf.micro, hydromet
+                                                              )
         
-        # ========== Compute single type mask ===================
-        [mask_tot, M_temp, el_temp, Tc_temp, Fw_temp]=\
-             ope_lib.singletype_mask(M[t], el, Tc, Fw,mask_precip_dist, expMmin,cf.micro,t)
+        # Define P3 : CC (2 moments) or Fw (1 moment)
+        [P3, P3min, P3max, P3step] = ope_lib.defineP3(hydromet, NMOMENTS, CC, CCI,
+                                                      mask_tot, Fw_temp,
+                                                      expCCmin,expCCmax, expCCstep,
+                                                      Fwmin[hydromet], Fwmax[hydromet], Fwstep[hydromet]
+                                                      )
         
-        # ========= Define P3 : CC (2 moments) or Fw (1 moment) =
-        [P3, P3min, P3max, P3step]=ope_lib.defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp, \
-          expCCmin, expCCmax, expCCstep,Fwmin[t], Fwmax[t], Fwstep[t])
-        
-        # ========= Extract scattering coefficients for singletype
-        [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11]=read_tmat.get_scatcoef(\
-          S11carre_t[t],S22carre_t[t],ReS22fmS11f_t[t],ReS22S11_t[t],ImS22S11_t[t],\
-          LAMmin[t], LAMmax[t], LAMstep[t], ELEVmin[t], ELEVmax[t], ELEVstep[t],\
-          Tcmin[t], Tcmax[t], Tcstep[t], P3min, P3max, P3step, expMmin,expMstep,expMmax,\
-          NMOMENTS, el_temp,Tc_temp,P3, M_temp)
-       
+        # Extract scattering coefficients for singletype
+        [S11carre,
+         S22carre,
+         ReS22fmS11f,
+         ReS22S11,
+         ImS22S11] = read_tmat.get_scatcoef(S11carre_t[hydromet],S22carre_t[hydromet],
+                                            ReS22fmS11f_t[hydromet],ReS22S11_t[hydromet],ImS22S11_t[hydromet],
+                                            LAMmin[hydromet], LAMmax[hydromet], LAMstep[hydromet],
+                                            ELEVmin[hydromet], ELEVmax[hydromet], ELEVstep[hydromet],
+                                            Tcmin[hydromet], Tcmax[hydromet], Tcstep[hydromet],
+                                            P3min, P3max, P3step, expMmin,expMstep,expMmax,
+                                            NMOMENTS, el_temp,Tc_temp,P3, M_temp
+                                            )
             
-        # ========== Single type dpol var computation ===================       
-        Vm_temp={}
-        for var in liste_var_calc:
-            Vm_temp[var]=Vm_k[var][mask_tot]
+        # Single type dpol var computation       
+        Vm_temp = {var:Vm_k[var][mask_tot] for var in liste_var_calc}
         Vm_temp["Zhhlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S22carre
         Vm_temp["Zvvlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S11carre
         Vm_temp["Kdp"] = 180.*1e3/math.pi*LAM*ReS22fmS11f
@@ -217,21 +219,18 @@ for datetime in cf.datetimelist:
         Vm_temp["S11S11"] = np.copy(S11carre)
         Vm_temp["S22S22"] = np.copy(S22carre)
         
-        # =========== Addition of scattering coef for all hydromet ========
+        # Addition of scattering coef for all hydromet
         for var in liste_var_calc:
             Vm_k[var][mask_tot]+=Vm_temp[var]
-
             if (cf.singletype):
                 Vm_t[var][mask_tot]=Vm_temp[var]
                 Vm_t[var][~mask_tot] = np.NaN 
-
         
         del S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
         del el_temp, Tc_temp, Fw_temp, M_temp, Vm_temp, mask_tot
 
-        # ===========  Dpol variables for single hydrometeor types =========== 
+        #  Dpol variables for single hydrometeor types 
         if (cf.singletype):
-            
             Vm_t["Zhh"] = np.copy(Vm_t["Zhhlin"])
             Vm_t["Zhh"][Vm_t["Zhhlin"]>0] = ope_lib.Z2dBZ(Vm_t["Zhhlin"][Vm_t["Zhhlin"]>0])
             Vm_t["Zdr"] = np.copy(Vm_t["Zhhlin"])
@@ -239,25 +238,21 @@ for datetime in cf.datetimelist:
                     (Vm_t["Zhhlin"]/Vm_t["Zvvlin"])[(Vm_t["Zhhlin"]>0) & (Vm_t["Zvvlin"]>0)])
             Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
             
-            # ========== Writing dpol var for a single hydrometeor type t           
-            fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+t
+            # Writing dpol var for a single hydrometeor type hydromet           
+            fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+hydromet
                
-            if (cf.model=="Arome"):
+            if (cf.model=="Arome") :
                 save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,cf.save_npz,cf.save_netcdf)
-            elif (cf.model=="MesoNH"):
+            elif (cf.model=="MesoNH") :
                 save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,cf.save_npz,cf.save_netcdf)
             else:
                 print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
-            
             del Vm_t
-
-    # ===== end loop over hydromet types =====================================    
-    
+   
     for var in liste_var_calc:
         Vm_k[var][~mask_precip_dist] = np.NaN 
    
-    
-    # ============ dpol var calculation
+    # ----- dpol var calculation
     Vm_k["Zhh"] = np.copy(Vm_k["Zhhlin"])
     Vm_k["Zhh"][Vm_k["Zhhlin"]>0] = ope_lib.Z2dBZ(Vm_k["Zhhlin"][Vm_k["Zhhlin"]>0])
     Vm_k["Zdr"] = np.copy(Vm_k["Zhhlin"])
@@ -265,18 +260,12 @@ for datetime in cf.datetimelist:
             (Vm_k["Zhhlin"]/Vm_k["Zvvlin"])[(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)])
     Vm_k["Rhohv"] = np.sqrt(np.divide(Vm_k["S11S22"], Vm_k["S11S11"]*Vm_k["S22S22"]))
     
-
-    
-    # ============= Save dpol var for all hydromet in netcdf and/or npz file
-    
+    # ----- Save dpol var for all hydromet in netcdf and/or npz file
     if (cf.model=="Arome"):
         save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,outFile,datetime,cf.save_npz,cf.save_netcdf)
     elif (cf.model=="MesoNH"):
         save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,cf.save_npz,cf.save_netcdf)
     else:
         print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
-
-          
+  
     del Vm_k
-
-# end loop over time ============================================================
