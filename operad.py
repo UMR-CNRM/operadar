@@ -101,28 +101,11 @@ liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
 liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 
 
-# ===== Reading Tmatrix tables ===== #
-print("Reading Tmatrix tables")
-
-if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
-    [LAMmin, LAMstep, LAMmax,ELEVmin, ELEVstep, ELEVmax,
-     Tcmin, Tcstep, Tcmax,Fwmin, Fwstep,Fwmax,
-     expMmin, expMstep, expMmax,expCCmin, expCCstep, expCCmax,
-     Tc_t, ELEV_t, Fw_t, M_t,S11carre_t, S22carre_t,
-     ReS22S11_t, ImS22S11_t,ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,"LIMA",cf.table_ind)
-else:        
-    [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
-     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
-     expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
-     Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
-     ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,cf.band,cf.micro,cf.table_ind)
-LAM = LAMmin["rr"]/1000.
-print("End reading Tmatrix tables")
 
 
 # ===== Loop over timesteps ===== #
+read_tmatrix = True
 for datetime in cf.datetimelist: 
-    print("-------",datetime,"-------")
     time = datetime.strftime('%H:%M')
     outFile = cf.pathfick + f"/k_{cf.model}_{cf.band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
 
@@ -130,7 +113,35 @@ for datetime in cf.datetimelist:
     if Path(outFile + ".nc").exists():
         print("netcdf file for",time,"already exists")
         continue   
+    print("-------",datetime,"-------")
     
+    # ----- Reading Tmatrix tables ----- #
+    if read_tmatrix :
+        print("Reading Tmatrix tables")
+        if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
+            [LAMmin, LAMstep, LAMmax,ELEVmin, ELEVstep, ELEVmax,
+            Tcmin, Tcstep, Tcmax,Fwmin, Fwstep,Fwmax,
+            expMmin, expMstep, expMmax,expCCmin, expCCstep, expCCmax,
+            Tc_t, ELEV_t, Fw_t, M_t,S11carre_t, S22carre_t,
+            ReS22S11_t, ImS22S11_t,ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
+                                                                                                        cf.band,
+                                                                                                        "LIMA",
+                                                                                                        cf.table_ind,
+                                                                                                        cf.list_types_tot)
+        else:        
+            [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
+            Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
+            expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
+            Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
+            ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
+                                                                                                        cf.band,
+                                                                                                        cf.micro,
+                                                                                                        cf.table_ind,
+                                                                                                        cf.list_types_tot)
+        LAM = LAMmin["rr"]/1000.
+        read_tmatrix = False
+        print("End reading Tmatrix tables")
+        
     # ----- Reading model variables ----- #
     # return 3D model variables + coordinates
     print("Reading model variables")    
@@ -207,7 +218,7 @@ for datetime in cf.datetimelist:
                                             ELEVmin[hydromet], ELEVmax[hydromet], ELEVstep[hydromet],
                                             Tcmin[hydromet], Tcmax[hydromet], Tcstep[hydromet],
                                             P3min, P3max, P3step, expMmin,expMstep,expMmax,
-                                            NMOMENTS, el_temp,Tc_temp,P3, M_temp
+                                            NMOMENTS, el_temp,Tc_temp,P3, M_temp,cf.n_interpol
                                             )
             
         # Single type dpol var computation       
