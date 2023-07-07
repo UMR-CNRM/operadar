@@ -24,16 +24,7 @@ import numpy as np
 import math
 
 
-import operad_conf as cf
-
-# ===========================================================================
-
-
-
-# ========== Define P3 ===================
-"""
-Define P3 : CC (2 moments) or Fw (1 moment)
-"""
+# ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
 def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fwmin, Fwmax, Fwstep):
     if(NMOMENTS==2):
         if (t =='rr'):
@@ -49,9 +40,6 @@ def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fw
     return P3, P3min, P3max, P3step
 
 # ========== Compute NMOMENTS ===================
-"""
-Compute nmoments
-"""
 def compute_nmoments(micro,t):
     if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG") and (t =='rr'))):
         NMOMENTS=2             
@@ -79,8 +67,7 @@ def singletype_mask(Mt, el, Tc, Fw, mask_precip_dist, expMmin,micro,t):
     Fw_temp=Fw[mask_tot]
     M_temp=Mt[mask_tot]
     
-    
-    # if((t =='ii') or ((cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMASG" or cf.micro =="LIMAAG") and (t =='rr'))):
+    # if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG") and (t =='rr'))):
     #     NMOMENTS=2
     #     if (t =='rr'):
     #         CC_temp=CC[mask_tot]
@@ -95,7 +82,7 @@ def singletype_mask(Mt, el, Tc, Fw, mask_precip_dist, expMmin,micro,t):
         
     return mask_tot, M_temp, el_temp, Tc_temp, Fw_temp #, P3, P3min, P3max, P3step
 
-#============== Compute radar geometry ==========
+# ============== Compute radar geometry ==========
 """
 Compute radar geometry variables in model grid
 
@@ -114,7 +101,7 @@ def compute_radargeo(X,Y,Z,X0,Y0,distmax_rad,RT,elevmax):
     # distmat_mod : ground distance to the radar location for each model point
     distmat_mod=np.array([(XX**2+YY**2)**0.5]*len(Z))
     Z=np.array([np.ones(np.shape(XX))*Z[k] for k in range(len(Z))]) 
-    mask_distmax=(distmat_mod<cf.distmax_rad)
+    mask_distmax=(distmat_mod<distmax_rad)
     
     # radar elevation
     tanel = Z/distmat_mod-3.*distmat_mod/(8.*RT)
@@ -123,15 +110,11 @@ def compute_radargeo(X,Y,Z,X0,Y0,distmax_rad,RT,elevmax):
     el[el>elevmax] = elevmax
     
     return mask_distmax,el
-# =================================================
 
-#==================================================
-"""
-Compute precipitation + maxdistance mask
-"""
-def mask_precip(mask_distmax,M,expMmin):
+# ============== Compute precipitation + maxdistance mask ==========
+def mask_precip(mask_distmax,M,expMmin,micro):
     Mtot=np.copy(M['rr'])
-    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+    if(micro =="LIMAAG" or micro =="ICE4"):
         Mtot=M['rr']+M['gg']+M['ss']+M['ii']+M['hh']	
     else :											
         Mtot=M['rr']+M['gg']+M['ss']+M['ii']							
@@ -140,13 +123,11 @@ def mask_precip(mask_distmax,M,expMmin):
     # Precip + distance to radar mask
     mask_precip_dist=(mask_precip & mask_distmax)
     
-    return mask_precip_dist
-#===================================================    
-
+    return mask_precip_dist    
 
 
     
-#=====================================================================
+# ============== Compute water fraction for wet species ==========
 """
 Add wet types in hydrometeor contents (Mwg, Mwh)
 and compute water fraction for wet species
@@ -154,11 +135,11 @@ and compute water fraction for wet species
 * input: M, mixed phase option (Fwpos, Tpos, Fwposg)
  *output: Fw 3D, M with addition of wet hydrometeor types wg, wh 
 """
-def compute_mixedphase(M,MixedPhase,expMmin):
+def compute_mixedphase(M,MixedPhase,expMmin,micro):
     
     # Bright band (or mixed phase) mask 
    # Mtot=np.copy(M['rr'])
-    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+    if(micro =="LIMAAG" or micro =="ICE4"):
         #Mtot=M['rr']+M['gg']+M['ss']+M['ii']+M['hh']	
         maskBB=((M["rr"] > 10**expMmin) & ((M["gg"]> 10**expMmin) | (M["hh"]> 10**expMmin)))
     else :											
@@ -168,7 +149,7 @@ def compute_mixedphase(M,MixedPhase,expMmin):
     print("Calculation of Fw for wet graupel")
     Fw = np.zeros(np.shape(M["rr"]))                          
  
-    if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+    if(micro =="LIMAAG" or micro =="ICE4"):
          Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]+M["hh"]))[maskBB]
          M["wh"] = np.copy(M["hh"])
     else :
@@ -176,49 +157,44 @@ def compute_mixedphase(M,MixedPhase,expMmin):
     
     M["wg"] = np.copy(M["gg"])
     
-    # cf.MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0   # => idem for hail           
-    if (cf.MixedPhase=="Tpos"):  
+    # MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0   # => idem for hail           
+    if (MixedPhase=="Tpos"):  
         M["wg"][Tc < 0] = 0
         M["gg"][Tc >= 0] = 0
         M["wh"][Tc < 0] = 0
         M["hh"][Tc >= 0] = 0
 
-    # cf.MixedPhase=="Fwpos" => Graupel is transferred to melting graupel if Fw>=0     
-    if (cf.MixedPhase=="Fwpos"):
+    # MixedPhase=="Fwpos" => Graupel is transferred to melting graupel if Fw>=0     
+    if (MixedPhase=="Fwpos"):
         M["wg"][Fw == 0] = 0
         M["wg"][maskBB] = M["gg"][maskBB]+M["rr"][maskBB] # If M["rr"] > 10**expMmin) & (M["gg"]> 10**expMmin)
                                    # the rainwater is added to the wet graupel content         
         M["rr"][maskBB] = 0        # and removed from the rain content  
         M["gg"][maskBB] = 0
        
-        if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+        if(micro =="LIMAAG" or micro =="ICE4"):
             M["wh"] = M["hh"] + ( (M["rr"]*M["hh"])/(M["hh"]+M["gg"]) )	# d'après Wolfensberger, 2018
 
-    if (cf.MixedPhase=="Fwposg"):
+    if (MixedPhase=="Fwposg"):
         M["wg"][Fw == 0] = 0
         M["wg"][maskBB] = M["gg"][maskBB]
         M["gg"][maskBB] = 0
        
-        if(cf.micro =="LIMAAG" or cf.micro =="ICE4"):
+        if(micro =="LIMAAG" or micro =="ICE4"):
             M["wh"][Fw == 0] = 0
             M["wh"][maskBB] = M["hh"][maskBB]
             M["hh"][maskBB] = 0 # addition Clotilde (in the mixed phase, there is no dry hail)
             
     return M, Fw
-#==========================================================================
 
 
-#============== Fonction lin_interpol ==============
-"""
-Interpolation linéaire de y1, y2 en x1,x2
-"""
+#============== Interpolation linéaire de y1, y2 en x1,x2 ==============
 def lin_interpol(x1,x2,y1,y2,x):
     if (x1==x2):
         res=0.5*(y1+y2)
     else:
         res=(y1*(x2-x)+y2*(x-x1))/(x2-x1)
     return res
-#=============================
     
 
     
