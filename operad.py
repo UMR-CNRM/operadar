@@ -84,9 +84,6 @@ from pathlib import Path
 os.system("cp "+configfile+" operad_conf.py")"""
 import configFiles.operad_conf_AROME_ICE4 as cf
 
-# ===== Output files (make a choice) ===== #
-save_npz    = False
-save_netcdf = True
 
 # ===== Testing existence of the output directory (or creates it) ===== #
 output_dir = Path(cf.pathfick)
@@ -246,9 +243,9 @@ for datetime in cf.datetimelist:
             fick = cf.pathfick+"k_"+cf.model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+t
                
             if (cf.model=="Arome"):
-                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,save_npz,save_netcdf)
+                save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,cf.save_npz,cf.save_netcdf)
             elif (cf.model=="MesoNH"):
-                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,save_npz,save_netcdf)
+                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,cf.save_npz,cf.save_netcdf)
             else:
                 print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
             
@@ -273,9 +270,9 @@ for datetime in cf.datetimelist:
     # ============= Save dpol var for all hydromet in netcdf and/or npz file
     
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,outFile,datetime,save_npz,save_netcdf)
+        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,outFile,datetime,cf.save_npz,cf.save_netcdf)
     elif (cf.model=="MesoNH"):
-        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,save_npz,save_netcdf)
+        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,cf.save_npz,cf.save_netcdf)
     else:
         print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
 

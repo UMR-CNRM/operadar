@@ -20,6 +20,9 @@ deb = settings.deb
 fin = settings.fin
 step = settings.step
 
+save_npz    = settings.save_npz
+save_netcdf = settings.save_netcdf
+
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
 list_types=['vv','cc','rr','ii','ss','gg']

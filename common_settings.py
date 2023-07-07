@@ -16,3 +16,6 @@ step = dt.timedelta(minutes=5)
 
 lat_min,lat_max=42,45
 lon_min,lon_max=1,5
+
+save_npz    = False
+save_netcdf = True
