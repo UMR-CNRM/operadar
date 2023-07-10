@@ -55,7 +55,7 @@ def read_mesonh(micro,time):
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
     name_hydro={}
     M={}
-    for t in cf.list_types:
+    for t in cf.htypes_model:
         M[t] = np.empty(Tc.shape)    
 
     # Arrays initialisation
@@ -63,7 +63,7 @@ def read_mesonh(micro,time):
         name_hydro[t]=list_hydro[it]
     
 
-    for t in cf.list_types:
+    for t in cf.htypes_model:
         M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
         M[t][M[t]==999.]=float('nan')
 
