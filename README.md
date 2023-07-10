@@ -6,15 +6,12 @@ OUTPUT : netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt
 ## How to run operadar
 1) Create a configuration file (like `operad_conf_AROME_ICE3.py` or `operad_conf_MesoNH_ICEidpc.py`) for the chosen model
 2) Select your model microphysics scheme options
-   - <p>ICE3 => htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables<br>
-           list_types_tot=['rr','ii','ss','gg','wg']</p>
-   - ICE4 => htypes_model=['vv','cc','rr','ii','ss','gg','hh']
-            list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
-
-LIMA => htypes_model=['vv','cc','rr','ii','ss','gg']
-            list_types_tot=['rr','ii','ss','gg','wg']
-LIMH => htypes_model=['vv','cc','rr','ii','ss','gg','hh']
-            list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
+   - ICE3 or LIMA (without hail) :
+     - htypes_model=['vv','cc','rr','ii','ss','gg'] # model's hydrometeors related variables
+     - list_types_tot=['rr','ii','ss','gg','wg'] <span style="color:green"># model's hydrometeors related variables **+ wet hydrometeors (computed)**</span>
+   - ICE4 or LIMA with hail :
+     - htypes_model=['vv','cc','rr','ii','ss','gg','hh']
+     - list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
 
 ==> select radar option (band)
 
