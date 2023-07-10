@@ -93,25 +93,18 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
 
 
 # ========== Hydrometeor concentrations =============================
-def get_concentrations(ficsubdo, p, Tc, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800):
-    
-    cc_rain = np.empty(Tc.shape)
-    cc_ice = iceCC_cst*np.ones(Tc.shape)
+def get_concentrations(ficsubdo, p, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800.):
+
+    cc_rain = np.empty(p.shape)
+    cc_ice  = iceCC_cst*np.ones(p.shape)
                
     if microphysics[0:4] == "LIMA":
-        name_hydro , list_t_full = link_varname_with_realname()
-        """"""  
-        # Arrays initialisation
-        q={}
-        for it,t in enumerate(list_t_full):
-            q[t]=np.zeros(p.shape)
-        IKE=p.shape[0]
-        for k in range(IKE):
-            q_cur={}
-            for htype in hydrometeor_type:
-                q_cur[htype]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[htype])
-                q[htype][k,:,:] = q_cur[htype].getdata()
-                del q_cur[htype]
+
+        for k in range(p.shape[0]):
+            extract_rr_cc = ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'N_RAIN')
+            cc_rain[k,:,:] = extract_rr_cc.getdata()
+            extract_ii_cc = ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'N_ICE')
+            cc_ice[k,:,:] = extract_ii_cc.getdata()
          
     return cc_rain, cc_ice
 
