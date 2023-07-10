@@ -7,8 +7,8 @@ Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome
 1) Create a configuration file (like `operad_conf_AROME_ICE3.py` or `operad_conf_MesoNH_ICEidpc.py`) for the chosen model
 2) Select your model microphysics scheme options
    - ICE3 or LIMA (without hail) :
-     - htypes_model=['vv','cc','rr','ii','ss','gg'] # model's hydrometeors related variables
-     - list_types_tot=['rr','ii','ss','gg','wg']    # idem **+ wet hydrometeors (computed)**
+     - `htypes_model   = ['vv','cc','rr','ii','ss','gg']` # model's hydrometeors related variables
+     - `list_types_tot = ['rr','ii','ss','gg','wg']`    # idem **+ wet hydrometeors (computed)**
    - ICE4 or LIMA with hail :
      - htypes_model=['vv','cc','rr','ii','ss','gg','hh']
      - list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
