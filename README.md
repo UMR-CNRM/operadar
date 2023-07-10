@@ -10,11 +10,14 @@ Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome
      - `htypes_model   = ['vv','cc','rr','ii','ss','gg']` # model's hydrometeors related variables
      - `list_types_tot = ['rr','ii','ss','gg','wg']`    # idem **+ wet hydrometeors (computed)**
    - ICE4 or LIMA with hail :
-     - htypes_model=['vv','cc','rr','ii','ss','gg','hh']
-     - list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
+     - `htypes_model   = ['vv','cc','rr','ii','ss','gg','hh']`
+     - `list_types_tot = ['rr','ii','ss','gg','wg','hh','wh']`
 3) Select a radar band (C, S or X)
 4) Change time steps, Tmatrix table and model file directories/paths
-5) Run in a terminal `python3 operad.py`
+5) Run in a terminal
+```python
+python3 operad.py
+```
 
 
 ## To Do
