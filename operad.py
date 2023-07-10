@@ -82,7 +82,7 @@ from pathlib import Path
 # ===== Configuration file ===== #
 """configfile="operad_conf_AROME_ICE4.py"
 os.system("cp "+configfile+" operad_conf.py")"""
-import configFiles.operad_conf_AROME_ICE4 as cf
+import configFiles.operad_conf_AROME_LIMAAG as cf
 
 
 # ===== Testing existence of the output directory (or creates it) ===== #
@@ -99,8 +99,6 @@ else:
 
 liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
 liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
-
-
 
 
 # ===== Loop over timesteps ===== #
@@ -154,7 +152,7 @@ for datetime in cf.datetimelist:
                                                        microphysics = cf.micro,
                                                        lonmin = cf.lon_min, lonmax = cf.lon_max,
                                                        latmin = cf.lat_min, latmax = cf.lat_max,
-                                                       hydrometeors_list = cf.list_types,
+                                                       hydrometeors_list = cf.htypes_model,
                                                        )
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
@@ -178,8 +176,8 @@ for datetime in cf.datetimelist:
                                                       cf.RT,ELEVmax["rr"],
                                                      )
 
-    mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin) # precip mask
-    [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin) # mixed phase parametrization
+    mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, cf.micro) # precip mask
+    [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, cf.micro) # mixed phase parametrization
   
     # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
     Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
@@ -273,7 +271,7 @@ for datetime in cf.datetimelist:
     
     # ----- Save dpol var for all hydromet in netcdf and/or npz file
     if (cf.model=="Arome"):
-        save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,outFile,datetime,cf.save_npz,cf.save_netcdf)
+        save.save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,outFile,datetime,cf.save_npz,cf.save_netcdf)
     elif (cf.model=="MesoNH"):
         save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,cf.save_npz,cf.save_netcdf)
     else:
