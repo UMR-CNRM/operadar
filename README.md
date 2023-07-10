@@ -14,8 +14,8 @@ Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome
      - `list_types_tot = ['rr','ii','ss','gg','wg','hh','wh']`
 3) Select a radar band (C, S or X)
 4) Change time steps, Tmatrix table and model file directories/paths
-5) Run in a terminal
-```python
+5) Then, run in a terminal :
+```Shell
 python3 operad.py
 ```
 
