@@ -1,7 +1,7 @@
 # operadar
 Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome or MesoNH model using existing Tmatrix tables
-INPUT  : Tmatrix tables and model file (Arome fa or MesoNH netcdf)
-OUTPUT : netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt 
+* INPUT  : Tmatrix tables and model file (Arome fa or MesoNH netcdf)
+* OUTPUT : netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt 
 
 ## How to run operadar
 1) Create a configuration file (like `operad_conf_AROME_ICE3.py` or `operad_conf_MesoNH_ICEidpc.py`) for the chosen model
