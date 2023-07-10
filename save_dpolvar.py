@@ -17,7 +17,7 @@ Save Arome dpol variables in npz or netcdf file
 input: Vm_k, Tc, Z, lat, lon , fick
 output: file saved
 """
-def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time,
+def save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,fick,time,
                        save_npz=True, save_netcdf=True):
     
     IKE=Tc.shape[0] 
@@ -47,26 +47,32 @@ def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick,time,
         np.savez_compressed(fick+'.npz', tab_fick)
   
     # ============ Save var pol in netcdf file with xarray
+    
+    # M dict formatting for dataset
+    hydromet_list = list(M.keys())
+    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]) # from kg to g/kg
+    
     if save_netcdf :
         ds=xr.Dataset(
                 data_vars=dict(
-                        Zh=(["level","y","x"],Vm_k["Zhh"]),
-                        Zdr=(["level","y","x"],Vm_k["Zdr"]),
-                        Kdp=(["level","y","x"],Vm_k["Kdp"]),
-                        Rhohv=(["level","y","x"],Vm_k["Rhohv"]),
-                        T=(["level","y","x"],Tc),
-                        Alt=(["level","y","x"],Z),
-
-                            #             "Kdp":(["lat","lon","alt"],Vm_k["Kdp"]),
-        #             "Rhohv":(["lat","lon","alt"],Vm_k["Rhohv"]),},
+                        Zh     = (["level","y","x"],Vm_k["Zhh"], {"units": "dBZ"}),
+                        Zdr    = (["level","y","x"],Vm_k["Zdr"], {"units": "dB"}),
+                        Kdp    = (["level","y","x"],Vm_k["Kdp"], {"units": "°/km"}),
+                        Rhohv  = (["level","y","x"],Vm_k["Rhohv"], {"units": "1"}),
+                        M      = (["hydrometeor","level","y","x"],contents, {"units": "g/kg of dry air"}),
+                        CCrain = (["level","y","x"],CC, {"units": "kg^-1"}),
+                        CCice  = (["level","y","x"],CCI, {"units": "kg^-1"}),
+                        T      = (["level","y","x"],Tc, {"units": "°C"}),
+                        Alt    = (["level","y","x"],Z, {"units": "m"}),
                 ),
                 coords=dict(
-                    y=(["y"], np.arange(Tc.shape[1])),
-                    x=(["x"], np.arange(Tc.shape[2])),
-                    lon=(["y","x"], lon),
-                    lat=(["y","x"], lat),
-                    level=(["level"], np.arange(Tc.shape[0])),
-                    time=(time),             
+                    y   = (["y"], np.arange(Tc.shape[1])),
+                    x   = (["x"], np.arange(Tc.shape[2])),
+                    lon = (["y","x"], lon),
+                    lat = (["y","x"], lat),
+                    level = (["level"], np.arange(Tc.shape[0])),
+                    time  = (time),             
+                    hydrometeor = (["hydrometeor"],hydromet_list),
         ),
         )    
         ds.to_netcdf(fick+".nc")
