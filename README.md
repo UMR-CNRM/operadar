@@ -1,20 +1,20 @@
 # operadar
 Computes dual-pol variables (Zh, Zdr, Kdp, Rhohv) in the 3D model grid for Arome or MesoNH model using existing Tmatrix tables
-input: Tmatrix tables and model file (Arome fa or MesoNH netcdf)
-output: netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt 
+INPUT  : Tmatrix tables and model file (Arome fa or MesoNH netcdf)
+OUTPUT : netcdf file with lat,lon (or X, Y) + Zh, Zdr, Kdp, Rhohv, T, Alt 
 
-1) create a configuration file like operad_conf_AROME_ICE3.py or operad_conf_MesoNH_ICEidpc.py
-==> select your model, microphysics scheme options
-!!! ICE3 => list_types=['vv','cc','rr','ii','ss','gg']
-            list_types_tot=['rr','ii','ss','gg','wg']
-!!! ICE4 => list_types=['vv','cc','rr','ii','ss','gg','hh']
-            list_types_tot=['rr','ii','ss','gg','wg','wh']
+## How to run operadar
+1) Create a configuration file (like `operad_conf_AROME_ICE3.py` or `operad_conf_MesoNH_ICEidpc.py`) for the chosen model
+2) Select your model microphysics scheme options
+   - <p>ICE3 => htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables<br>
+           list_types_tot=['rr','ii','ss','gg','wg']</p>
+   - ICE4 => htypes_model=['vv','cc','rr','ii','ss','gg','hh']
+            list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
 
-MesoNH only:
-LIMA => list_types=['vv','cc','rr','ii','ss','gg']
+LIMA => htypes_model=['vv','cc','rr','ii','ss','gg']
             list_types_tot=['rr','ii','ss','gg','wg']
-LIMH => list_types=['vv','cc','rr','ii','ss','gg','hh']
-            list_types_tot=['rr','ii','ss','gg','wg','wh']
+LIMH => htypes_model=['vv','cc','rr','ii','ss','gg','hh']
+            list_types_tot=['rr','ii','ss','gg','wg','hh','wh']
 
 ==> select radar option (band)
 
