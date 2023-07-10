@@ -12,7 +12,7 @@ Configuration file for operad.py
 model='MesoNH'
 micro = "ICE3" # ICE3 / LIMASG / LIMAAG / ICE4
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
-list_types=['vv','cc','rr','ii','ss','gg']
+htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables
 list_types_tot=['rr','ii','ss','gg','wg']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #

@@ -25,8 +25,8 @@ save_netcdf = settings.save_netcdf
 
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
-list_types=['vv','cc','rr','ii','ss','gg','hh']
-list_types_tot = ['rr','ii','ss','gg','wg','wh']
+htypes_model=['vv','cc','rr','ii','ss','gg','hh'] # available model variables
+list_types_tot = ['rr','ii','ss','gg','wg','hh','wh']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
  
