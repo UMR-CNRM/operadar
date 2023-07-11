@@ -5,10 +5,11 @@ Created on Tue Apr 11 09:55:15 2023
 
 @author: augros
 """
-
+import time as tm
 import numpy as np
 import epygram
 import bronx
+import pickle as pkl
 import read_arome_lib as arolib
 
 
@@ -23,6 +24,7 @@ OUTPUT: M, Tc, CC, CCI, lon, lat, Z
 
 def read_arome(modelfile: str,
                microphysics: str,
+               extract_once: bool,
                hydrometeors_list: list,
                lonmin: float = -5.2,
                lonmax: float = 8.3,
@@ -32,9 +34,26 @@ def read_arome(modelfile: str,
     
     epygram.init_env()
     
-    print("Reading AROME fa file: ",modelfile)
+    print("  AROME fa file: ",modelfile)
     ficA = epygram.formats.resource(modelfile, openmode = 'r', fmt = 'FA')
     ps = ficA.readfield('SURFPRESSION')
+    
+    if extract_once :
+        # Vertical levels values
+        A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
+        B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
+        # Number of vertical levels
+        IKE=len(ficA.geometry.vcoordinate.levels)
+        # Save in temporary pickle files
+        tmpA = open('tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
+        tmpB = open('tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
+        tmpIKE = open('tmpIKE.obj' , 'wb') ; pkl.dump(IKE,tmpIKE) ; tmpIKE.close()
+    else :
+        # Read previously saved pickle files
+        tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
+        tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
+        tmpIKE = open('tmpIKE.obj', 'rb') ; IKE = pkl.load(tmpIKE) ; tmpIKE.close()
+        
     
     # === Infos === #
     #ficA.listfields()
@@ -49,24 +68,24 @@ def read_arome(modelfile: str,
                                                   subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
     #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
     
-    
     # ======== Horizontal, vertical coordinates, pressure
-    [p, psurf, pdep, phis, A, B, lon, lat] = arolib.get_geometry(ficA,ficsubdo)
+    if extract_once : 
+        [lon, lat] = arolib.get_lat_lon_epygram(ficsubdo)
+    [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B, IKE)
       
     # ======== Hydrometeor contents and temperature
     [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15
     [CC , CCI] = arolib.get_concentrations(ficsubdo, p,microphysics,hydrometeors_list)
     
-        
     # ========= Altitude z of each level
-    Z=arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
+    Z = arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
     
-     
     # ========= Close file
     ficsubdo.close()
         
-    return M, Tc, CC, CCI, lon, lat, Z
+    if extract_once : return M, Tc, CC, CCI, Z, lon, lat
+    else : return M, Tc, CC, CCI, Z
 
 # =============================================================================
 
