@@ -11,7 +11,6 @@ import epygram
 import bronx
 import read_arome_lib as arolib
 
-epygram.init_env()
 
 
 #================= Read Arome variables =======================================
