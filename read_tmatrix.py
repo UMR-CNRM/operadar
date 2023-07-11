@@ -177,13 +177,13 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
                  ELEVmint, ELEVmaxt, ELEVstept,\
                  Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
                  expMmin,expMstep,expMmax,\
-                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol):    
+                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
                                                                
     # Find position in the T-matrix table
     [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
         Tc_temp,P3, M_temp, LAMmint, LAMmaxt,\
         LAMstept, ELEVmint, ELEVmaxt, ELEVstept, Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-        expMmin,expMstep,expMmax,NMOMENTS)
+        expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
@@ -210,7 +210,7 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
 #    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
 def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
     ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
+    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings):
     
     """#LAMm = longueur d'onde radar en m (val)
        ELEV = Elevation en radians (tab)
@@ -259,42 +259,42 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
 
     #if (abs(LAM-LAMmin) < LAMstep/10):
     if (LAM<LAMmin):
-        print("Warning : LAM = ",LAM, " < LAMmin=",LAMmin)
+        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " < LAMmin=",LAMmin)
         LAM=LAMmin
     #if (abs(LAM-LAMmax) < LAMstep/10):
     if (LAM > LAMmax):
-        print("Warning : LAM = ",LAM, " > LAMmax=",LAMmax)
+        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " > LAMmax=",LAMmax)
         LAM=LAMmax
     
     if (len(ELEV[ELEV<ELEVmin])>0):
-        print("Warning: ELEV < ELEVmin: ",ELEV[ELEV<ELEVmin])
+        if shutdown_warnings == False : print("Warning: ELEV < ELEVmin: ",ELEV[ELEV<ELEVmin])
     ELEV[ELEV<ELEVmin]=ELEVmin
     
     if (len(ELEV[ELEV>ELEVmax])>0):
-        print("Warning: ELEV > ELEVmax: ",ELEV[ELEV>ELEVmax])
+        if shutdown_warnings == False : print("Warning: ELEV > ELEVmax: ",ELEV[ELEV>ELEVmax])
     ELEV[ELEV>ELEVmax]=ELEVmax
     
     if (len(Tc[Tc<Tcmin])>0):
-        print("Warning: Tc < Tcmin: ",Tc[Tc<Tcmin])
+        if shutdown_warnings == False : print("Warning: Tc < Tcmin: ",Tc[Tc<Tcmin])
     Tc[Tc<Tcmin]=Tcmin
     
     if (len(Tc[Tc>Tcmax])>0):
-        print("Warning: Tc > Tcmax: ",Tc[Tc>Tcmax])
+        if shutdown_warnings == False : print("Warning: Tc > Tcmax: ",Tc[Tc>Tcmax])
     Tc[Tc>Tcmax]=Tcmax
     
     if (len(P3[P3<P3min])>0):
-        print("Warning: P3 < P3min: ",P3[P3<P3min])
+        if shutdown_warnings == False : print("Warning: P3 < P3min: ",P3[P3<P3min])
     P3[P3<P3min]=P3min
  
     if (len(P3[P3>P3max])>0):
-        print("Warning: P3 > P3max: ",P3[P3>P3max])
+        if shutdown_warnings == False : print("Warning: P3 > P3max: ",P3[P3>P3max])
     P3[P3>P3max]=P3max
 
     if (len(expM[expM<expMmin])>0):
-        print("Warning: expM < expMmin: ",expM[expM<expMmin])
+        if shutdown_warnings == False : print("Warning: expM < expMmin: ",expM[expM<expMmin])
 
     if (len(expM[expM>expMmax])>0):
-        print("Warning: expM > expMmax: ",expM[expM>expMmax])
+        if shutdown_warnings == False : print("Warning: expM > expMmax: ",expM[expM>expMmax])
     expM[expM>expMmax]=expMmax
     
     #    condok=np.where((LAM >=LAMmin) & (LAM<=LAMmax) & (ELEV>=ELEVmin) & (ELEV<=ELEVmax) 
@@ -305,9 +305,10 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
                      & (expM >=expMmin) & (expM<=expMmax),1.,float('NaN'))
     
     
-    print("Tc isnan: ",Tc[np.isnan(condok)])
-    print("expM isnan: ",expM[np.isnan(condok)])
-    print("P3 isnan: ",P3[np.isnan(condok)])
+    if shutdown_warnings == False : 
+        print("Tc isnan: ",Tc[np.isnan(condok)])
+        print("expM isnan: ",expM[np.isnan(condok)])
+        print("P3 isnan: ",P3[np.isnan(condok)])
     
     # Looking for the location in the table of the values given as input in the 
     # function
