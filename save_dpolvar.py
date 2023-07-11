@@ -50,27 +50,27 @@ def save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,fick,time,
     
     # M dict formatting for dataset
     hydromet_list = list(M.keys())
-    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]) # from kg to g/kg
+    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg to g/kg
     
     if save_netcdf :
         ds=xr.Dataset(
                 data_vars=dict(
-                        Zh     = (["level","y","x"],Vm_k["Zhh"], {"units": "dBZ"}),
-                        Zdr    = (["level","y","x"],Vm_k["Zdr"], {"units": "dB"}),
-                        Kdp    = (["level","y","x"],Vm_k["Kdp"], {"units": "°/km"}),
-                        Rhohv  = (["level","y","x"],Vm_k["Rhohv"], {"units": "1"}),
+                        Zh     = (["level","y","x"],Vm_k["Zhh"].astype('f4'), {"units": "dBZ"}),
+                        Zdr    = (["level","y","x"],Vm_k["Zdr"].astype('f4'), {"units": "dB"}),
+                        Kdp    = (["level","y","x"],Vm_k["Kdp"].astype('f4'), {"units": "°/km"}),
+                        Rhohv  = (["level","y","x"],Vm_k["Rhohv"].astype('f4'), {"units": "1"}),
                         M      = (["hydrometeor","level","y","x"],contents, {"units": "g/kg of dry air"}),
-                        CCrain = (["level","y","x"],CC, {"units": "kg^-1"}),
-                        CCice  = (["level","y","x"],CCI, {"units": "kg^-1"}),
-                        T      = (["level","y","x"],Tc, {"units": "°C"}),
-                        Alt    = (["level","y","x"],Z, {"units": "m"}),
+                        CCrain = (["level","y","x"],CC.astype('f4'), {"units": "kg^-1"}),
+                        CCice  = (["level","y","x"],CCI.astype('f4'), {"units": "kg^-1"}),
+                        T      = (["level","y","x"],Tc.astype('f4'), {"units": "°C"}),
+                        Alt    = (["level","y","x"],Z.astype('i1'), {"units": "m"}),
                 ),
                 coords=dict(
-                    y   = (["y"], np.arange(Tc.shape[1])),
-                    x   = (["x"], np.arange(Tc.shape[2])),
-                    lon = (["y","x"], lon),
-                    lat = (["y","x"], lat),
-                    level = (["level"], np.arange(Tc.shape[0])),
+                    y   = (["y"], np.arange(Tc.shape[1]).astype('i1')),
+                    x   = (["x"], np.arange(Tc.shape[2]).astype('i1')),
+                    lon = (["y","x"], lon.astype('f4')),
+                    lat = (["y","x"], lat.astype('f4')),
+                    level = (["level"], np.arange(Tc.shape[0]).astype('i1')),
                     time  = (time),             
                     hydrometeor = (["hydrometeor"],hydromet_list),
         ),
