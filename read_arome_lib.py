@@ -6,22 +6,23 @@ import epygram
 """
 Horizontal, vertical coordinates, pressure 
 input: ficA
-output: p, A, B, nkA, lon, lat 
+output: p, A, B, nkA
 """
-def get_geometry(ficA,ficsubdo):
+
+def get_lat_lon_epygram(ficsubdo):
+    ps = ficsubdo.readfield('SURFPRESSION')
+    ps.sp2gp() # spectral to grid points
+    
+    (lon,lat) = ps.geometry.get_lonlat_grid(subzone='C')
+    
+    return lon, lat
+
+
+def get_geometry(ficsubdo, A, B, IKE):
     # === Horizontal coordinates 
     ps = ficsubdo.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
     psurf = np.exp(ps.getdata())
-
-    (lon,lat) = ps.geometry.get_lonlat_grid(subzone='C')
-
-    # Vertical levels values
-    A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
-    B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
-        
-    # Number of vertical levels
-    IKE=len(ficA.geometry.vcoordinate.levels)
 
     # 3D Pressure (Pa)
     p = epygram.profiles.hybridP2masspressure(A, B, psurf, 'geometric')
@@ -41,7 +42,7 @@ def get_geometry(ficA,ficsubdo):
     # Orography
     #oro = phis.getdata(subzone='C')/epygram.profiles.g0
 
-    return p, psurf, pdep, phis, A, B, lon, lat 
+    return p, psurf, pdep, phis
 
 # ==============================================================================
 
