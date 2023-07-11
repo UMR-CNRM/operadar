@@ -492,7 +492,7 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
     
     ncoef=5
     nval=Mred.shape[0]
-    print("INTERPOL: nval=",nval)
+    print("  INTERPOL: nval=",nval)
     VectCoef={}
 
     #--- Interpolation linéaire ---
