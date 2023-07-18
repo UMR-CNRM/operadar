@@ -7,7 +7,7 @@ Created on Tue Apr 11 09:55:15 2023
 """
 
 import numpy as np
-import operad_conf as cf
+"import operad_conf as cf" # NOT USED ANYMORE --> make call directly into functions
 from netCDF4 import Dataset
 
 #============== Read MesoNH variables ===============

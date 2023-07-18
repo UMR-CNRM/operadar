@@ -5,7 +5,7 @@ import epygram
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
 Horizontal, vertical coordinates, pressure 
-input: ficA
+input: ficsubdo
 output: p, A, B, nkA
 """
 

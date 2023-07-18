@@ -5,7 +5,6 @@ Created on Tue Apr 11 09:55:15 2023
 
 @author: augros
 """
-import time as tm
 import numpy as np
 import epygram
 import bronx
@@ -62,8 +61,6 @@ def read_arome(modelfile: str,
     # === Zoom === #
     imin,jmin=(np.round(ps.geometry.ll2ij(lonmin,latmin)).astype(int))
     imax,jmax=(np.round(ps.geometry.ll2ij(lonmax,latmax)).astype(int))
-    
-    #Fichier FA avec SubdomainResource
     ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
                                                   subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
     #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
@@ -80,10 +77,11 @@ def read_arome(modelfile: str,
     
     # ========= Altitude z of each level
     Z = arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
-    
+
     # ========= Close file
+    ficA.close()
     ficsubdo.close()
-        
+    
     if extract_once : return M, Tc, CC, CCI, Z, lon, lat
     else : return M, Tc, CC, CCI, Z
 

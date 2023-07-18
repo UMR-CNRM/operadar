@@ -68,6 +68,7 @@ The modifications are recorded via git:
 import sys
 import os
 import math
+import time as tm
 import numpy as np
 
 # Operad modules
@@ -80,9 +81,7 @@ from pathlib import Path
 
 
 # ===== Configuration file ===== #
-"""configfile="operad_conf_AROME_ICE4.py"
-os.system("cp "+configfile+" operad_conf.py")"""
-import configFiles.operad_conf_AROME_LIMAAG as cf
+import configFiles.operad_conf_AROME_ICE3 as cf
 
 
 # ===== Testing existence of the output directory (or creates it) ===== #
@@ -103,6 +102,7 @@ liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 
 # ===== Loop over timesteps ===== #
 read_tmatrix = True
+extract_once = True
 for datetime in cf.datetimelist: 
     time = datetime.strftime('%H:%M')
     outFile = cf.pathfick + f"/k_{cf.model}_{cf.band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
@@ -116,6 +116,7 @@ for datetime in cf.datetimelist:
     # ----- Reading Tmatrix tables ----- #
     if read_tmatrix :
         print("Reading Tmatrix tables")
+        deb_timer = tm.time()
         if (cf.micro=="LIMT" and cf.LIMToption=="cstmu"):
             [LAMmin, LAMstep, LAMmax,ELEVmin, ELEVstep, ELEVmax,
             Tcmin, Tcstep, Tcmax,Fwmin, Fwstep,Fwmax,
@@ -138,31 +139,45 @@ for datetime in cf.datetimelist:
                                                                                                         cf.list_types_tot)
         LAM = LAMmin["rr"]/1000.
         read_tmatrix = False
-        print("End reading Tmatrix tables")
+        print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
         
     # ----- Reading model variables ----- #
     # return 3D model variables + coordinates
-    print("Reading model variables")    
+    print("Reading model variables") ; deb_timer = tm.time()  
     
     if (cf.model=="MesoNH"):
         [M, Tc, CC, CCI, X, Y, Z] = meso.read_mesonh(cf.micro,time) 
-    elif (cf.model=="Arome"):
+    elif (cf.model=="Arome") :
         modelfile=cf.pathmodel+cf.filestart+time+".fa"
-        [M, Tc, CC, CCI, lon, lat, Z] = aro.read_arome(modelfile = modelfile,
-                                                       microphysics = cf.micro,
-                                                       lonmin = cf.lon_min, lonmax = cf.lon_max,
-                                                       latmin = cf.lat_min, latmax = cf.lat_max,
-                                                       hydrometeors_list = cf.htypes_model,
-                                                       )
+        if extract_once :
+            [M, Tc, CC, CCI, Z, lon, lat] = aro.read_arome(modelfile = modelfile,
+                                                        microphysics = cf.micro,
+                                                        extract_once = extract_once,
+                                                        lonmin = cf.lon_min, lonmax = cf.lon_max,
+                                                        latmin = cf.lat_min, latmax = cf.lat_max,
+                                                        hydrometeors_list = cf.htypes_model,
+                                                        )
+        else :
+            [M, Tc, CC, CCI, Z] = aro.read_arome(modelfile = modelfile,
+                                                 microphysics = cf.micro,
+                                                 extract_once = extract_once,
+                                                 lonmin = cf.lon_min, lonmax = cf.lon_max,
+                                                 latmin = cf.lat_min, latmax = cf.lat_max,
+                                                 hydrometeors_list = cf.htypes_model,
+                                                 )
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
-      
+    extract_once = False    
+    print("Done in",round(tm.time()- deb_timer,2),"seconds")
+    
     # ----- Compute radar geometry variables ----- #
-    print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)")
+    print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)") ; deb_timer = tm.time()
     # TODO: add latlon2XY function in ope_lib
     # else: 
     #     X0,Y0=ope_lib.latlon2XY(cf.latrad,cf.lonrad)
     # ----------------
+    np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
+
     if (cf.model=="Arome"):
         el = np.zeros(Tc.shape)
         mask_distmax = (el >= 0.)
@@ -178,12 +193,13 @@ for datetime in cf.datetimelist:
 
     mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, cf.micro) # precip mask
     [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, cf.micro) # mixed phase parametrization
-  
+    print("Done in",round(tm.time()- deb_timer,2),"seconds")
+    
     # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
     Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
         
     # ----- Loop over hydromet types ----- #
-    print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot)
+    print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot) ; deb_timer = tm.time()
     for hydromet in cf.list_types_tot:
         if (cf.singletype):
             Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
@@ -216,7 +232,7 @@ for datetime in cf.datetimelist:
                                             ELEVmin[hydromet], ELEVmax[hydromet], ELEVstep[hydromet],
                                             Tcmin[hydromet], Tcmax[hydromet], Tcstep[hydromet],
                                             P3min, P3max, P3step, expMmin,expMstep,expMmax,
-                                            NMOMENTS, el_temp,Tc_temp,P3, M_temp,cf.n_interpol
+                                            NMOMENTS, el_temp,Tc_temp,P3, M_temp,cf.n_interpol,shutdown_warnings=True,
                                             )
             
         # Single type dpol var computation       
@@ -260,7 +276,7 @@ for datetime in cf.datetimelist:
    
     for var in liste_var_calc:
         Vm_k[var][~mask_precip_dist] = np.NaN 
-   
+    
     # ----- dpol var calculation
     Vm_k["Zhh"] = np.copy(Vm_k["Zhhlin"])
     Vm_k["Zhh"][Vm_k["Zhhlin"]>0] = ope_lib.Z2dBZ(Vm_k["Zhhlin"][Vm_k["Zhhlin"]>0])
@@ -268,6 +284,7 @@ for datetime in cf.datetimelist:
     Vm_k["Zdr"][(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
             (Vm_k["Zhhlin"]/Vm_k["Zvvlin"])[(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)])
     Vm_k["Rhohv"] = np.sqrt(np.divide(Vm_k["S11S22"], Vm_k["S11S11"]*Vm_k["S22S22"]))
+    print("Done in",round(tm.time() - deb_timer,2),"seconds")
     
     # ----- Save dpol var for all hydromet in netcdf and/or npz file
     if (cf.model=="Arome"):

@@ -146,7 +146,7 @@ def compute_mixedphase(M,MixedPhase,expMmin,micro):
         #Mtot=M['rr']+M['gg']+M['ss']+M['ii']							
         maskBB=((M["rr"] > 10**expMmin) & (M["gg"]> 10**expMmin))
     
-    print("Calculation of Fw for wet graupel")
+    print("  Calculation of Fw for wet graupel")
     Fw = np.zeros(np.shape(M["rr"]))                          
  
     if(micro =="LIMAAG" or micro =="ICE4"):
