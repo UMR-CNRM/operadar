@@ -1,0 +1,3 @@
+# Ignore the content of OUTPUT directory but not the directory itself
+output/**
+!output/.gitkeep

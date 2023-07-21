@@ -25,81 +25,114 @@ from pytmatrix.psd import PSDIntegrator, GammaPSD
 from pytmatrix import orientation, tmatrix_aux, refractive
 
 #from scattering_io import get_save_dir
-#from graph import plot_sp_scatt_quantities, plot_psd_scatt_quantities
+#, plot_psd_scatt_quantities
 #from part_descrip import compute_velocity_rain
 #from precip import compute_lwc, compute_rainfall_rate
-from scattering import compute_scattering_psd_tm, compute_scattering_sp_tm
+import sys
+sys.path.insert(0,"./lib/")
+from scattering import compute_scattering_sp_tm
 from scattering import compute_scattering_canting_sp
-from scattering import compute_scattering_canting_psd
 from scattering import compute_angular_moments_analytical
+from scattering_io import get_save_dir
 
-# parameters
-sp_var_list = [
-    'sca_xsect_h', 'sca_xsect_v', 'refl_h', 'refl_v', 'ldr_h', 'ldr_v',
-    'zdr', 'rho_hv', 'delta_hv', 'ext_xsect_h', 'ext_xsect_v', 'kdp',
-    'A_h', 'A_v', 'Adp']
+from graph import plot_sp_scatt_quantities
 
-sp_x_var_list = ['d']
-sp_y_var_list = [
-    'sca_xsect', 'ext_xsect', 'refl', 'ldr', 'zdr', 'rho_hv', 'delta_hv',
-    'kdp', 'A', 'Adp']
+def main():
+    """
+    main
+    """
+    # parse the arguments
+    parser = argparse.ArgumentParser(
+        description='Entry to rain scattering simulations framework')
 
-psd_var_list = [
-    'refl_h', 'refl_v', 'ldr_h', 'ldr_v', 'zdr', 'rho_hv', 'delta_hv',
-    'kdp', 'A_h', 'A_v', 'Adp']
+    # keyword arguments
+    parser.add_argument(
+        '--path', type=str,
+        default='../output/',
+        help='output data path')
 
-psd_x_var_list = ['refl_h', 'lwc', 'rr', 'D0']
-psd_y_var_list = [
-    'refl', 'ldr', 'zdr', 'rho_hv', 'delta_hv', 'kdp', 'A', 'Adp']
+    parser.add_argument(
+        '--band', type=str,
+        default='C',
+        help='frequency band. Default C')
 
-diam_min = 0.1
-diam_max = 7.
-step = 0.1
-diam = np.arange(diam_min, diam_max+step, step)
-num_points = diam.size
+    parser.add_argument(
+        '--hydro_type', type=str,
+        default="rain",
+        help='hydrometeor type (rain, snow, graupel, hail. Default rain')
+        
+    parser.add_argument(
+        '--analytical_cant_angl', type=int,
+        default=1,
+        help='If 1 the canting angle will be computed analytically. Default 1')
 
-canting_angle = 10.
+    args = parser.parse_args()
 
-# geometry = (theta0, theta, phi0, phi, alpha, beta)
-# geom_horiz_back = (90.0, 90.0, 0.0, 180.0, 0.0, 0.0) #horiz. backscatter
-# geom_horiz_forw = (90.0, 90.0, 0.0, 0.0, 0.0, 0.0) #horiz. forward scatter
-# geom_vert_back = (0.0, 180.0, 0.0, 0.0, 0.0, 0.0) #vert. backscatter
-# geom_vert_forw = (180.0, 180.0, 0.0, 0.0, 0.0, 0.0) #vert. forward scatter
-geom_back = (90.0-args.ele, 90.0+args.ele, 0.0, 180.0, 0.0, 0.0)
-geom_forw = (90.0-args.ele, 90.0-args.ele, 0.0, 0.0, 0.0, 0.0)
+    print(f'======  single particle scattering simulation started: '
+          f'{datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}')
+    atexit.register(_print_end_msg,
+     "====== single particle scattering simulation finished: ")
 
-print(hydro_type)
-print('band:', args.band)
-print('temp:', args.temp)
-print('elevation angle', args.ele)
-
-if args.band == 'S':
-    wavelength = tmatrix_aux.wl_S
-elif args.band == 'C':
-    wavelength = tmatrix_aux.wl_C
-elif args.band == 'X':
-    wavelength = tmatrix_aux.wl_X
-
-if args.temp == 0.:
-    m = refractive.m_w_0C[wavelength]
-elif args.temp == 10.:
-    m = refractive.m_w_10C[wavelength]
-elif args.temp == 20.:
-    m = refractive.m_w_20C[wavelength]
-
-scatterer = Scatterer(wavelength=wavelength, m=m)
-if args.analytical_cant_angl:
-    scatterer.orient = orientation.orient_single
-    ang_moments_dict = compute_angular_moments_analytical(canting_angle)
-else:
-    scatterer.orient = orientation.orient_averaged_fixed
-    scatterer.or_pdf = orientation.gaussian_pdf(canting_angle)
-
-savedir = get_save_dir(
-    args.path, hydro_type, args.band, args.temp, create_dir=True,
-    with_subdirs=with_subdirs)
-
-if args.compute_sp:
+    #=============== Parameters =====================
+    sp_var_list = ['sca_xsect_h', 'sca_xsect_v', 'refl_h', 'zdr', 'kdp', 'rho_hv']
+    
+    sp_x_var_list = ['d']
+    sp_y_var_list = ['sca_xsect','refl', 'zdr','kdp', 'rho_hv']
+    diam_min = 0.1
+    diam_max = 7.
+    step = 0.1
+    diam = np.arange(diam_min, diam_max+step, step)
+    num_points = diam.size
+    
+    
+    canting_angle = 10.
+    elev=0.
+    temp=20.
+    
+    with_subdirs = False
+    # ==============================================
+    
+    # geometry = (theta0, theta, phi0, phi, alpha, beta)
+    # geom_horiz_back = (90.0, 90.0, 0.0, 180.0, 0.0, 0.0) #horiz. backscatter
+    # geom_horiz_forw = (90.0, 90.0, 0.0, 0.0, 0.0, 0.0) #horiz. forward scatter
+    # geom_vert_back = (0.0, 180.0, 0.0, 0.0, 0.0, 0.0) #vert. backscatter
+    # geom_vert_forw = (180.0, 180.0, 0.0, 0.0, 0.0, 0.0) #vert. forward scatter
+    geom_back = (90.0-elev, 90.0+elev, 0.0, 180.0, 0.0, 0.0)
+    geom_forw = (90.0-elev, 90.0-elev, 0.0, 0.0, 0.0, 0.0)
+    
+    hydro_type=args.hydro_type
+    
+    print(hydro_type)
+    print('band:', args.band)
+    print('temp:', temp)
+    print('elevation angle', elev)
+    
+    if args.band == 'S':
+        wavelength = tmatrix_aux.wl_S
+    elif args.band == 'C':
+        wavelength = tmatrix_aux.wl_C
+    elif args.band == 'X':
+        wavelength = tmatrix_aux.wl_X
+    
+    if temp == 0.:
+        m = refractive.m_w_0C[wavelength]
+    elif temp == 10.:
+        m = refractive.m_w_10C[wavelength]
+    elif temp == 20.:
+        m = refractive.m_w_20C[wavelength]
+    
+    scatterer = Scatterer(wavelength=wavelength, m=m) 
+    if args.analytical_cant_angl:
+        scatterer.orient = orientation.orient_single
+        ang_moments_dict = compute_angular_moments_analytical(canting_angle)
+    else:
+        scatterer.orient = orientation.orient_averaged_fixed
+        scatterer.or_pdf = orientation.gaussian_pdf(canting_angle)
+    
+    savedir = get_save_dir(
+        args.path, hydro_type, args.band, temp, create_dir=True,
+        with_subdirs=with_subdirs)
+    
     # single particle scattering
     if args.analytical_cant_angl:
         fv180 = np.empty(num_points, dtype=complex)
@@ -132,7 +165,7 @@ if args.compute_sp:
 
             for var in sp_var_list:
                 single_part_dict[var][ind] = scatt_sp_dict[var]
-
+    
     if args.analytical_cant_angl:
         df_single_part = compute_scattering_canting_sp(
             wavelength, fv180, fh180, fv0, fh0, ang_moments_dict,
@@ -143,11 +176,34 @@ if args.compute_sp:
 
     # save single particle results
     fname = (
-        f'{savedir}sp_{hydro_type}_{args.band}_{int(args.temp*100):04d}'
-        f'_ele{int(args.ele*100.):05d}_scattering.csv')
+        f'{savedir}sp_{hydro_type}_{args.band}_{int(temp*100):04d}'
+        f'_ele{int(elev*100.):05d}_scattering.csv')
     df_single_part.to_csv(fname, index=False)
     print(f'saved {fname}')
 
     plot_sp_scatt_quantities(
-        df_single_part, savedir, args.band, args.temp, hydro_type,
-        ele=args.ele, x_var_list=sp_x_var_list, y_var_list=sp_y_var_list)
+        df_single_part, savedir, args.band, temp, hydro_type,
+        ele=elev, x_var_list=sp_x_var_list, y_var_list=sp_y_var_list)
+        
+def _print_end_msg(text):
+    """
+    prints end message
+
+    Parameters
+    ----------
+    text : str
+        the text to be printed
+
+    Returns
+    -------
+    Nothing
+
+    """
+    print(text + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+
+# ---------------------------------------------------------
+# Start main:
+# ---------------------------------------------------------
+if __name__ == "__main__":
+    main()
