@@ -18,7 +18,7 @@ def read_mesonh(micro,time):
     
     # === Model file
     time='00'+str(time)          
-    modelfile=cf.pathmodel+cf.filestart+time[-3:]+'.nc'
+    modelfile=cf.pathmodel+cf.commonFilename+time[-3:]+'.nc'
     print("Reading "+modelfile)
     
     # === Extract Dataset 

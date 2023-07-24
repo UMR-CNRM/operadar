@@ -10,7 +10,7 @@ import epygram
 import bronx
 import pickle as pkl
 import read_arome_lib as arolib
-
+import time as tm
 
 
 #================= Read Arome variables =======================================
@@ -41,19 +41,14 @@ def read_arome(modelfile: str,
         # Vertical levels values
         A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
         B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
-        # Number of vertical levels
-        IKE=len(ficA.geometry.vcoordinate.levels)
         # Save in temporary pickle files
         tmpA = open('tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
         tmpB = open('tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
-        tmpIKE = open('tmpIKE.obj' , 'wb') ; pkl.dump(IKE,tmpIKE) ; tmpIKE.close()
     else :
         # Read previously saved pickle files
         tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
         tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
-        tmpIKE = open('tmpIKE.obj', 'rb') ; IKE = pkl.load(tmpIKE) ; tmpIKE.close()
-        
-    
+
     # === Infos === #
     #ficA.listfields()
     #ficA.what()
@@ -64,12 +59,12 @@ def read_arome(modelfile: str,
     ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
                                                   subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
     #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
-    
+
     # ======== Horizontal, vertical coordinates, pressure
     if extract_once : 
         [lon, lat] = arolib.get_lat_lon_epygram(ficsubdo)
-    [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B, IKE)
-      
+    [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B)
+    
     # ======== Hydrometeor contents and temperature
     [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15

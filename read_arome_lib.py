@@ -1,7 +1,7 @@
 import numpy as np
 import epygram
-
-
+import multiprocessing as mp
+import time as tm
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
 Horizontal, vertical coordinates, pressure 
@@ -12,18 +12,16 @@ output: p, A, B, nkA
 def get_lat_lon_epygram(ficsubdo):
     ps = ficsubdo.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
-    
     (lon,lat) = ps.geometry.get_lonlat_grid(subzone='C')
-    
     return lon, lat
 
 
-def get_geometry(ficsubdo, A, B, IKE):
+def get_geometry(ficsubdo, A, B):
     # === Horizontal coordinates 
     ps = ficsubdo.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
     psurf = np.exp(ps.getdata())
-
+    
     # 3D Pressure (Pa)
     p = epygram.profiles.hybridP2masspressure(A, B, psurf, 'geometric')
 
@@ -32,13 +30,13 @@ def get_geometry(ficsubdo, A, B, IKE):
     phis.sp2gp()
     
     # Pressure depart: difference at z_level: pressure - hydrostatic state
-    pdep = np.zeros(p.shape)
-    for k in range(IKE): #going downward
-        pdep_cur=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'PRESS.DEPART')
-        pdep_cur.sp2gp()
-        pdep[k,:,:] = pdep_cur.getdata()
-        del pdep_cur
-
+    pdep = np.zeros(p.shape)   
+    field_all_levels = ficsubdo.readfields('S0*PRESS.DEPART')
+    for k,field in enumerate(field_all_levels):
+        field.sp2gp()
+        pdep[k,:,:] = field.getdata()
+    del field_all_levels
+    
     # Orography
     #oro = phis.getdata(subzone='C')/epygram.profiles.g0
 
@@ -53,11 +51,9 @@ def link_varname_with_realname ():
     return name_hydro_linked, list_t_full
 
 
-# ========== Hydrometeor contents and temperature =============================
+# ========== Get hydrometeor contents and temperature =============================
 """
-   Hydrometeor contents and temperature
-   get_contents_and_T
-   input: ficsubdo, p
+   input: ficsubdo, p, list of hydrometeors type
    output: M, T, R 
 """
 def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
@@ -68,21 +64,20 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
     q = {t:np.zeros(p.shape) for t in list_t_full}
     T = np.zeros(p.shape)
     
-    # 3D specific content q and temperature T 
-    IKE=p.shape[0]
-    for k in range(IKE): #going downward
-        # Temperature
-        T_cur = ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'TEMPERATURE')
-        T_cur.sp2gp()
-        T[k,:,:] = T_cur.getdata()
-        del T_cur    
-        # Hydrometeors
-        q_cur={}
-        for htype in hydrometeor_type :
-            q_cur[htype]=ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+name_hydro[htype])
-            q[htype][k,:,:] = q_cur[htype].getdata()
-            del q_cur[htype]
-        
+    # 3D temperature T
+    temperature_all_levels = ficsubdo.readfields('S0*TEMPERATURE')
+    for k,field in enumerate(temperature_all_levels):
+        field.sp2gp()
+        T[k,:,:] = field.getdata()
+    del temperature_all_levels 
+    
+    # 3D specific content q 
+    for htype in hydrometeor_type :
+        field_all_levels = ficsubdo.readfields('S0[0-9][0-9]'+name_hydro[htype])
+        for k,field in enumerate(field_all_levels):
+            q[htype][k,:,:] = field.getdata()
+        del field_all_levels
+    
     # Calcul de la "constante" des gaz parfaits du mélange air sec/vapeur 
     Rd = epygram.profiles.Rd # air sec
     Rv = epygram.profiles.Rv # vapeur d'eau
@@ -98,14 +93,13 @@ def get_concentrations(ficsubdo, p, microphysics: str, hydrometeor_type: list, i
 
     cc_rain = np.empty(p.shape)
     cc_ice  = iceCC_cst*np.ones(p.shape)
-               
+    
     if microphysics[0:4] == "LIMA":
-
-        for k in range(p.shape[0]):
-            extract_rr_cc = ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'N_RAIN')
-            cc_rain[k,:,:] = extract_rr_cc.getdata()
-            extract_ii_cc = ficsubdo.readfield('S'+'{0:03d}'.format(k+1)+'N_ICE')
-            cc_ice[k,:,:] = extract_ii_cc.getdata()
+        extract_rr_cc = ficsubdo.readfields('S0*N_RAIN')
+        extract_ii_cc = ficsubdo.readfields('S0*N_ICE')
+        for k in range(len(extract_rr_cc)):
+            cc_rain[k,:,:] = extract_rr_cc[k].getdata()
+            cc_ice[k,:,:] = extract_ii_cc[k].getdata()
          
     return cc_rain, cc_ice
 
