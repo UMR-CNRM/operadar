@@ -55,20 +55,28 @@ lon_min = settings.lon_min ; lon_max = settings.lon_max
 # ========== Directories / files name options =========
 # Time list
 datetimelist=[]
-while deb <= fin :
-    datetimelist += [deb]
-    deb += step
+ech = deb
+while ech <= fin :
+    datetimelist += [ech]
+    ech += step
 
-#pathmodel="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
-pathmodel=f"/cnrm/precip/users/davidcl/{deb.strftime('%Y%m%d')}_aro{run}Z_{micro}/"
-filestart="historic.arome.franmg-01km30+00" #08:00.fa"
+# Vortex experiment name
+if settings.run == '00' :
+    expeOLIVE = 'GN51'
+elif settings.run == '12' :
+    expeOLIVE = 'GOJI'
+
+# Model files
+commonPath_fa  = f"/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/"
+commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"
+pathmodel = commonPath_fa + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
 repTmat="/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
 
 # Output files
-pathfick=pathmodel+'k'+MixedPhase+'/'+settings.radar_ids
+pathfick = f"/cnrm/precip/SAVE/davidcl/THESE/operadar_files/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{MixedPhase}/{settings.radar_ids}"
 pathTmat=repTmat+"/OUTPUT/"
 
 

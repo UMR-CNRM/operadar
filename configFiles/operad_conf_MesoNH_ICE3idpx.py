@@ -35,7 +35,7 @@ radarloc="center" # radar location: center or latlon (if latlon ==> to be define
 timelist=[18] #range(1,36) #[5,6,7,8] #ech=[20] #[36]
 
 pathmodel="/home/augros/DONNEES/MESONH/SUPERCELL/SIMU550/"+micro+'/'
-filestart="SU500.1.EXP01."
+commonFilename="SU500.1.EXP01."
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
