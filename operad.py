@@ -70,6 +70,7 @@ import os
 import math
 import time as tm
 import numpy as np
+from datetime import timedelta
 
 # Operad modules
 import operad_lib as ope_lib
@@ -144,11 +145,12 @@ for datetime in cf.datetimelist:
     # ----- Reading model variables ----- #
     # return 3D model variables + coordinates
     print("Reading model variables") ; deb_timer = tm.time()  
+    model_hour = (datetime - timedelta(hours=int(cf.run))).strftime('%H:%M')
     
     if (cf.model=="MesoNH"):
         [M, Tc, CC, CCI, X, Y, Z] = meso.read_mesonh(cf.micro,time) 
     elif (cf.model=="Arome") :
-        modelfile=cf.pathmodel+cf.filestart+time+".fa"
+        modelfile=cf.pathmodel+cf.commonFilename+model_hour+".fa"
         if extract_once :
             [M, Tc, CC, CCI, Z, lon, lat] = aro.read_arome(modelfile = modelfile,
                                                         microphysics = cf.micro,
@@ -168,7 +170,7 @@ for datetime in cf.datetimelist:
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
     extract_once = False    
-    print("Done in",round(tm.time()- deb_timer,2),"seconds")
+    print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
     
     # ----- Compute radar geometry variables ----- #
     print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)") ; deb_timer = tm.time()
@@ -193,7 +195,7 @@ for datetime in cf.datetimelist:
 
     mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, cf.micro) # precip mask
     [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, cf.micro) # mixed phase parametrization
-    print("Done in",round(tm.time()- deb_timer,2),"seconds")
+    print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
     
     # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
     Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
@@ -284,7 +286,7 @@ for datetime in cf.datetimelist:
     Vm_k["Zdr"][(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
             (Vm_k["Zhhlin"]/Vm_k["Zvvlin"])[(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)])
     Vm_k["Rhohv"] = np.sqrt(np.divide(Vm_k["S11S22"], Vm_k["S11S11"]*Vm_k["S22S22"]))
-    print("Done in",round(tm.time() - deb_timer,2),"seconds")
+    print("  --> Done in",round(tm.time() - deb_timer,2),"seconds")
     
     # ----- Save dpol var for all hydromet in netcdf and/or npz file
     if (cf.model=="Arome"):
