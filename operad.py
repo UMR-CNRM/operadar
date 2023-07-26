@@ -85,13 +85,14 @@ from vortex_experiments import set_vortex_experiments
 # ===== Configuration ===== #
 import common_settings as settings
 import operad_conf as cf
+
 model = sys.argv[1]
 date  = dt.datetime.strptime(sys.argv[2], "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
 micro = sys.argv[3]
 
 
 # ===== Begining of the program ===== #
-df = pd.read_csv("expe_olive.csv", delimiter=";")
+df = pd.read_csv(settings.csvPath, delimiter=";")
 time_columns = ["start_time", "end_time"]
 df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M"))
 
@@ -106,9 +107,6 @@ for _,row in studyCases.iterrows():
     lat_min = row.latmin ; lat_max = row.latmax
     lon_min = row.lonmin ; lon_max = row.lonmax
 
-    # Vortex experiment name
-    expeOLIVE = set_vortex_experiments(run,micro)
-
     # Time list
     datetimelist=[]
     ech = deb
@@ -116,8 +114,12 @@ for _,row in studyCases.iterrows():
         datetimelist += [ech]
         ech += settings.step
 
+    # Vortex experiment name
+    expeOLIVE = set_vortex_experiments(run,micro)
+
+    # Paths
     pathmodel = settings.commonPath_fa + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
-    pathfick = f"/cnrm/precip/SAVE/davidcl/THESE/operadar_files/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+    pathfick = f"{settings.outPath}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
 
 
     # ===== Testing existence of the output directory (or creates it) ===== #
@@ -133,7 +135,7 @@ for _,row in studyCases.iterrows():
 
 
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
-    liste_var_calc=["Zhhldatetimelistin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
+    liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 
 
     # ===== Loop over timesteps ===== #
@@ -169,10 +171,10 @@ for _,row in studyCases.iterrows():
                 expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
                 Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
                 ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
-                                                                                                            cf.band,
-                                                                                                            cf.micro,
-                                                                                                            cf.table_ind,
-                                                                                                            cf.list_types_tot)
+                                                                                                              cf.band,
+                                                                                                              micro,
+                                                                                                              cf.table_ind,
+                                                                                                              cf.list_types_tot)
             LAM = LAMmin["rr"]/1000.
             read_tmatrix = False
             print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
@@ -304,9 +306,9 @@ for _,row in studyCases.iterrows():
                 fick = pathfick+"k_"+model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+hydromet
                 
                 if (model=="Arome") :
-                    save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,settings.save_npz,cf.save_netcdf)
+                    save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,settings.save_npz,settings.save_netcdf)
                 elif (model=="MesoNH") :
-                    save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,settings.save_npz,cf.save_netcdf)
+                    save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,settings.save_npz,settings.save_netcdf)
                 else:
                     print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
                 del Vm_t
@@ -325,9 +327,9 @@ for _,row in studyCases.iterrows():
         
         # ----- Save dpol var for all hydromet in netcdf and/or npz file
         if (model=="Arome"):
-            save.save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,outFile,datetime,settings.save_npz,cf.save_netcdf)
+            save.save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,outFile,datetime,settings.save_npz,settings.save_netcdf)
         elif (model=="MesoNH"):
-            save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,settings.save_npz,cf.save_netcdf)
+            save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,outFile,settings.save_npz,settings.save_netcdf)
         else:
             print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
     
