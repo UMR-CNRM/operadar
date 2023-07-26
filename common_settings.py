@@ -5,17 +5,13 @@ Created on July 7 2023
 @author: davidcl
 
 """
-import pandas as pd
 import datetime as dt
 
-radar_ids = 'OPOU-MCLA-NIME'
-run = "00"
-deb = pd.Timestamp('2022-08-16 14:00')
-fin = pd.Timestamp('2022-08-16 23:45')
 step = dt.timedelta(minutes=5)
-
-lat_min,lat_max=42,45
-lon_min,lon_max=1,5
-
 save_npz    = False
 save_netcdf = True
+
+
+# Model files paths
+commonPath_fa  = f"/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/"
+commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"

@@ -7,22 +7,16 @@ Created on Apr 4 2023
 
 Configuration file for operad.py
 """
-import pandas as pd
-import datetime as dt
 import common_settings as settings
 
 
-# ==========  Model simulation options ===============
-model='Arome'
-micro = "LIMAAG"
-run  = settings.run
-deb = settings.deb
-fin = settings.fin
+# ==========  Common settings to all simulations =============== #
 step = settings.step
-
 save_npz    = settings.save_npz
 save_netcdf = settings.save_netcdf
 
+
+# ==========  Model simulation options =============== #
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
 htypes_model=['vv','cc','rr','ii','ss','gg','hh'] # available model variables
@@ -45,39 +39,18 @@ radarloc="center" # radar location: center or latlon (if latlon ==> to be define
 #latrad=
 #lonrad=
 
-# ========= Zoom ==========================
-#lat_min,lat_max=42,45
-#lon_min,lon_max=1,5
-lat_min = settings.lat_min ; lat_max = settings.lat_max
-lon_min = settings.lon_min ; lon_max = settings.lon_max
-
-
 # ========== Directories / files name options =========
-# Time list
-datetimelist=[]
-ech = deb
-while ech <= fin :
-    datetimelist += [ech]
-    ech += step
-
-# Vortex experiment name
-if settings.run == '00' :
-    expeOLIVE = 'GOIP'
-elif settings.run == '12' :
-    expeOLIVE = 'GOVE'
-
+# Model files
 # Model files
 commonPath_fa  = f"/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/"
 commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"
-pathmodel = commonPath_fa + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
 
 # Tmatrix directory
-table_ind="" # number of the selected Tmatrix table 
-repTmat="/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
+table_ind = "" # number of the selected Tmatrix table 
+repTmat   = "/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
 
 # Output files
-pathfick = f"/cnrm/precip/SAVE/davidcl/THESE/operadar_files/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{MixedPhase}/{settings.radar_ids}"
-pathTmat=repTmat+"/OUTPUT/"
+pathTmat = repTmat+"/OUTPUT/"
 
 
 # ========== Constants =======================
