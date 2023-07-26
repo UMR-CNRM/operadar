@@ -28,6 +28,6 @@ cp ./configFiles/conf_$1_$3.py operad_conf.py
 
 currentTime=`date +"%D %R"`
 
-nohup python3 operad.py $1 $2 $3 1>nohupOUT/output_$2_$3.txt 2>&1 &
+nohup python3 -u operad.py $1 $2 $3 >nohupOUT/output_$2_$3.txt 2>&1 &
 
 echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
