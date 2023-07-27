@@ -92,6 +92,7 @@ micro = sys.argv[3]
 
 
 # ===== Begining of the program ===== #
+begining_program_timer = tm.time()
 df = pd.read_csv(settings.csvPath, delimiter=";")
 time_columns = ["start_time", "end_time"]
 df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M"))
@@ -334,3 +335,7 @@ for _,row in studyCases.iterrows():
             print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
     
         del Vm_k
+
+end_program_timer = tm.time()
+elapsed_time = end_program_timer - begining_program_timer
+print("End of the program in",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
