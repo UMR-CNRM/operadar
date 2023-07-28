@@ -23,6 +23,7 @@ from shutil import copy
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from pytmatrix import tmatrix_aux, radar, scatter
 
@@ -179,14 +180,13 @@ def compute_angular_moments_analytical(canting_angle):
     return ang_moments_dict
 
 
-def compute_scattering_canting_sp(wavelength, fv180, fh180, fv0, fh0,
+def compute_scattering_canting_sp(wavelength,temp_list,elev_list,diam_list,
+                                  fv180, fh180, fv0, fh0,
                                   ang_moments_dict, kw_sqr=0.93,
+                                  
                                   var_list=['sca_xsect_h', 'sca_xsect_v',
-                                            'ext_xsect_h', 'ext_xsect_v',
-                                            'refl_h', 'refl_v', 'ldr_h',
-                                            'ldr_v', 'zdr', 'rho_hv',
-                                            'delta_hv', 'kdp', 'A_h', 'A_v',
-                                            'Adp']):
+                                            'im_delta_co','re_delta_co','refl_h', 'zdr', 'kdp',
+                                            'rho_hv']):
     """
     Compute scattering quantities of single particles averaged by canting
     angle
@@ -195,21 +195,24 @@ def compute_scattering_canting_sp(wavelength, fv180, fh180, fv0, fh0,
     ----------
     wavelength : float
         wave length (mm)
-    fv180, fh180, fv0, fh0 : array of floats
-        elements of the scattering matrix for each particle diameter
+    temp_list,elev_list,diam_list: 1D arrays of floats
+        range of computed values for each dimension
+    fv180, fh180, fv0, fh0 : 3D arrays of floats
+        elements of the scattering matrix
+        for each temperature, elevation angle, particle diameter
     ang_moments_dict : dict
         dictionary containing the angular moments
     kw_sqr : float
         the squared reference water dielectric factor for computing radar
-        reflectivity
+        reflectivity        
     var_list : list of str
         list of variables to compute
 
     Returns
-    -------
-    df : Pandas DataFrame
-       a Pandas DataFrame containing all computed quantities for each particle
-       diameter
+    -------  
+    ds : xarray Dataset
+       a xarray Dataset containing all computed quantities for each specified dimension
+       (temperature, elevation, diameter)
 
     """
     a1 = ang_moments_dict['a1']
@@ -218,7 +221,7 @@ def compute_scattering_canting_sp(wavelength, fv180, fh180, fv0, fh0,
     a4 = ang_moments_dict['a4']
     a5 = ang_moments_dict['a5']
     a7 = ang_moments_dict['a7']
-
+    
     if ('sca_xsect_h' in var_list or 'sca_xsect_v' in var_list
             or 'rho_hv' in var_list or 'ldr_h' in var_list
             or 'refl_h' in var_list or 'refl_v' in var_list
@@ -227,15 +230,16 @@ def compute_scattering_canting_sp(wavelength, fv180, fh180, fv0, fh0,
         j0 = np.power(np.abs(fh180), 2.)
         j1 = np.power(np.abs(fh180-fv180), 2.)
         j2 = np.conjugate(fh180)*(fh180-fv180)
-
+    
     if ('ext_xsect_h' in var_list or 'ext_xsect_v' in var_list
             or 'A_h' in var_list or 'A_v' in var_list
             or 'Adp' in var_list or 'kdp' in var_list
             or 'zdr' in var_list):
         j3 = fh0-fv0
-    if ('delta_hv' in var_list or 'rho_hv' in var_list):
+    if ('delta_hv' in var_list or 'rho_hv' in var_list or 'im_delta_co' 
+        or 're_delta_co' in var_list):
         delta_co = j0+j1*a5-j2*a1-np.conjugate(j2)*a2
-
+    
     if ('sca_xsect_h' in var_list or 'rho_hv' in var_list
             or 'ldr_h' in var_list or 'refl_h' in var_list
             or 'zdr' in var_list):
@@ -274,39 +278,61 @@ def compute_scattering_canting_sp(wavelength, fv180, fh180, fv0, fh0,
     if 'zdr' in var_list:
         zdr = sca_xsect_h/sca_xsect_v
 
-    df = pd.DataFrame()
+        
+    ds=xr.Dataset(
+#            data_vars=dict(
+#                 sca_xsect_h=(["temp","elev","diam"],sca_xsect_h),
+#                 sca_xsect_v=(["temp","elev","diam"],sca_xsect_v),
+#            ),
+            coords=dict(
+                 temperature=temp_list,
+                 elevation=elev_list,
+                 diameter=diam_list,
+                 ),
+            attrs=dict(description="Single particle scattering variables"),
+            )
+    
+ 
     if 'sca_xsect_h' in var_list:
-        df['sca_xsect_h'] = 10.*np.log10(sca_xsect_h)
+        ds=ds.assign(sca_xsect_h=(["temperature","elevation","diameter"],sca_xsect_h))
     if 'sca_xsect_v' in var_list:
-        df['sca_xsect_v'] = 10.*np.log10(sca_xsect_v)
+        ds=ds.assign(sca_xsect_v=(["temperature","elevation","diameter"],sca_xsect_v))
     if 'ext_xsect_h' in var_list:
-        df['ext_xsect_h'] = 10.*np.log10(ext_xsect_h)
-    if 'ext_xsect_v' in var_list:
-        df['ext_xsect_v'] = 10.*np.log10(ext_xsect_v)
-    if 'ldr_h' in var_list:
-        df['ldr_h'] = 10.*np.log10(ldr_h)
-    if 'ldr_v' in var_list:
-        df['ldr_v'] = 10.*np.log10(ldr_v)
+        ds=ds.assign(ext_xsect_h=(["temperature","elevation","diameter"],ext_xsect_h))
+        
+#    if 'ext_xsect_v' in var_list:
+#        df['ext_xsect_v'] = 10.*np.log10(ext_xsect_v)
+    if 're_delta_co' in var_list:
+        ds=ds.assign(re_delta_co=(["temperature","elevation","diameter"],delta_co.real))
+    if 'im_delta_co' in var_list:
+        ds=ds.assign(im_delta_co=(["temperature","elevation","diameter"],delta_co.imag))    
+#    if 'ldr_h' in var_list:
+#        df['ldr_h'] = 10.*np.log10(ldr_h)
+#    if 'ldr_v' in var_list:
+#        df['ldr_v'] = 10.*np.log10(ldr_v)
     if 'refl_h' in var_list:
-        df['refl_h'] = 10.*np.log10(refl_h)
-    if 'refl_v' in var_list:
-        df['refl_v'] = 10.*np.log10(refl_v)
+        ds=ds.assign(refl_h=(["temperature","elevation","diameter"],10.*np.log10(refl_h)))
+#        df['refl_h'] = 10.*np.log10(refl_h)
+#    if 'refl_v' in var_list:
+#        df['refl_v'] = 10.*np.log10(refl_v)
     if 'zdr' in var_list:
-        df['zdr'] = 10.*np.log10(zdr)
+        ds=ds.assign(zdr=(["temperature","elevation","diameter"],10.*np.log10(zdr)))
     if 'rho_hv' in var_list:
-        df['rho_hv'] = rho_hv
-    if 'delta_hv' in var_list:
-        df['delta_hv'] = delta_hv
+        ds=ds.assign(rho_hv=(["temperature","elevation","diameter"],rho_hv))
+#    if 'delta_hv' in var_list:
+#        df['delta_hv'] = delta_hv
     if 'kdp' in var_list:
-        df['kdp'] = kdp
-    if 'A_h' in var_list:
-        df['A_h'] = ah
-    if 'A_v' in var_list:
-        df['A_v'] = av
-    if 'Adp' in var_list:
-        df['Adp'] = ah-av
-
-    return df
+        ds=ds.assign(kdp=(["temperature","elevation","diameter"],kdp))
+#        df['kdp'] = kdp
+#    if 'A_h' in var_list:
+#        df['A_h'] = ah
+#    if 'A_v' in var_list:
+#        df['A_v'] = av
+#    if 'Adp' in var_list:
+#        df['Adp'] = ah-av
+#
+#    return df
+    return ds
 
 
 def compute_scattering_canting_psd(wavelength, fv180, fh180, fv0, fh0,

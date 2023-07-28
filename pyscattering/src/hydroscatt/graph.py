@@ -297,7 +297,7 @@ def plot_psd_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
         plot in the same axis
 
     """
-    temp100 = int(temp*100.)
+
     titl = f'{hydro_type} {band}-band {temp} deg C ele {ele} deg'
     for x_var in x_var_list:
         if x_var not in df:
@@ -308,8 +308,8 @@ def plot_psd_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
         for y_var in y_var_list:
             ylabel = get_label(y_var)
             fname = (
-                f'{path}psd_{hydro_type}_{band}_{temp100:04d}'
-                f'_ele{int(ele*100.):05d}_{x_var}-{y_var}.png')
+                f'{path}psd_{hydro_type}_{band}_{int(temp):02d}'
+                f'_ele{int(ele*10.):03d}_{x_var}_{y_var}.png')
 
             if y_var in ('refl', 'ldr', 'A', 'sca_xsect', 'ext_xsect'):
                 if f'{y_var}_h' in df.columns and f'{y_var}_v' in df.columns:
@@ -353,10 +353,9 @@ def plot_psd_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
                     titl=titl, fname=fname)
 
 
-def plot_sp_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
-                             x_var_list=['d'],
-                             y_var_list=['refl', 'ldr', 'A', 'sca_xsect',
-                                         'ext_xsect']):
+def plot_sp_scatt_quantities(df, path, band, hydro_type, temp, ele,
+                             x_var_list=['diameter'],
+                             y_var_list=['refl', 'zdr', 'kdp', 'rho_hv']):
     """
     Plots the selected single particle scattering quantitites
 
@@ -381,7 +380,6 @@ def plot_sp_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
         plot in the same axis
 
     """
-    temp100 = int(temp*100.)
     titl = f'{hydro_type} {band}-band {temp} deg C ele {ele} deg'
     for x_var in x_var_list:
         if x_var not in df:
@@ -392,8 +390,8 @@ def plot_sp_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
         for y_var in y_var_list:
             ylabel = get_label(y_var)
             fname = (
-                f'{path}sp_{hydro_type}_{band}_{temp100:04d}'
-                f'_ele{int(ele*100.):05d}_{x_var}-{y_var}.png')
+                f'{path}sp_{hydro_type}_{band}_{int(temp):02d}'
+                f'_ele{int(ele*10.):03d}_{x_var}_{y_var}.png')
 
             if y_var in ('refl', 'ldr', 'A', 'sca_xsect', 'ext_xsect'):
                 if f'{y_var}_h' in df.columns and f'{y_var}_v' in df.columns:
@@ -433,6 +431,7 @@ def plot_sp_scatt_quantities(df, path, band, temp, hydro_type, ele=0.,
                 plot_polvar(
                     df[x_var], df[y_var], xlabel=xlabel, ylabel=ylabel,
                     titl=titl, fname=fname)
+
 
 
 def plot_psd_scatt_profile(df, path, band, hydro_type, ele=0.,
@@ -520,7 +519,8 @@ def get_label(var):
     """
     if var == 'temp':
         return 'temperature (deg C)'
-
+    if var == 'diameter':
+        return 'equivalent volume diameter (mm)'
     if var == 'd':
         return 'equivalent volume diameter (mm)'
     if var == 'd_ext':

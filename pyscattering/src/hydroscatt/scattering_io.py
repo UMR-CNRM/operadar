@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_save_dir(basepath, hydro_type, band, temp, create_dir=True,
+def get_save_dir(basepath, hydro_type, band, create_dir=True,
                  with_subdirs=False):
     """
     obtains the path to a product directory and eventually creates it
@@ -43,8 +43,6 @@ def get_save_dir(basepath, hydro_type, band, temp, create_dir=True,
         hydrometeor type
     band : str
         frequency band
-    temp : float
-        temperature
     create_dir : boolean
         If True creates the directory
     with_subdirs : boolean
@@ -57,7 +55,7 @@ def get_save_dir(basepath, hydro_type, band, temp, create_dir=True,
 
     """
     if with_subdirs:
-        savedir = f'{basepath}{hydro_type}/{band}/t{int(temp*100.):04d}/'
+        savedir = f'{basepath}{hydro_type}/{band}/'
     else:
         savedir = f'{basepath}'
 
