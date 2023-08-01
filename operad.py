@@ -34,7 +34,7 @@ The modifications are recorded via git:
 # - for each hydrometeor type, dpol variables are calculated only for M > Mmin
 # - mask for all hydromet (Mtot > Mmin) and for radar distance 
 # - removal of the subdomains
-# - bug corrections in the mixed phase with a new option: cf.MixedPhase="Fwpos" or "Tpos"
+# - bug corrections in the mixed phase with a new option: MixedPhase="Fwpos" or "Tpos"
 # => higher Zh and Zdr for T<0 with Fwpos !!!
 # # - new option for the output file: native python compressed format (.npz):
 # faster !!!!!
@@ -103,6 +103,7 @@ for _,row in studyCases.iterrows():
     deb = row.start_time
     fin = row.end_time
     radar_ids = "-".join([str(x) for x in row.radar_id_list.strip().split(',')])
+    radar_band = str(row.radar_band)
     
     # Zoom
     lat_min = row.latmin ; lat_max = row.latmax
@@ -144,7 +145,7 @@ for _,row in studyCases.iterrows():
     extract_once = True
     for datetime in datetimelist: 
         time = datetime.strftime('%H:%M')
-        outFile = pathfick + f"/k_{model}_{cf.band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
+        outFile = pathfick + f"/k_{model}_{radar_band}_{str(int(settings.distmax_rad/1000.))}_ech{time}_2"
 
         # ----- Testing existence of the output file ----- #
         if Path(outFile + ".nc").exists():
@@ -162,7 +163,7 @@ for _,row in studyCases.iterrows():
                 expMmin, expMstep, expMmax,expCCmin, expCCstep, expCCmax,
                 Tc_t, ELEV_t, Fw_t, M_t,S11carre_t, S22carre_t,
                 ReS22S11_t, ImS22S11_t,ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
-                                                                                                            cf.band,
+                                                                                                            radar_band,
                                                                                                             "LIMA",
                                                                                                             cf.table_ind,
                                                                                                             cf.list_types_tot)
@@ -172,7 +173,7 @@ for _,row in studyCases.iterrows():
                 expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
                 Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
                 ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
-                                                                                                              cf.band,
+                                                                                                              radar_band,
                                                                                                               micro,
                                                                                                               cf.table_ind,
                                                                                                               cf.list_types_tot)
@@ -223,11 +224,11 @@ for _,row in studyCases.iterrows():
             mask_distmax = (el >= 0.)
         
         elif (model=="MesoNH"):
-            if (cf.radarloc=="center"):
+            if (settings.radarloc=="center"):
                 X0 = np.nanmean(X)
                 Y0 = np.nanmean(Y)        
             [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z, X0, Y0,
-                                                        cf.distmax_rad,
+                                                        settings.distmax_rad,
                                                         cf.RT,ELEVmax["rr"],
                                                         )
 
@@ -304,7 +305,7 @@ for _,row in studyCases.iterrows():
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
                 # Writing dpol var for a single hydrometeor type hydromet           
-                fick = pathfick+"k_"+model+"_"+cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+hydromet
+                fick = pathfick+"k_"+model+"_"+radar_band+'_'+str(int(settings.distmax_rad/1000.))+"_ech"+time+"_"+hydromet
                 
                 if (model=="Arome") :
                     save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,settings.save_npz,settings.save_netcdf)

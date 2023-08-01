@@ -21,14 +21,6 @@ singletype=False #False #True # if True: computes dpol var for each type
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 
-# ==========  Radar options =============== #
-band="S"
-distmax_rad = 255.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
-alt_max = 12000. # Altitude max des données radar utilisées pour le calcul des pseudo-observations
-radarloc="center" # radar location: center or latlon (if latlon ==> to be defined below buy user)
-#latrad=
-#lonrad=
-
 # ========== Directories / file's name ========= #
 # Tmatrix directory
 table_ind = "" # number of the selected Tmatrix table 
