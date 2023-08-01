@@ -4,7 +4,7 @@
   Before running exec_operad.sh code, you need to modify/check common_settings.py
   This function takes 3 arguments in this order :
       1 - Arome or MesoNH
-      2 - date into the yyyymmdd format
+      2 - date into the yyyymmdd format or "all"
       3 - microphysics scheme name in capital letter 
   _________________________________________
   Example :
@@ -28,8 +28,9 @@ cp ./configFiles/conf_$1_$3.py operad_conf.py
 
 currentTime=`date +"%F %R"`
 
-nohup python3 -u operad.py $1 $2 $3 >nohupOUT/output_$2_$3.txt 2>&1 &
+nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$2_$3.txt 2> nohupOUT/err_$2_$3.txt &
 
 echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
 
-echo program output redirected to ./nohupOUT/output_$2_$3.txt
+echo program output redirected to ./nohupOUT/out_$2_$3.txt
+echo corresponding process id written in ./process_id_historic.txt

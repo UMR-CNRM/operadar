@@ -82,22 +82,27 @@ from pathlib import Path
 from vortex_experiments import set_vortex_experiments
 
 
-# ===== Configuration ===== #
+# ===== Configuration files ===== #
 import common_settings as settings
 import operad_conf as cf
-
-model = sys.argv[1]
-date  = dt.datetime.strptime(sys.argv[2], "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
-micro = sys.argv[3]
 
 
 # ===== Begining of the program ===== #
 begining_program_timer = tm.time()
+
+model = sys.argv[1]
+micro = sys.argv[3]
+
 df = pd.read_csv(settings.csvPath, delimiter=";")
 time_columns = ["start_time", "end_time"]
 df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M"))
 
-studyCases = df.loc[df['start_time'].dt.date == date]
+if sys.argv[2] == "all" :
+    studyCases = df
+else :
+    date  = dt.datetime.strptime(sys.argv[2], "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
+    studyCases = df.loc[df['start_time'].dt.date == date]
+
 for _,row in studyCases.iterrows():
     run  = str(row.run_arome).zfill(2)
     deb = row.start_time
