@@ -39,42 +39,7 @@ from graph import plot_sp_scatt_quantities
 # pyscattering libs
 import lib_dielectric as diel
 import util
-
-#def main():
-#    """
-#    main
-#    """
-#    # parse the arguments
-#    parser = argparse.ArgumentParser(
-#        description='Entry to rain scattering simulations framework')
-#
-#    # keyword arguments
-#    parser.add_argument(
-#        '--path', type=str,
-#        default='../output/',
-#        help='output data path')
-#
-#    parser.add_argument(
-#        '--band', type=str,
-#        default='C',
-#        help='frequency band. Default C')
-#
-#    parser.add_argument(
-#        '--hydro_type', type=str,
-#        default="rain",
-#        help='hydrometeor type (rain, snow, graupel, hail. Default rain')
-#        
-#    parser.add_argument(
-#        '--analytical_cant_angl', type=int,
-#        default=1,
-#        help='If 1 the canting angle will be computed analytically. Default 1')
-#
-#    args = parser.parse_args()
-#
-#    print(f'======  single particle scattering simulation started: '
-#          f'{datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}')
-#    atexit.register(_print_end_msg,
-#     "====== single particle scattering simulation finished: ")
+import mesonh_psd as psd
 
 #=============== Parameters =====================
 
@@ -139,12 +104,13 @@ else:
 # ==== Loop over temperatures
 for itemp, temp in enumerate(temp_list):
 
-    # Diel constant
+    # ==== Diel constant ====
     tempK=temp+273.15 #!T (°K)
     
     
     if (hydro_type=="rain"):
         m=cmath.sqrt(diel.QEPSW(tempK, radar_freq))
+    # ========================
     
     scatterer = Scatterer(wavelength=wavelength, m=m) 
     
@@ -171,7 +137,8 @@ for itemp, temp in enumerate(temp_list):
             # === Axis ratio
             scatterer.axis_ratio = 1.0/tmatrix_aux.dsr_thurai_2007(diam)
             
-            
+            # === Use of pytmatrix via scatterer objet
+            # output = fv180,fh180,fv0,fh0 or scatt_sp_dict
             if analytical_cant_angl: # only scattering matrix
                 scatterer.set_geometry(geom_back)
                 s_mat = scatterer.get_S()
@@ -188,6 +155,9 @@ for itemp, temp in enumerate(temp_list):
         
                 for var in sp_var_list:
                     single_part_dict[var][itemp,ielev,idiam] = scatt_sp_dict[var]
+                    
+#            [lamb,N]=psd.PSD(M,Dmrec,CCLOUD,P3,typeh,
+#             aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N)
         
         # ====== end loop over diameters
     # ==== end loop over elevations
@@ -218,31 +188,3 @@ df_plot['diameter']=df_plot.index
 plot_sp_scatt_quantities(
     df_plot, savedir, band, hydro_type, temp_choice, elev_choice, 
      x_var_list=sp_x_var_list, y_var_list=sp_y_var_list)
-
-
-
-# end main
-# ===========================================================================    
-    
-#def _print_end_msg(text):
-#    """
-#    prints end message
-#
-#    Parameters
-#    ----------
-#    text : str
-#        the text to be printed
-#
-#    Returns
-#    -------
-#    Nothing
-#
-#    """
-#    print(text + datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
-
-
-# ---------------------------------------------------------
-# Start main:
-# ---------------------------------------------------------
-#if __name__ == "__main__":
-#    main()
