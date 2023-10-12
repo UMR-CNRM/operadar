@@ -82,8 +82,8 @@ from pathlib import Path
 
 #============= Parameters to configure =========================
 
-configfile="operad_conf_AROME_ICE4.py"
-#configfile="operad_conf_MesoNH_ICE3idpx.py"
+#configfile="operad_conf_AROME_ICE4.py"
+configfile="operad_conf_MesoNH_ICE3idpx.py"
 
 os.system("cp "+configfile+" operad_conf.py")
 
