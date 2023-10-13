@@ -52,9 +52,6 @@ def save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick):
                     Rhohv=(["level","y","x"],Vm_k["Rhohv"]),
                     T=(["level","y","x"],Tc),
                     Alt=(["level","y","x"],Z),
-
-                        #             "Kdp":(["lat","lon","alt"],Vm_k["Kdp"]),
-    #             "Rhohv":(["lat","lon","alt"],Vm_k["Rhohv"]),},
             ),
             coords=dict(
                    y=(["y"], np.arange(Tc.shape[1])),
@@ -114,8 +111,6 @@ def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick):
                     Rhohv=(["level","y","x"],Vm_k["Rhohv"]),
                     T=(["level","y","x"],Tc),
                     Alt=(["level"],Z),                
-                        #             "Kdp":(["lat","lon","alt"],Vm_k["Kdp"]),
-    #             "Rhohv":(["lat","lon","alt"],Vm_k["Rhohv"]),},
             ),
             coords=dict(
                    X=(["x"], X),
