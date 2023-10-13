@@ -121,6 +121,7 @@ def compute_radargeo(X,Y,Z,X0,Y0,distmax_rad,RT,elevmax):
     el = np.arctan(tanel)*180./math.pi
     el[el<0] = 0.
     el[el>elevmax] = elevmax
+    el[:]=0.
     
     return mask_distmax,el
 # =================================================

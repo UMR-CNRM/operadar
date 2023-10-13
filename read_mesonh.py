@@ -14,11 +14,11 @@ from netCDF4 import Dataset
 """
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
-def read_mesonh(micro,time):
+def read_mesonh(micro,modelfile):
     
     # === Model file
-    time='00'+str(time)          
-    modelfile=cf.pathmodel+cf.filestart+time[-3:]+'.nc'
+    #time='00'+str(time)          
+    #modelfile=cf.pathmodel+cf.filestart+time[-3:]+'.nc'
     print("Reading "+modelfile)
     
     # === Extract Dataset 

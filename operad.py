@@ -83,12 +83,14 @@ from pathlib import Path
 #============= Parameters to configure =========================
 
 #configfile="operad_conf_AROME_ICE4.py"
-configfile="operad_conf_MesoNH_ICE3idpx.py"
+#configfile="operad_conf_MesoNH_ICE3idpx.py"
+configfile="operad_conf_MesoNH_CORSEsx.py"
 
 os.system("cp "+configfile+" operad_conf.py")
 
 
 import operad_conf as cf
+
 
 
 #============= Programm ====================================
@@ -149,10 +151,12 @@ for time in cf.timelist:
     
     # Return 3D model variables + coordinates
     if (cf.model=="MesoNH"):
-        [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,time)
+        modelfile=cf.pathmodel+cf.filestart+time+'.nc'
+        [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,modelfile)
     
     elif (cf.model=="Arome"):
-        [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(cf.micro,time)
+        modelfile=cf.pathmodel+cf.filestart+time+".fa"
+        [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(cf.micro,modelfile)
     else:
         print("cf.model="+cf.model+" => needs to be either Arome or MesoNH")
       
