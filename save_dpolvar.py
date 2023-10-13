@@ -98,11 +98,13 @@ def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick):
         tab_fick[var] = (np.rollaxis(np.rollaxis(Vm_k[var], 2, 0), 2, 1)).ravel() 
     
         
-    print ("Writing varpol in fick :")
-    print (fick)
-    np.savez_compressed(fick+'.npz', tab_fick)
-      
+    #print ("Writing varpol in fick :")
+    #print (fick)
+    #np.savez_compressed(fick+'.npz', tab_fick)
+    print ("Writing varpol in netcdf file :")
+    print (fick+".nc")   
     # ============ Save var pol in netcdf file with xarray
+    
     ds=xr.Dataset(
             data_vars=dict(
                     Zh=(["level","y","x"],Vm_k["Zhh"]),
