@@ -7,7 +7,6 @@ Created on Apr 4 2023
 
 Configuration file for operad.py
 """
-
 import numpy as np
 
 # ==========  Model simulation options ===============
@@ -30,24 +29,22 @@ band="C"
 distmax_rad = 1000.*1000 #255*1000 # Max distance for dual-pol variables computation
 alt_max = 12000. # Max altitude for dual-pol variables computation
 radarloc="center" # radar location: center or latlon (if latlon ==> to be defined below buy user)
-#radarloc="latlon" # radar location: center or latlon (if latlon ==> to be defined below buy user)
 latrad=float("nan")
 lonrad=float("nan")
 Radpos = np.array([latrad,lonrad])
 
 # ========== Directories / files name options =========
-timelist=["18","20","22","24","26","28"] #range(1,36) #[5,6,7,8] #ech=[20] #[36]
+timelist=["18","19","20","21","22","23","24","25","26","27","28","29","30"] #range(1,36) #[5,6,7,8] #ech=[20] #[36]
 
-pathmodel="/scratch/work/dricard/CORSE/1km/CT1KM/"
+pathmodel="/cnrm/precip/users/augros/DONNEES/MESONH/CORSE/CT1KM/"
 filestart="CT1KM.1.SEG01.0"
 
 # Tmatrix directory
 table_ind="" # number of the selected Tmatrix table 
-pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
+pathTmat="/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL/OUTPUT/" 
 
 # Output files
-pathfick="/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/CT1KM/"+"dpolvar/"
-#pathfick=pathmodel+'k'+MixedPhase+'/'
+pathfick=pathmodel+'k'+MixedPhase+'/'
 
 
 # ========== Constants =======================
