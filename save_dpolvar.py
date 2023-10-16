@@ -78,7 +78,7 @@ Save dpol variables in txt, npz or netcdf file
 input: Vm_k, Tc, Z, lat, lon (Arome), fick
 output: file saved
 """
-def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick):
+def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y, LAT, LON,tabs,Radpos,fick):
     
     # ============= Save in npz file : tab_fick 
     IKE=Tc.shape[0]
@@ -115,15 +115,17 @@ def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick):
                     Alt=(["level"],Z),                
             ),
             coords=dict(
-                   X=(["x"], X),
-                   Y=(["y"], Y),
+                   lon=(["x"], LON),
+                   lat=(["y"], LAT),
+                   Time = (["time"], tabs),
                    level=(["level"], np.arange(Z.shape[0])),
+                   Radloc = (["radpos"],Radpos),
      ),
      )    
     ds.to_netcdf(fick+".nc")
     
     # =========== Plot Zh at first level to test (level 2 = 10 m in MesoNH)=======
-    ds.Zh.sel(level=2).plot(x="X",y="Y",cmap="viridis",vmin=0)
+    ds.Zh.sel(level=2).plot(x="lon",y="lat",cmap="viridis",vmin=0)
     
   
 

@@ -84,7 +84,7 @@ from pathlib import Path
 
 #configfile="operad_conf_AROME_ICE4.py"
 #configfile="operad_conf_MesoNH_ICE3idpx.py"
-configfile="operad_conf_MesoNH_CORSEsx.py"
+configfile="operad_conf_MesoNH_CORSEpx.py"
 
 os.system("cp "+configfile+" operad_conf.py")
 
@@ -142,9 +142,9 @@ for time in cf.timelist:
     print("-------",time,"-------")
     fick = cf.pathfick+"k_"+cf.model+"_"+ cf.band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_2"
     
-    if Path(fick+".nc").exists():
-        print("operad netcdf file for",time,"already exists")
-        continue   
+#    if Path(fick+".nc").exists():
+#        print("operad netcdf file for",time,"already exists")
+#        continue   
     
     # =========== Reading model variables =============
     print("Reading model variables")    
@@ -152,8 +152,9 @@ for time in cf.timelist:
     # Return 3D model variables + coordinates
     if (cf.model=="MesoNH"):
         modelfile=cf.pathmodel+cf.filestart+time+'.nc'
-        [M, Tc, CC, CCI, X, Y, Z]=meso.read_mesonh(cf.micro,modelfile)
-    
+        [M, Tc, CC, CCI, LAT, LON, X, Y, Z, tabs]=meso.read_mesonh(cf.micro,modelfile)
+        tabs = tabs/3600 #absolute time from begining of simulation
+
     elif (cf.model=="Arome"):
         modelfile=cf.pathmodel+cf.filestart+time+".fa"
         [M, Tc, CC, CCI, lon, lat, Z]=aro.read_arome(cf.micro,modelfile)
@@ -173,7 +174,11 @@ for time in cf.timelist:
     elif (cf.model=="MesoNH"):
         if (cf.radarloc=="center"):
             X0=np.nanmean(X)
-            Y0=np.nanmean(Y)        
+            Y0=np.nanmean(Y)
+        if (cf.radarloc=="latlon"):
+            irad,jrad  =ope_lib.latlon2XY(cf.latrad,cf.lonrad,LAT,LON)
+            Y0,X0 = Y[irad] , X[jrad]
+
         [mask_distmax,el]=ope_lib.compute_radargeo(X,Y,Z,X0,Y0,cf.distmax_rad,cf.RT,ELEVmax["rr"])
 
     # ============= Precip mask ========================= 
@@ -257,7 +262,7 @@ for time in cf.timelist:
             if (cf.model=="Arome"):
                 save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick)
             elif (cf.model=="MesoNH"):
-                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick)
+                save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y, LAT, LON,tabs,cf.Radpos,fick)
             else:
                 print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
             
@@ -284,7 +289,7 @@ for time in cf.timelist:
     if (cf.model=="Arome"):
         save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick)
     elif (cf.model=="MesoNH"):
-        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick)
+        save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y, LAT, LON,tabs,cf.Radpos,fick)
     else:
         print("model="+cf.model," => the save dpolvar option is available for Arome or MesoNH only")
 

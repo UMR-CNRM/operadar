@@ -26,11 +26,22 @@ def read_mesonh(micro,modelfile):
     ncfile1 = Dataset(modelfile,'r')
     #print(ncfile1.variables.keys())
 
+    #To get indices of radar position
+    LAT = ncfile1.variables['latitude'][:,0]
+    LON = ncfile1.variables['longitude'][0,:]
     
     # === Geometry: X, Y, Z coordinates and radar cover mask
     X=ncfile1.variables['XHAT'][:]
     Y=ncfile1.variables['YHAT'][:]
     Z=ncfile1.variables['ZHAT'][:]
+    tabs=ncfile1.variables['time'][:]
+    
+    #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
+    if X.shape!=LON.shape : 
+        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(modelfile,LAT[0],LAT[-1],LON[0],LON[-1])
+        X=ncfile1.variables['XHAT'][ilonmin:ilonmax+1]
+        Y=ncfile1.variables['YHAT'][ilatmin:ilatmax+1]
+
 
     # =======================
     
@@ -79,9 +90,17 @@ def read_mesonh(micro,modelfile):
     CC*=rho3D
     CCI*=rho3D
     
+    
+    # ===== Calcul of the grid considering orography
+    #Orography =ncfile1.variables['ZS'][:]
+    #if np.any(Orography > 0):
+    #    Z = ope_lib.compute_grid_alt(var3D,ztop,orography,level)
+    #else:
+    #    Z=ncfile1.variables['level'][:] # but in 3D shape ?
+    
     # =====================================================
     
     print("End reading model variables")
     
-    return M, Tc, CC, CCI, X, Y, Z
+    return M, Tc, CC, CCI, LAT, LON, X, Y, Z, tabs
 #=====================================================================
