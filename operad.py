@@ -69,7 +69,9 @@ import sys
 import os
 import math
 import numpy as np
+from pathlib import Path
 
+sys.path.insert(0, "./lib")
 
 # operad modules
 import operad_lib as ope_lib
@@ -77,7 +79,6 @@ import read_arome as aro
 import read_mesonh as meso
 import read_tmatrix as read_tmat
 import save_dpolvar as save
-from pathlib import Path
 
 
 #============= Parameters to configure =========================
@@ -86,7 +87,7 @@ from pathlib import Path
 #configfile="operad_conf_MesoNH_ICE3idpx.py"
 configfile="operad_conf_MesoNH_CORSEsx.py"
 
-os.system("cp "+configfile+" operad_conf.py")
+os.system("cp ./conf/"+configfile+" ./operad_conf.py")
 
 
 import operad_conf as cf
@@ -284,7 +285,7 @@ for time in cf.timelist:
     
 
     
-    # ============= Save dpol var for all hydromet in txt or npz file
+    # ============= Save dpol var for all hydromet in npz or nc file
     
     if (cf.model=="Arome"):
         save.save_dpolvar_arome(liste_var_pol, Vm_k, Tc, Z,lat,lon,fick)

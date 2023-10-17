@@ -35,6 +35,7 @@ Radpos = np.array([latrad,lonrad])
 
 # ========== Directories / files name options =========
 timelist=["18","19","20","21","22","23","24","25","26","27","28","29","30"] #range(1,36) #[5,6,7,8] #ech=[20] #[36]
+timelist=["18"]
 
 pathmodel="/cnrm/precip/users/augros/DONNEES/MESONH/CORSE/CT1KM/"
 filestart="CT1KM.1.SEG01.0"
