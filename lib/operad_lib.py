@@ -108,6 +108,7 @@ def compute_radargeo(X,Y,Z,X0,Y0,distmax_rad,RT,elevmax):
     el = np.arctan(tanel)*180./math.pi
     el[el<0] = 0.
     el[el>elevmax] = elevmax
+    el[:]=0.
     
     return mask_distmax,el
 
@@ -197,13 +198,118 @@ def lin_interpol(x1,x2,y1,y2,x):
     return res
     
 
-    
+#=============== Linear to dBZ conversion =====   
+"""
+Linear to dBZ conversion
+""" 
 def Z2dBZ(Z):
     Ztemp = np.copy(Z)
     Ztemp[Z > 0.] = 10.*np.log10(Z[Z > 0.])
     Ztemp[Z == 0.] = -999.
     Ztemp[Z < 0.] = -9999.
     return Ztemp
+#=============================
+
+
+def latlon2XY(latrad,lonrad,latitude,longitude):
+    """
+    Fonction de conversion lat lon vers indices x y dans la grille modèle
+    dx-y = resolution
+    
+    """
+    dx = (longitude[2]-longitude[1])/2.
+    dy = (latitude[2]-latitude[1])/2.
+    
+    lat0 = np.where((latrad-dy <latitude) & (latitude< latrad+dy))
+    lon0 = np.where((lonrad-dx <longitude) & (longitude< lonrad+dx))
+    jlat=lat0[0][0]
+    ilon = lon0[0][0]
+    
+    if np.size(lat0)>1:
+        if abs(latitude[lat0[0][0]]-latrad)<abs(latitude[lat0[0][1]]-latrad):
+            jlat=lat0[0][0]
+        else:
+            jlat=lat0[0][1]
+            
+    if np.size(lon0)>1:
+        if abs(longitude[lon0[0][0]]-lonrad)<abs(longitude[lon0[0][1]]-lonrad):
+            ilon=lon0[0][0]
+        else:
+            ilon=lon0[0][1]
+            
+    return jlat, ilon
+
+
+def compute_grid_alt(var3D,ztop,orography,level):
+    altitude = np.zeros_like(var3D[0,:,:,:])
+    nx = len(var3D[0,0,0,:])
+    ny = len(var3D[0,0,:,0])
+    for ii in range(0,ny):
+        for jj in range(0,nx):
+            if ZS[ii, jj] == 0:
+                altitude[:, ii,jj] = level[:]
+            else:
+                for k in range(len(level)):
+                    altitude[k, ii,jj] = orography[ii,jj] + level[k] * ((ztop - orography[ii,jj]) / ztop)
+    return altitude
+
+
+#======================================
+#Opening net_cdf file
+#======================================
+def open_nc(file_name,variable,dim):
+    from netCDF4 import Dataset
+    
+    fic=Dataset(file_name,'r')
+    var=[]
+    
+    if dim<2 or dim>4:
+        print('Error dim should be 3 or 4')
+        var=99999 ; print('var=',var)
+    if dim==2: 
+        var=fic.variables[variable][:,:] # for lat and lon
+        print(var.shape)
+    if dim==3: 
+        var=fic.variables[variable][:,1:-1,1:-1]
+        print(var.shape)
+    if dim==4 : 
+        var=fic.variables[variable][:,:,1:-1,1:-1]  
+        print(var.shape)
+        
+    return var
+
+#==============================================================================
+# Fonction get indice
+#==============================================================================
+def getlevel(zr,vec,eps):
+    zz0 = np.where((zr-eps <vec)&(vec< zr+eps))
+    zz=zz0[0][0]
+    if np.size(zz0)>1:
+        if abs(vec[zz0[0][0]]-zr)<abs(vec[zz0[0][1]]-zr):
+            zz=zz0[0][0]
+        else:
+            zz=zz0[0][1]
+    return zz
+
+
+#============== Fonction Cropping lat lon ==============
+
+def crop_latlon(file,latmin,latmax,lonmin,lonmax):
+                 
+    LAT = open_nc(file,'latitude',2) ;  #print(np.min(LAT[:,0]),np.max(LAT[:,0]))
+    LON = open_nc(file,'longitude',2) ; #print(np.min(LON[0,:]),np.max(LON[0,:]))
+
+    dlat = abs(LAT[2,0]-LAT[1,0]) ; dlon = abs(LON[0,2]-LON[0,1]) ; #print(dlat,dlon)
+
+    ii_latmin=getlevel(latmin,LAT[:,0],dlat) ; #print(ii_latmin,LAT[ii_latmin,0])
+    ii_latmax=getlevel(latmax,LAT[:,0],dlat) ; #print(ii_latmax,LAT[ii_latmax,0])
+
+    ii_lonmax= getlevel(lonmax,LON[0,:],dlon) ; #print(ii_lonmax,LON[0,ii_lonmax])
+    ii_lonmin = getlevel(lonmin,LON[0,:],dlon) ; #print(ii_lonmin,LON[0,ii_lonmin])
+    
+    return ii_latmin,ii_latmax,ii_lonmin,ii_lonmax
+
+
 
 
 

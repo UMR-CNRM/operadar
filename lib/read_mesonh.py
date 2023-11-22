@@ -14,11 +14,11 @@ from netCDF4 import Dataset
 """
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
-def read_mesonh(micro,time):
+def read_mesonh(modelfile: str,
+                microphysics: str
+               ):
     
     # === Model file
-    time='00'+str(time)          
-    modelfile=cf.pathmodel+cf.commonFilename+time[-3:]+'.nc'
     print("Reading "+modelfile)
     
     # === Extract Dataset 
@@ -26,11 +26,22 @@ def read_mesonh(micro,time):
     ncfile1 = Dataset(modelfile,'r')
     #print(ncfile1.variables.keys())
 
+    #To get indices of radar position
+    LAT = ncfile1.variables['latitude'][:,0]
+    LON = ncfile1.variables['longitude'][0,:]
     
     # === Geometry: X, Y, Z coordinates and radar cover mask
     X=ncfile1.variables['XHAT'][:]
     Y=ncfile1.variables['YHAT'][:]
     Z=ncfile1.variables['ZHAT'][:]
+    tabs=ncfile1.variables['time'][:]
+    
+    #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
+    if X.shape!=LON.shape : 
+        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(modelfile,LAT[0],LAT[-1],LON[0],LON[-1])
+        X=ncfile1.variables['XHAT'][ilonmin:ilonmax+1]
+        Y=ncfile1.variables['YHAT'][ilatmin:ilatmax+1]
+
 
     # =======================
     
@@ -67,11 +78,11 @@ def read_mesonh(micro,time):
         M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
         M[t][M[t]==999.]=float('nan')
 
-    if(cf.micro =="ICE3" or cf.micro =="ICE4"):
+    if(microphysics =="ICE3" or microphysics =="ICE4"):
         CCI=ncfile1.variables['CIT'][0,:,:,:]
         CCI[CCI==999.]=float('nan')
         CC=np.empty(Tc.shape)
-    if(cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMASG" or cf.micro =="LIMAAG"):
+    if(microphysics =="LIMA" or microphysics =="LIMT" or microphysics =="LIMASG" or microphysics =="LIMAAG"):
         CC=ncfile1.variables['CRAINT'][0,:,:,:]
         CC[CC==999.]=float('nan')
         CCI=ncfile1.variables['CICET'][0,:,:,:]
@@ -79,9 +90,17 @@ def read_mesonh(micro,time):
     CC*=rho3D
     CCI*=rho3D
     
+    
+    # ===== Calcul of the grid considering orography
+    #Orography =ncfile1.variables['ZS'][:]
+    #if np.any(Orography > 0):
+    #    Z = ope_lib.compute_grid_alt(var3D,ztop,orography,level)
+    #else:
+    #    Z=ncfile1.variables['level'][:] # but in 3D shape ?
+    
     # =====================================================
     
     print("End reading model variables")
     
-    return M, Tc, CC, CCI, X, Y, Z
+    return M, Tc, CC, CCI, LAT, LON, X, Y, Z, tabs
 #=====================================================================

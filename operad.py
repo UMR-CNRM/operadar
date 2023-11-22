@@ -72,14 +72,16 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-# Operad modules
+from pathlib import Path
+sys.path.insert(0, "./lib")
+from vortex_experiments import set_vortex_experiments
+
+# 0perad modules
 import operad_lib as ope_lib
 import read_arome as aro
 import read_mesonh as meso
 import read_tmatrix as read_tmat
 import save_dpolvar as save
-from pathlib import Path
-from vortex_experiments import set_vortex_experiments
 
 
 # ===== Configuration files ===== #

@@ -129,17 +129,20 @@ def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,fick,
                             #             "Kdp":(["lat","lon","alt"],Vm_k["Kdp"]),
         #             "Rhohv":(["lat","lon","alt"],Vm_k["Rhohv"]),},
                 ),
-                coords=dict(
-                    X=(["x"], X),
-                    Y=(["y"], Y),
-                    level=(["level"], np.arange(Z.shape[0])),
-        ),
+		 coords=dict(
+		           lon=(["x"], LON),
+		           lat=(["y"], LAT),
+		           Time = (["time"], tabs),
+		           level=(["level"], np.arange(Z.shape[0])),
+		           Radloc = (["radpos"],Radpos),
+	 ),
         )    
         ds.to_netcdf(fick+".nc")
         ds.close() ; del ds
+
     
     # =========== Plot Zh at first level to test (level 2 = 10 m in MesoNH)=======
-    ds.Zh.sel(level=2).plot(x="X",y="Y",cmap="viridis",vmin=0)
+    ds.Zh.sel(level=2).plot(x="lon",y="lat",cmap="viridis",vmin=0)
     
   
 
