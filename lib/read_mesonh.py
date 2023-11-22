@@ -7,18 +7,18 @@ Created on Tue Apr 11 09:55:15 2023
 """
 
 import numpy as np
-import operad_conf as cf
+"import operad_conf as cf" # NOT USED ANYMORE --> make call directly into functions
 from netCDF4 import Dataset
 
 #============== Read MesoNH variables ===============
 """
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
-def read_mesonh(micro,modelfile):
+def read_mesonh(modelfile: str,
+                microphysics: str
+               ):
     
     # === Model file
-    #time='00'+str(time)          
-    #modelfile=cf.pathmodel+cf.filestart+time[-3:]+'.nc'
     print("Reading "+modelfile)
     
     # === Extract Dataset 
@@ -66,7 +66,7 @@ def read_mesonh(micro,modelfile):
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
     name_hydro={}
     M={}
-    for t in cf.list_types:
+    for t in cf.htypes_model:
         M[t] = np.empty(Tc.shape)    
 
     # Arrays initialisation
@@ -74,15 +74,15 @@ def read_mesonh(micro,modelfile):
         name_hydro[t]=list_hydro[it]
     
 
-    for t in cf.list_types:
+    for t in cf.htypes_model:
         M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
         M[t][M[t]==999.]=float('nan')
 
-    if(cf.micro =="ICE3" or cf.micro =="ICE4"):
+    if(microphysics =="ICE3" or microphysics =="ICE4"):
         CCI=ncfile1.variables['CIT'][0,:,:,:]
         CCI[CCI==999.]=float('nan')
         CC=np.empty(Tc.shape)
-    if(cf.micro =="LIMA" or cf.micro =="LIMT" or cf.micro =="LIMA_SG" or cf.micro =="LIMA_AG"):
+    if(microphysics =="LIMA" or microphysics =="LIMT" or microphysics =="LIMASG" or microphysics =="LIMAAG"):
         CC=ncfile1.variables['CRAINT'][0,:,:,:]
         CC[CC==999.]=float('nan')
         CCI=ncfile1.variables['CICET'][0,:,:,:]

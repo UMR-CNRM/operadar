@@ -5,84 +5,80 @@ Created on Tue Apr 11 09:55:15 2023
 
 @author: augros
 """
-
 import numpy as np
-
 import epygram
 import bronx
-
-
-import operad_conf as cf
+import pickle as pkl
 import read_arome_lib as arolib
-
-epygram.init_env()
-
-
-## ---- to be included in conf file
-#micro="ICE3"
-##rep="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
-#rep="/cnrm/precip/users/augros/DONNEES/AROME/"
-#file="historic.arome.franmg-01km30+0008:00.fa"
-##rep="/home/augros/DONNEES/AROME/20220816/3DVARFR/T00/" 
-##file="historic.arome.franmg-01km30+0017:00.fa"
-#lat_min,lat_max=47.0,50.
-#lon_min,lon_max=1.,4.
-#modelfile=rep+file
-# -------------------------------------
+import time as tm
 
 
 #================= Read Arome variables =======================================
 """
-Read Arome 3D variables in ncfile: pressure, temperature, hydrometeor contents 
-input : micro,modelfile,lon_min,lon_max,lat_min,lat_max
-output: M, Tc, CC, CCI, lon, lat, Z
-
-
+Read Arome 3D variables in ncfile: pressure, temperature, hydrometeor contents
+and concentrations 
+INPUT : microphysics,modelfile,lon_min,lon_max,lat_min,lat_max
+OUTPUT: M, Tc, CC, CCI, lon, lat, Z
 """
-def read_arome(micro,timestr):   
+
+def read_arome(modelfile: str,
+               microphysics: str,
+               extract_once: bool,
+               hydrometeors_list: list,
+               lonmin: float = -5.2,
+               lonmax: float = 8.3,
+               latmin: float = 41.3,
+               latmax: float = 51.15,
+               ):   
     
     epygram.init_env()
-    # ======== Open file 
-    #modelfile=cf.pathmodel+cf.filestart+timestr+".fa"
     
-    
-    print("Reading AROME fa file: ",modelfile)
+    print("  AROME fa file: ",modelfile)
     ficA = epygram.formats.resource(modelfile, openmode = 'r', fmt = 'FA')
     ps = ficA.readfield('SURFPRESSION')
     
-    
-    # === Infos
+    if extract_once :
+        # Vertical levels values
+        A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
+        B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
+        # Save in temporary pickle files
+        tmpA = open('tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
+        tmpB = open('tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
+    else :
+        # Read previously saved pickle files
+        tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
+        tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
+
+    # === Infos === #
     #ficA.listfields()
     #ficA.what()
     
-    # ======= Zoom
-    imin,jmin=(np.round(ps.geometry.ll2ij(cf.lon_min,cf.lat_min)).astype(int))
-    imax,jmax=(np.round(ps.geometry.ll2ij(cf.lon_max,cf.lat_max)).astype(int))
-    
-    #Fichier FA avec SubdomainResource
+    # === Zoom === #
+    imin,jmin=(np.round(ps.geometry.ll2ij(lonmin,latmin)).astype(int))
+    imax,jmax=(np.round(ps.geometry.ll2ij(lonmax,latmax)).astype(int))
     ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
                                                   subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
     #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
-    
-    
+
     # ======== Horizontal, vertical coordinates, pressure
-    [p, psurf, pdep, phis, A, B, lon, lat]=arolib.get_geometry(ficA,ficsubdo)
-      
+    if extract_once : 
+        [lon, lat] = arolib.get_lat_lon_epygram(ficsubdo)
+    [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B)
+    
     # ======== Hydrometeor contents and temperature
-    [M, T, R]=arolib.get_contents_t(ficsubdo, p)
-    
+    [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15
-    CC=np.empty(Tc.shape)
-    CCI=cf.CCIconst*np.ones(Tc.shape)
-        
-    # ========= Altitude z of each level
-    Z=arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
+    [CC , CCI] = arolib.get_concentrations(ficsubdo, p,microphysics,hydrometeors_list)
     
-     
+    # ========= Altitude z of each level
+    Z = arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
+
     # ========= Close file
+    ficA.close()
     ficsubdo.close()
-        
-    return M, Tc, CC, CCI, lon, lat, Z
+    
+    if extract_once : return M, Tc, CC, CCI, Z, lon, lat
+    else : return M, Tc, CC, CCI, Z
 
 # =============================================================================
 
@@ -93,7 +89,7 @@ def read_arome(micro,timestr):
 if __name__ == '__main__':
 
     # ---- to be included in conf file
-    micro="ICE3"
+    microphysics="ICE3"
     #rep="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
     rep="/cnrm/precip/users/augros/DONNEES/AROME/"
     file="historic.arome.franmg-01km30+0008:00.fa"
