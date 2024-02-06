@@ -15,7 +15,8 @@ from netCDF4 import Dataset
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
 def read_mesonh(modelfile: str,
-                microphysics: str
+                microphysics: str,
+                hydrometeors_list: list,
                ):
     
     # === Model file
@@ -34,7 +35,7 @@ def read_mesonh(modelfile: str,
     X=ncfile1.variables['XHAT'][:]
     Y=ncfile1.variables['YHAT'][:]
     Z=ncfile1.variables['ZHAT'][:]
-    tabs=ncfile1.variables['time'][:]
+    time=ncfile1.variables['time'][:]
     
     #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
     if X.shape!=LON.shape : 
@@ -62,11 +63,11 @@ def read_mesonh(modelfile: str,
     # =====================
     
     # === Hydrometeors contents and concentrations
-    list_t_full=['vv','cc','rr','ii','ss','gg']
+    list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
     name_hydro={}
     M={}
-    for t in cf.htypes_model:
+    for t in hydrometeors_list:
         M[t] = np.empty(Tc.shape)    
 
     # Arrays initialisation
@@ -74,7 +75,7 @@ def read_mesonh(modelfile: str,
         name_hydro[t]=list_hydro[it]
     
 
-    for t in cf.htypes_model:
+    for t in hydrometeors_list:
         M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
         M[t][M[t]==999.]=float('nan')
 
@@ -102,5 +103,5 @@ def read_mesonh(modelfile: str,
     
     print("End reading model variables")
     
-    return M, Tc, CC, CCI, LAT, LON, X, Y, Z, tabs
+    return M, Tc, CC, CCI, LAT, LON, X, Y, Z, time
 #=====================================================================
