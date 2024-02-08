@@ -112,7 +112,7 @@ else :
 
 # ===== Loop over study cases
 for _,row in studyCases.iterrows():
-    run  = str(row.run_arome).zfill(2)
+    run  = str(row.run_model).zfill(2)
     deb = row.start_time
     fin = row.end_time
     radar_ids = "-".join([str(x) for x in row.radar_id_list.strip().split(',')])
@@ -150,7 +150,7 @@ for _,row in studyCases.iterrows():
     read_tmatrix = True
     extract_once = True
     for datetime in datetimelist: 
-        time = datetime.strftime('%H:%M')
+        time = datetime.strftime('%H%M')
         outFile = cf.outPath + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
 
         # ----- Testing existence of the output file ----- #
@@ -183,7 +183,11 @@ for _,row in studyCases.iterrows():
         
         if (model=="MesoNH"):
             pathmodel = cf.commonPath
-            ech="027"
+            datetime_run=dt.datetime.strptime(run,'%Y%m%d%H%M')
+            model_ech=((datetime - datetime_run).total_seconds())/60.0/15.0
+            ech=(str(int(model_ech))).zfill(3)
+            #ech="027"
+            print(ech)
             modelfile=pathmodel+cf.commonFilename+ech+".nc"
             pathfick = f"{cf.outPath}/k{cf.MixedPhase}"
             [M, Tc, CC, CCI, lat,lon, X, Y, Z, time] = meso.read_mesonh(modelfile = modelfile,

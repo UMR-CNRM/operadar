@@ -9,8 +9,7 @@
       4 - Config file with common settings 
   _________________________________________
   Example :
-   >>> ./exec_operad.sh AROME 20220522 ICE4
-   >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_CORSEpx.py
+   >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEsx.py
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)

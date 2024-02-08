@@ -139,11 +139,11 @@ def save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,lat,lon,time,fick,
         )    
         ds.to_netcdf(fick+".nc")
         ds.close() ;
-        #del ds
+        del ds
 
     
-    # =========== Plot Zh at first level to test (level 2 = 10 m in MesoNH)=======
-    ds.Zh.sel(level=2).plot(x="lon",y="lat",cmap="viridis",vmin=0)
+    # # =========== Plot Zh at first level to test (level 2 = 10 m in MesoNH)=======
+    # ds.Zh.sel(level=2).plot(x="lon",y="lat",cmap="viridis",vmin=0)
   
 
 # ============================================================================         
