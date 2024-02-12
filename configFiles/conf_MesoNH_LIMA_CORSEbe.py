@@ -22,7 +22,7 @@ n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T
 commonPath  = "/scratch/work/vie/CORSE/003_run/LIREF/"
 commonFilename = "LIREF.1.SEG01." #08:00.fa"
 outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIREF/dpolvar/"
-csvPath = "./study_cases.csv"
+csvPath = "./study_cases/CORSE_MesoNH.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 

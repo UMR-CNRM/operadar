@@ -26,7 +26,7 @@ save_netcdf = True
 commonPath  = "/cnrm/precip/users/augros/DONNEES/MESONH/CORSE/CT1KM/"
 commonFilename = "CT1KM.1.SEG01." #08:00.fa"
 outPath = commonPath
-csvPath = "./study_cases.csv"
+csvPath = "./study_cases/CORSE_MesoNH.csv"
 pathTmat="/home/augros/Programmes/TMATRIX/DPOLSIMUL/OUTPUT/" 
 
 # ==== Forward operator options
