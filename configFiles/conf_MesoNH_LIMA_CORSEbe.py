@@ -19,7 +19,7 @@ MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 # ==== Directories / files name options 
-commonPath  = "/scratch/work/vie/CORSE/003_run/LIREF/"
+commonPath  = "/scratch/work/vie/CORSE/03_run/LIREF/"
 commonFilename = "LIREF.1.SEG01." #08:00.fa"
 outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIREF/dpolvar/"
 csvPath = "./study_cases/CORSE_MesoNH.csv"
@@ -33,7 +33,7 @@ save_npz    = False
 save_netcdf = True
 
 # ==== Radar options
-distmax_rad = 255.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
+distmax_rad = 1000.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
 alt_max = 15000. # Altitude max des données radar utilisées pour le calcul des pseudo-observations
 radarloc="center" # radar location: center or latlon (if latlon ==> to be defined below buy user)
 #latrad=

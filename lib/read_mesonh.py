@@ -84,9 +84,9 @@ def read_mesonh(modelfile: str,
         CCI[CCI==999.]=float('nan')
         CC=np.empty(Tc.shape)
     if(microphysics =="LIMA" or microphysics =="LIMT" or microphysics =="LIMASG" or microphysics =="LIMAAG"):
-        CC=ncfile1.variables['CRAINT'][0,:,:,:]
+        CC=ncfile1.variables['CRAIN'][0,:,:,:] #former name: CRAINT
         CC[CC==999.]=float('nan')
-        CCI=ncfile1.variables['CICET'][0,:,:,:]
+        CCI=ncfile1.variables['CICE'][0,:,:,:] #former name: CICET
         CCI[CCI==999.]=float('nan')
     CC*=rho3D
     CCI*=rho3D

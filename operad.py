@@ -150,8 +150,9 @@ for _,row in studyCases.iterrows():
     read_tmatrix = True
     extract_once = True
     for datetime in datetimelist: 
+        day=datetime.strftime('%Y%m%d')
         time = datetime.strftime('%H%M')
-        outFile = cf.outPath + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
+        outFile = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
 
         # ----- Testing existence of the output file ----- #
         if Path(outFile + ".nc").exists():

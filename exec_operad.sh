@@ -9,7 +9,8 @@
       4 - Config file with common settings 
   _________________________________________
   Example :
-   >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEsx.py
+   >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEbe.py
+   >>> ./exec_operad.sh MesoNH 20220818 LIMA conf_MesoNH_LIMA_CORSEbe.py
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)
@@ -29,8 +30,10 @@ cp ./configFiles/$4 operad_conf.py
 
 currentTime=`date +"%F %R"`
 
+# --- For tests -----
 #python3 -i operad.py $1 $2 $3 $4
 
+# --- For multiple times running ---
 nohup python3 -u operad.py $1 $2 $3 $4 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
 
 echo ${currentTime} $! $1 $2 $3 $4 >> process_id_historic.txt

@@ -33,7 +33,7 @@ save_npz    = False
 save_netcdf = True
 
 # ==== Radar options
-distmax_rad = 255.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
+distmax_rad = 1000.*1000 #150*1000 # Distance max des données radar dont on calcule les pseudo-observations
 alt_max = 15000. # Altitude max des données radar utilisées pour le calcul des pseudo-observations
 radarloc="center" # radar location: center or latlon (if latlon ==> to be defined below buy user)
 #latrad=
