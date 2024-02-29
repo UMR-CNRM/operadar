@@ -196,11 +196,13 @@ for _,row in studyCases.iterrows():
                                                             hydrometeors_list = cf.htypes_model)
         elif (model=="Arome") :
             model_hour = (datetime - dt.timedelta(hours=int(run))).strftime('%H:%M')
+            
             # Vortex experiment name
             expeOLIVE = set_vortex_experiments(run,micro)
 
             # Paths
-            pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
+            #pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
+            pathmodel = cf.commonPath
             pathfick = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
             modelfile=pathmodel+cf.commonFilename+model_hour+".fa"
             if extract_once :

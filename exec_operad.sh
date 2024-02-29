@@ -8,9 +8,10 @@
       3 - microphysics scheme name in capital letter
       4 - Config file with common settings 
   _________________________________________
-  Example :
+  Examples :
    >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEbe.py
    >>> ./exec_operad.sh MesoNH 20220818 LIMA conf_MesoNH_LIMA_CORSEbe.py
+   >>> ./exec_operad.sh Arome 20220818 ICE3 conf_Arome_ICE3_CORSEbe.py
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)
