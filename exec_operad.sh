@@ -1,12 +1,15 @@
 #!/bin/bash
 
 [ "$1" = "-h" -o "$1" = "--help" ] && echo "
-  Before running exec_operad.sh code, you need to modify/check common_settings.py
-  This function takes 3 arguments in this order :
+  Before running exec_operad.sh code, you need to:
+  * create a case study file in ./study_cases/
+  * create a configuration file in ./configFiles/
+  
+  This script takes 4 arguments in this order :
       1 - Arome or MesoNH
       2 - date into the yyyymmdd format or "all"
       3 - microphysics scheme name in capital letter
-      4 - Config file with common settings 
+      4 - Config file specifying directories and forward operator options 
   _________________________________________
   Examples :
    >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEbe.py
