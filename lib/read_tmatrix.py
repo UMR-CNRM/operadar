@@ -31,13 +31,15 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind,list_types_tot):
+def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
 
     # Choice of the right table depending on the microphysics
     if schema_micro == "ICE3" or schema_micro == "ICE4" :
         schema_micro = "ICE3"
     elif schema_micro == "LIMASG" or schema_micro == "LIMAAG" or schema_micro == "LIMA" :
         schema_micro = "LIMA"
+    elif schema_micro=="LIMT": # and cf.LIMToption=="cstmu":
+        schema_micro="LIMA"
 
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}

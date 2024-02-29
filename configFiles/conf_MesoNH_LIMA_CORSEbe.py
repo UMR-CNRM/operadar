@@ -19,16 +19,16 @@ MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 # ==== Directories / files name options 
-commonPath  = "/scratch/work/mandementm/EXTRACTION/20220818_T0000P/"
-commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"
-outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/AROME/dpolvar/"
-csvPath = "./study_cases/CORSE_Arome.csv"
+commonPath  = "/scratch/work/vie/CORSE/03_run/LIREF/"
+commonFilename = "LIREF.1.SEG01." #08:00.fa"
+outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIREF/dpolvar/"
+csvPath = "./study_cases/CORSE_MesoNH.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 
 # ==== Forward operator options
 singletype=False #False #True # if True: computes dpol var for each type
-step = dt.timedelta(hours=1)
+step = dt.timedelta(minutes=15)
 save_npz    = False
 save_netcdf = True
 
