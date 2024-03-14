@@ -11,9 +11,9 @@ Tmatrix tables directory at CNRM : belenos  /home/augros/TmatCoefInt_SCXW/
  start_time;end_time;radar_id_list;radar_band;run_model;latmin;latmax;lonmin;lonmax;
 
 * start_time;end_time => period of your study (each time corresponds to 1 Arome or MesoNH file, the time step is defined in the configuration file below)
-* radar_id_list => not use in this version 
+* radar_id_list => not used in this version 
 * radar_band => to specify which tables to read (S, C or X band)
-* run_model => to specify at what time the simulation startet (for MesoNH) or the Arome run (00, 03 ...)
+* run_model => to specify at what time the simulation starts (for MesoNH) or the Arome run (00, 03 ...)
 * latmin;latmax;lonmin;lonmax => to restrict a specific region where to compute the radar variables (to save time if there is no need to compute them within the full Arome or MesoNH domain)
         
 2) Create a configuration file in ./configFiles/ (eg: conf_AROME_ICE3_CORSEbe.py or conf_MesoNH_ICE3_CORSEbe.py)
