@@ -5,8 +5,12 @@ Computes dual-pol variables (Z<sub>H</sub>, Z<sub>DR</sub>, K<sub>DP</sub>, Rho<
 Tmatrix tables directory at CNRM : belenos  /home/augros/TmatCoefInt_SCXW/
 * OUTPUT : netcdf file with $lat/lon$ (or $X/Y$) + $Z_{H}$ , $Z_{DR}$ , $K_{DP}$ , $\rho_{HV}$ , $T$, and altitude for each model level
 
+## How to get the code
+git clone https://github.com/UMR-CNRM/operadar.git
+
 ## How to run operadar
 1) Create a study case file in ./study_cases/  (eg: CORSE_Arome.csv or CORSE_MesoNH.csv)
+   ==> you copy one of the examples available that best fits to your simulation
 
  start_time;end_time;radar_id_list;radar_band;run_model;latmin;latmax;lonmin;lonmax;
 
@@ -14,7 +18,7 @@ Tmatrix tables directory at CNRM : belenos  /home/augros/TmatCoefInt_SCXW/
 * radar_id_list => not used in this version 
 * radar_band => to specify which tables to read (S, C or X band)
 * run_model => to specify at what time the simulation starts (for MesoNH) or the Arome run (00, 03 ...)
-* latmin;latmax;lonmin;lonmax => to restrict a specific region where to compute the radar variables (to save time if there is no need to compute them within the full Arome or MesoNH domain)
+* latmin;latmax;lonmin;lonmax => to restrict a specific region where to compute the radar variables (only for Arome)
         
 2) Create a configuration file in ./configFiles/ (eg: conf_AROME_ICE3_CORSEbe.py or conf_MesoNH_ICE3_CORSEbe.py)
 
@@ -41,7 +45,9 @@ takes 4 arguments in this order :
 - 1 Arome or MesoNH
 - 2 date into the yyyymmdd format or "all"
 - 3 microphysics scheme name in capital letter
-- 4 Config file specifying directories and forward operator options 
+- 4 Config file specifying directories and forward operator options
+
+  Before running, select the option with or without nohup in exec_operad.sh (directly with python3 -i if you need to debub, or with nohup if the script is running well)
 
 Examples :
 
