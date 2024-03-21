@@ -2,11 +2,26 @@
 Computes dual-pol variables (Z<sub>H</sub>, Z<sub>DR</sub>, K<sub>DP</sub>, Rho<sub>HV</sub>) in the 3D model grid for Arome or MesoNH model using existing T-matrix tables
 * INPUT  : T-matrix tables and model file (Arome .fa or MesoNH netcdf)
   
-Tmatrix tables directory at CNRM : belenos  /home/augros/TmatCoefInt_SCXW/
+Tmatrix tables directory at CNRM on belenos:  /home/augros/TmatCoefInt_SCXW/
 * OUTPUT : netcdf file with $lat/lon$ (or $X/Y$) + $Z_{H}$ , $Z_{DR}$ , $K_{DP}$ , $\rho_{HV}$ , $T$, and altitude for each model level
 
 ## How to get the code
+!!! for belenos !!!
+create a .gitconfig file (on your home directory) with:
+
+[http]
+        sslVerify = false
+
+* If you only need to run the code:
 git clone https://github.com/UMR-CNRM/operadar.git
+
+* If you want to suggest slight modifications
+  1. fork the code (select: Fork, create a new fork)
+  2. get the name of your new fork repository by clicking on the Code button (copy the https url) 
+     e. g. : git clone https://github.com/augros/operadar.git 
+
+* If you want to be part of the main developpers (ask clotilde.augros@meteo.fr)
+
 
 ## How to run operadar
 1) Create a study case file in ./study_cases/  (eg: CORSE_Arome.csv or CORSE_MesoNH.csv)
