@@ -22,10 +22,10 @@ MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 # ==== Directories / files name options 
-commonPath  = "/scratch/work/vie/CORSE/03_run/LIREF/"
-commonFilename = "LIREF.1.SEG01." #08:00.fa"
-outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIREF/dpolvar/"
-csvPath = "./study_cases/CORSE_MesoNH.csv"
+commonPath  = "/scratch/work/straussc/CORSE/0082_run3/"
+commonFilename = "CT250.2.SEG04." #08:00.fa"
+outPath = "/scratch/work/straussc/CORSE/SIMULATEUR_RADAR/CT250"
+csvPath = "./study_cases/CORSE_MesoNH250.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 

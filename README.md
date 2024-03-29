@@ -65,7 +65,7 @@ You need to change:
 takes 4 arguments in this order :
 - 1 Arome or MesoNH
 - 2 date into the yyyymmdd format or "all"
-- 3 microphysics scheme name in capital letter
+- 3 microphysics scheme name in capital letter (ICE3, LIMA, ICE4, LIMAAG)
 - 4 Config file specifying directories and forward operator options
 
   Before running, select the option with or without nohup in exec_operad.sh (directly with python3 -i if you need to debub, or with nohup if the script is running well)
@@ -77,6 +77,8 @@ Examples :
    `>>> ./exec_operad.sh MesoNH 20220818 LIMA conf_MesoNH_LIMA_CORSEbe.py`
    
    `>>> ./exec_operad.sh Arome 20220818 ICE3 conf_Arome_ICE3_CORSEbe.py`
+
+   `>>> ./exec_operad.sh MesoNH 20220818 LIMAAG conf_MesoNH_LIMH_CORSEbe.py`
 
 ## To Do
 - [ ] find a way to read the ice concentration in AROME file ?
