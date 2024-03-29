@@ -84,3 +84,5 @@ Examples :
 - [ ] find a way to read the ice concentration in AROME file ?
 - [ ] add the radar geometry option (with elevations and beam filtering with gaussian)
 - [ ] link this project with tmatrix DPOLSIMUL git (which produces the required tables !)
+- [ ] put Tmatrix tables online so that every one can get them
+- [ ] put one MesoNh and one AROME example test files 
