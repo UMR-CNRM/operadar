@@ -17,6 +17,7 @@ Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents
 def read_mesonh(modelfile: str,
                 microphysics: str,
                 hydrometeors_list: list,
+                real_case: bool(),
                ):
     
     # === Model file
@@ -27,15 +28,23 @@ def read_mesonh(modelfile: str,
     ncfile1 = Dataset(modelfile,'r')
     #print(ncfile1.variables.keys())
 
-    #To get indices of radar position
-    LAT = ncfile1.variables['latitude'][:,0]
-    LON = ncfile1.variables['longitude'][0,:]
     
     # === Geometry: X, Y, Z coordinates and radar cover mask
     X=ncfile1.variables['XHAT'][:]
     Y=ncfile1.variables['YHAT'][:]
     Z=ncfile1.variables['ZHAT'][:]
     time=ncfile1.variables['time'][:]
+
+    # === Get lat lon if real case
+    if (real_case):
+        LAT = ncfile1.variables['latitude'][:,0]
+        LON = ncfile1.variables['longitude'][0,:]
+    else:
+        LAT = np.copy(Y)
+        LAT[:]=float('nan')
+        LON=np.copy(X)
+        LON[:] = float('nan')
+
     
     #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
     if X.shape!=LON.shape : 
