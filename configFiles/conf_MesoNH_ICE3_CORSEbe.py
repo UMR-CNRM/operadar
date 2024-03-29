@@ -14,6 +14,9 @@ CCIconst=800.
 htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables
 list_types_tot = ['rr','ii','ss','gg','wg']
 
+# ==== Real or Ideal case
+real_case=True
+
 # ==== Tmatrix options
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
@@ -29,6 +32,7 @@ pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 # ==== Forward operator options
 singletype=False #False #True # if True: computes dpol var for each type
 step = dt.timedelta(minutes=15)
+step_seconds = 15*60
 save_npz    = False
 save_netcdf = True
 

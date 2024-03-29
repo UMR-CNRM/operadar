@@ -102,7 +102,7 @@ elif (model=="Arome"):
 # ===== Reading dates in study cases csv file 
 df = pd.read_csv(cf.csvPath, delimiter=";")
 time_columns = ["start_time", "end_time"]
-df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M"))
+df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M%S"))
 
 if sys.argv[2] == "all" :
     studyCases = df
@@ -151,7 +151,7 @@ for _,row in studyCases.iterrows():
     extract_once = True
     for datetime in datetimelist: 
         day=datetime.strftime('%Y%m%d')
-        time = datetime.strftime('%H%M')
+        time = datetime.strftime('%H%M%S')
         outFile = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
 
         # ----- Testing existence of the output file ----- #
@@ -184,8 +184,8 @@ for _,row in studyCases.iterrows():
         
         if (model=="MesoNH"):
             pathmodel = cf.commonPath
-            datetime_run=dt.datetime.strptime(run,'%Y%m%d%H%M')
-            model_ech=((datetime - datetime_run).total_seconds())/60.0/15.0
+            datetime_run=dt.datetime.strptime(run,'%Y%m%d%H%M%S')
+            model_ech=((datetime - datetime_run).total_seconds())/cf.step_seconds
             ech=(str(int(model_ech))).zfill(3)
             #ech="027"
             print(ech)
@@ -193,7 +193,8 @@ for _,row in studyCases.iterrows():
             pathfick = f"{cf.outPath}/k{cf.MixedPhase}"
             [M, Tc, CC, CCI, lat,lon, X, Y, Z, time] = meso.read_mesonh(modelfile = modelfile,
                                                             microphysics = micro,
-                                                            hydrometeors_list = cf.htypes_model)
+                                                            hydrometeors_list = cf.htypes_model,
+                                                            real_case = cf.real_case)
         elif (model=="Arome") :
             model_hour = (datetime - dt.timedelta(hours=int(run))).strftime('%H:%M')
             
