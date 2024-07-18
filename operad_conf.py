@@ -24,14 +24,14 @@ n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T
 # ==== Directories / files name options 
 commonPath  = "/scratch/work/vie/CORSE/03_run/LIMAH/"
 commonFilename = "LIMAH.1.SEG01." #08:00.fa"
-outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIMAH/dpolvar/"
+outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIMAAG/dpolvar/"
 csvPath = "./study_cases/CORSE_MesoNH.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 
 # ==== Forward operator options
 singletype=False #False #True # if True: computes dpol var for each type
-step = dt.timedelta(minutes=15)
+step = dt.timedelta(minutes=60)
 step_seconds = 15*60
 save_npz    = False
 save_netcdf = True

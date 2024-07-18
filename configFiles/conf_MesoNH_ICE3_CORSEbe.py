@@ -31,8 +31,8 @@ pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 # ==== Forward operator options
 singletype=False #False #True # if True: computes dpol var for each type
-step = dt.timedelta(minutes=15)
-step_seconds = 15*60
+step = dt.timedelta(minutes=60) # time step (datetime object) chosen to compute dpol var
+step_seconds = 15*60 # nb of seconds between 2 consecutive MesoNH ncfile ()
 save_npz    = False
 save_netcdf = True
 

@@ -8,13 +8,14 @@
   This script takes 4 arguments in this order :
       1 - Arome or MesoNH
       2 - date into the yyyymmdd format or "all"
-      3 - microphysics scheme name in capital letter
+      3 - microphysics scheme name in capital letter (ICE3, ICE4, LIMA, LIMAAG)
       4 - Config file specifying directories and forward operator options 
   _________________________________________
   Examples :
    >>> ./exec_operad.sh MesoNH 20220818 ICE3 conf_MesoNH_ICE3_CORSEbe.py
    >>> ./exec_operad.sh MesoNH 20220818 LIMA conf_MesoNH_LIMA_CORSEbe.py
    >>> ./exec_operad.sh Arome 20220818 ICE3 conf_Arome_ICE3_CORSEbe.py
+   >>> ./exec_operad.sh MesoNH 20220818 LIMAAG conf_MesoNH_LIMAAG_CORSEbe.py
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)
@@ -35,12 +36,12 @@ cp ./configFiles/$4 operad_conf.py
 currentTime=`date +"%F %R"`
 
 # --- For tests -----
-#python3 -i operad.py $1 $2 $3 $4
+#python3 -i operad.py $1 $2 $3
 
 # --- For multiple times running ---
-nohup python3 -u operad.py $1 $2 $3 $4 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
+nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
 
-echo ${currentTime} $! $1 $2 $3 $4 >> process_id_historic.txt
+echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
 
 echo program output redirected to ./nohupOUT/out_$1_$2_$3.txt
 echo corresponding process id written in ./process_id_historic.txt

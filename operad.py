@@ -91,7 +91,12 @@ import operad_conf as cf
 begining_program_timer = tm.time()
 
 model = sys.argv[1]
+dateconf = sys.argv[2]
 micro = sys.argv[3]
+
+# For tests only with spyder (to comment if running with exec_operad.sh)
+#model,dateconf,micro="MesoNH","20220818","ICE3"
+#model,dateconf,micro="Arome","20220818","ICE3"
 
 if (model=="MesoNH"):
     import read_mesonh as meso
@@ -104,10 +109,10 @@ df = pd.read_csv(cf.csvPath, delimiter=";")
 time_columns = ["start_time", "end_time"]
 df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M%S"))
 
-if sys.argv[2] == "all" :
+if dateconf == "all" :
     studyCases = df
 else :
-    date  = dt.datetime.strptime(sys.argv[2], "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
+    date  = dt.datetime.strptime(dateconf, "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
     studyCases = df.loc[df['start_time'].dt.date == date]
 
 # ===== Loop over study cases
@@ -154,10 +159,10 @@ for _,row in studyCases.iterrows():
         time = datetime.strftime('%H%M%S')
         outFile = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
 
-        # ----- Testing existence of the output file ----- #
-        if Path(outFile + ".nc").exists():
-            print("netcdf file for",time,"already exists")
-            continue   
+#        # ----- Testing existence of the output file ----- #
+#        if Path(outFile + ".nc").exists():
+#            print("netcdf file for",time,"already exists")
+#            continue   
         print("-------",datetime,"-------")
         
         # ----- Reading Tmatrix tables ----- #
@@ -178,7 +183,6 @@ for _,row in studyCases.iterrows():
             print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
             
         # ----- Reading model variables ----- #
-        # return 3D model variables + coordinates
         print("Reading model variables") ; deb_timer = tm.time()  
         
         
@@ -191,8 +195,10 @@ for _,row in studyCases.iterrows():
             print(ech)
             modelfile=pathmodel+cf.commonFilename+ech+".nc"
             pathfick = f"{cf.outPath}/k{cf.MixedPhase}"
-            [M, Tc, CC, CCI, lat,lon, X, Y, Z, time] = meso.read_mesonh(modelfile = modelfile,
-                                                            microphysics = micro,
+            [M, Tc, CC, CCI, lat,lon, X, Y, Z] = meso.read_mesonh(modelfile = modelfile,
+                                                            micro = micro,
+                                                            lon_min = lon_min, lon_max = lon_max,
+                                                            lat_min = lat_min, lat_max = lat_max,
                                                             hydrometeors_list = cf.htypes_model,
                                                             real_case = cf.real_case)
         elif (model=="Arome") :
@@ -207,19 +213,19 @@ for _,row in studyCases.iterrows():
             pathfick = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
             modelfile=pathmodel+cf.commonFilename+model_hour+".fa"
             if extract_once :
-                [M, Tc, CC, CCI, Z, lon, lat] = aro.read_arome(modelfile = modelfile,
-                                                            microphysics = micro,
+                [M, Tc, CC, CCI, Z, X, Y, lon, lat] = aro.read_arome(modelfile = modelfile,
+                                                            micro = micro,
                                                             extract_once = extract_once,
-                                                            lonmin = lon_min, lonmax = lon_max,
-                                                            latmin = lat_min, latmax = lat_max,
+                                                            lon_min = lon_min, lon_max = lon_max,
+                                                            lat_min = lat_min, lat_max = lat_max,
                                                             hydrometeors_list = cf.htypes_model,
                                                             )
             else :
-                [M, Tc, CC, CCI, Z] = aro.read_arome(modelfile = modelfile,
-                                                    microphysics = micro,
+                [M, Tc, CC, CCI, Z, X, Y] = aro.read_arome(modelfile = modelfile,
+                                                    micro = micro,
                                                     extract_once = extract_once,
-                                                    lonmin = lon_min, lonmax = lon_max,
-                                                    latmin = lat_min, latmax = lat_max,
+                                                    lon_min = lon_min, lon_max = lon_max,
+                                                    lat_min = lat_min, lat_max = lat_max,
                                                     hydrometeors_list = cf.htypes_model,
                                                     )
         else:
@@ -229,10 +235,6 @@ for _,row in studyCases.iterrows():
         
         # ----- Compute radar geometry variables ----- #
         print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)") ; deb_timer = tm.time()
-        # TODO: add latlon2XY function in ope_lib
-        # else: 
-        #     X0,Y0=ope_lib.latlon2XY(cf.latrad,cf.lonrad)
-        # ----------------
         np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
 
         if (model=="Arome"):
@@ -242,14 +244,17 @@ for _,row in studyCases.iterrows():
         elif (model=="MesoNH"):
             if (cf.radarloc=="center"):
                 X0 = np.nanmean(X)
-                Y0 = np.nanmean(Y)        
-            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z, X0, Y0,
+                Y0 = np.nanmean(Y) 
+                Z0 = 0.
+            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z, X0, Y0, Z0,
                                                         cf.distmax_rad,
                                                         cf.RT,ELEVmax["rr"],
                                                         )
 
         mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, micro) # precip mask
-        [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, micro) # mixed phase parametrization
+        
+        # ------ Mixed phase parametrization -------- #
+        [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, micro) 
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
         
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
@@ -320,15 +325,10 @@ for _,row in studyCases.iterrows():
                         (Vm_t["Zhhlin"]/Vm_t["Zvvlin"])[(Vm_t["Zhhlin"]>0) & (Vm_t["Zvvlin"]>0)])
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
-                # Writing dpol var for a single hydrometeor type hydromet           
-                fick = pathfick+"k_"+model+"_"+radar_band+'_'+str(int(cf.distmax_rad/1000.))+"_ech"+time+"_"+hydromet
+                # Writing dpol var for a single hydrometeor type hydromet
+                outFileType = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}_{hydromet}"
                 
-                if (model=="Arome") :
-                    save.save_dpolvar_arome(liste_var_pol, Vm_t, Tc, Z,lat,lon,fick,datetime,cf.save_npz,cf.save_netcdf)
-                elif (model=="MesoNH") :
-                    save.save_dpolvar_mesonh(liste_var_pol, Vm_t, Tc, Z, X, Y,fick,cf.save_npz,cf.save_netcdf)
-                else:
-                    print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
+                save.save_dpolvar(M[hydromet], CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType)
                 del Vm_t
     
         for var in liste_var_calc:
@@ -344,12 +344,7 @@ for _,row in studyCases.iterrows():
         print("  --> Done in",round(tm.time() - deb_timer,2),"seconds")
         
         # ----- Save dpol var for all hydromet in netcdf and/or npz file
-        if (model=="Arome"):
-            save.save_dpolvar_arome(liste_var_pol,M, CC, CCI, Vm_k, Tc, Z,lat,lon,outFile,datetime,cf.save_npz,cf.save_netcdf)
-        elif (model=="MesoNH"):
-            save.save_dpolvar_mesonh(liste_var_pol, Vm_k, Tc, Z, X, Y,lat,lon,time,outFile,cf.save_npz,cf.save_netcdf)
-        else:
-            print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
+        save.save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
     
         del Vm_k
 
