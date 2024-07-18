@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 import numpy as np
 import xarray as xr
@@ -13,6 +14,7 @@ from netCDF4 import Dataset
 
 import epygram
 
+sys.path.insert(0, "./lib")
 import level2alt as lev2alt
 
 # ==== Functions ======
@@ -86,14 +88,13 @@ band="C"
 day="20220818"
 lat_min,lat_max,lon_min,lon_max=41.,45.,4.,11.
 
-simuList = ["Arome_oper","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
 #simuList = ["Arome_oper","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
-#simuList=["Arome_oper"]
+simuList=["Arome_oper"]
 #simuCloe = ["Arome_ICE3","Arome_LIMA","obs"]
 simuCloe =["obs"]
 simuDiag = [] #"MesoNH_Rayleigh"]
 
-timeList=["0100","0200","0300","0400","0500","0600","0700","0800","0900","1000"]
+#timeList=["0100","0200","0300","0400","0500","0600","0700","0800","0900","1000"]
 timeList=["0600"]
 
 dataDir = '/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/'
@@ -101,7 +102,7 @@ imgDir = dataDir+"IMG/"
 #dataDir = '/home/augros/DONNEES/MESONH/CORSE/'
 statDir = dataDir
 
-fileDirDict   = {'Arome_oper' : dataDir+'AROME_oper/dpolvar/',
+fileDirDict   = {'Arome_oper' : dataDir+'AROME/dpolvar/',
              'MesoNH_ICE3': dataDir+'CT1KM/dpolvar/',
                  'MesoNH_LIMA': dataDir+'LIREF/dpolvar/',
                  'MesoNH_LIMAAG': dataDir+'LIMAH/dpolvar/',
@@ -155,7 +156,7 @@ cmap=plt.get_cmap('radar');cmap.set_under('white') ; cmap.set_over('deeppink')
 altiList = [] #1000,2000] #2000] #[int(x) for x in np.arange(0,15e3,500)]
 levelList=[] #20] #[89] #,87,85,80,75,70,60,50,40,30,20,10,0]
 listVarPol = ['Zh','Zdr','Kdp'] #'zdr','kdp','rhohv'] 
-listVarPol = ['Zdr'] 
+listVarPol = ['Zh'] 
 listVarHydro = [] #['rr','ii','ss','gg','wg','vv','cc']
 
 listVarTot = listVarPol+listVarHydro

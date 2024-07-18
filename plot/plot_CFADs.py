@@ -50,7 +50,7 @@ def legend_hydrometeor(figure,h,l):
 # ==== Data path and simulations list
 dataPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/"
 
-simuList = ["obs","Arome_oper","Arome_ICE3","Arome_LIMA","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
+simuList = ["obs","Arome_oper","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"] #,"Arome_ICE3","Arome_LIMA","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
 colorDict = {"obs":"tab:gray",
              "Arome_oper":"tab:brown",
              "Arome_ICE3":"tab:orange",
@@ -67,16 +67,18 @@ colorDict = {"obs":"tab:gray",
 
 
 
-var = 'Zh' ; title = '$Z_{H}$' ; unit = 'dBZ' ; minv=0 ; maxv=50;
-#var = 'Zdr' ; title = '$Z_{dr}$' ; unit = 'dB' ; minv=0 ; maxv=2;
-var = 'Kdp' ; title = '$K_{dp}$' ; unit = 'deg/km' ; minv=0 ; maxv=1;
+var = 'zh' ; title = '$Z_{H}$' ; unit = 'dBZ' ; minv=0 ; maxv=60;
+#var = 'zdr' ; title = '$Z_{dr}$' ; unit = 'dB' ; minv=0 ; maxv=6;
+var = 'kdp' ; title = '$K_{dp}$' ; unit = 'deg/km' ; minv=0 ; maxv=4;
+#var = 'rhohv' ; title = '$rho_{hv}$' ; unit = '/' ; minv=0.9 ; maxv=1;
 # subdf = df[(df.varname==var)&(df.dataType==dataType)]
 
+threshold="40"
 
 fig, ax = plt.subplots(1,1,figsize=(8,5))
 
 for simu in simuList:
-    df = pd.read_pickle(f'{dataPath}df_for_stats_Zhsup0_{simu}.pkl')
+    df = pd.read_pickle(f'{dataPath}df_for_stats_zhsup{threshold}_{simu}.pkl')
     plot_CFAD(ax,df,var,simu,colorDict[simu])
     del df
 
@@ -91,7 +93,7 @@ ax.set_ylim(0, 12e3)
 ax.set_ylabel('Height (km)',fontsize=14)
 ax.set_xlabel(f'{title} ({unit})',fontsize=14)
 #ax.set_title(f'Distribution of {title} values over 9 study cases inside storms cores',fontsize=15,y=1.02)
-plt.savefig(dataPath+f'cfad_{var}',bbox_inches='tight',dpi=100)
+plt.savefig(dataPath+f'cfad_zhsup{threshold}_{var}',bbox_inches='tight',dpi=100)
 
 
 # ### Contenus en hydrométéores (uniquement pour les modèles)

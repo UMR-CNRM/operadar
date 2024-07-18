@@ -86,29 +86,33 @@ def singletype_mask(Mt, el, Tc, Fw, mask_precip_dist, expMmin,micro,t):
 """
 Compute radar geometry variables in model grid
 
-input: * X, Y, Z: model coordinate vectors 
+input: * X, Y, Z: model coordinate vectors + altitude
        * X0, Y0: radar location in model grid 
+       * Z0: radar altitude
        * distmax_rad: max range (km) from radar location (no need to compute simulated data after this range)
 
 output: * distmat_mod: 3D matrix in model geometry with distance to radar
         * mask_distmax
 
 """
-def compute_radargeo(X,Y,Z,X0,Y0,distmax_rad,RT,elevmax):
+def compute_radargeo(X,Y,Z,X0,Y0,Z0,distmax_rad,RT,elevmax):
 
     XX,YY=np.meshgrid(X-X0,Y-Y0)
         
-    # distmat_mod : ground distance to the radar location for each model point
-    distmat_mod=np.array([(XX**2+YY**2)**0.5]*len(Z))
-    Z=np.array([np.ones(np.shape(XX))*Z[k] for k in range(len(Z))]) 
-    mask_distmax=(distmat_mod<distmax_rad)
+    radardist=(XX**2+YY**2)**0.5 #2D array with radar distance
+                                               # for each model point
+    radardist3D=np.ones(Z.shape)
+    for level in range(Z.shape[0]):
+        radardist3D[level,:,:]=radardist
+    
+    mask_distmax=(radardist3D<distmax_rad)
     
     # radar elevation
-    tanel = Z/distmat_mod-3.*distmat_mod/(8.*RT)
+    tanel = Z/radardist3D-3.*radardist3D/(8.*RT)
     el = np.arctan(tanel)*180./math.pi
     el[el<0] = 0.
     el[el>elevmax] = elevmax
-    el[:]=0.
+    el[:,:,:]=0.
     
     return mask_distmax,el
 
