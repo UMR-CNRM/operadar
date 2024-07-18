@@ -1,0 +1,2 @@
+start_time;end_time;radar_id_list;radar_band;run_model;latmin;latmax;lonmin;lonmax;
+20220818000000;20220818120000;AJAC,COLL,NIME;C;00;41;45;4;11;

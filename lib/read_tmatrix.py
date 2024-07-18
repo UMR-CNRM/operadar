@@ -17,7 +17,6 @@ Contains routines to :
 """
 
 import numpy as np
-import operad_conf as cf
 import pandas as pd
 import math
 
@@ -32,13 +31,15 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
+def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
 
-    # Choice of the right table depending on the microphysics 		# CLOE
-    if schema_micro == "ICE3" or schema_micro == "ICE4" :		# CLOE
-        schema_micro = "ICE3"						# CLOE
-    elif schema_micro == "LIMA_SG" or schema_micro == "LIMA_AG" :	# CLOE
-        schema_micro = "LIMA"						# CLOE
+    # Choice of the right table depending on the microphysics
+    if schema_micro == "ICE3" or schema_micro == "ICE4" :
+        schema_micro = "ICE3"
+    elif schema_micro == "LIMASG" or schema_micro == "LIMAAG" or schema_micro == "LIMA" :
+        schema_micro = "LIMA"
+    elif schema_micro=="LIMT": # and cf.LIMToption=="cstmu":
+        schema_micro="LIMA"
 
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
@@ -55,12 +56,12 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
 #    elif bande=='C':
 #        LAMstr="053.2"
     
-    for t in cf.list_types_tot: 
+    for t in list_types_tot: 
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+LAMstr+'_'+t+table_ind
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
         nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
-    
-        print("reading min/step/max in : ", nomfileCoefInt)
+        
+        print("  Reading min/step/max for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
         LAMmin[t]= np.copy(df["LAMmin"])[0]
         LAMstep[t]= np.copy(df["LAMmin"])[0]
@@ -75,41 +76,35 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,table_ind):
         Fwstep[t]= np.copy(df["Fwstep"])[0]
         Fwmax[t]= np.copy(df["Fwmax"])[0]
 
-        # For M and CC: same min/step/max for all types
-        expMmin= np.copy(df["expMmin"])[0]
-        expMstep= np.copy(df["expMstep"])[0]
-        expMmax= np.copy(df["expMmax"])[0]
-        expCCmin= np.copy(df["expCCmin"])[0]
-        expCCstep= np.copy(df["expCCstep"])[0]
-        expCCmax= np.copy(df["expCCmax"])[0]
-        
-        del df
-        
-        
-        print("reading scattering coef in : ", nomfileCoefInt)
-        df = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
-        #df = pandas.read_csv(nomfileCoefInt, sep=";",names=["Tc_t", "ELEV_t", "Fw_t", "M_t", "S11carre_t", "S22carre_t", "ReS22S11_t", "ImS22S11_t", "ReS22fmS11f_t", "ImS22ft_t", "ImS11ft_t", "RRint_t"])
-        Tc_t[t] = np.copy(df['Tc'])
-        ELEV_t[t] = np.copy(df['ELEV'])
-        Fw_t[t] = np.copy(df['P3'])
-        M_t[t] = np.copy(df['M'])
-        S11carre_t[t] = np.copy(df['S11carre'])
-        S22carre_t[t] = np.copy(df['S22carre'])
-        ReS22S11_t[t] = np.copy(df['ReS22S11'])
-        ImS22S11_t[t] = np.copy(df['ImS22S11'])
-        ReS22fmS11f_t[t] = np.copy(df['ReS22fmS11f'])
-        ImS22ft_t[t] = np.copy(df['ImS22ft'])
-        ImS11ft_t[t] = np.copy(df['ImS11ft'])
-        RRint_t[t] = np.copy(df['RRint'])
-
-        del df
-    # End loop over hydromet types    
+        print("  Reading scattering coef for",t)
+        df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
+        Tc_t[t] = np.copy(df_scat['Tc'])
+        ELEV_t[t] = np.copy(df_scat['ELEV'])
+        Fw_t[t] = np.copy(df_scat['P3'])
+        M_t[t] = np.copy(df_scat['M'])
+        S11carre_t[t] = np.copy(df_scat['S11carre'])
+        S22carre_t[t] = np.copy(df_scat['S22carre'])
+        ReS22S11_t[t] = np.copy(df_scat['ReS22S11'])
+        ImS22S11_t[t] = np.copy(df_scat['ImS22S11'])
+        ReS22fmS11f_t[t] = np.copy(df_scat['ReS22fmS11f'])
+        ImS22ft_t[t] = np.copy(df_scat['ImS22ft'])
+        ImS11ft_t[t] = np.copy(df_scat['ImS11ft'])
+        RRint_t[t] = np.copy(df_scat['RRint'])
+        del df_scat
+       
+    # For M and CC: same min/step/max for all types
+    expMmin= np.copy(df["expMmin"])[0]
+    expMstep= np.copy(df["expMstep"])[0]
+    expMmax= np.copy(df["expMmax"])[0]
+    expCCmin= np.copy(df["expCCmin"])[0]
+    expCCstep= np.copy(df["expCCstep"])[0]
+    expCCmax= np.copy(df["expCCmax"])[0]
+    del df
    
-    return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, \
-    Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
-    Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, \
-    Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t, ReS22S11_t, \
-    ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t
+    return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
+    Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, \
+    S22carre_t, ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t
+
 
 def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
         
@@ -184,18 +179,18 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
                  ELEVmint, ELEVmaxt, ELEVstept,\
                  Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
                  expMmin,expMstep,expMmax,\
-                 NMOMENTS, el_temp,Tc_temp,P3, M_temp):    
+                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
                                                                
     # Find position in the T-matrix table
     [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
         Tc_temp,P3, M_temp, LAMmint, LAMmaxt,\
         LAMstept, ELEVmint, ELEVmaxt, ELEVstept, Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-        expMmin,expMstep,expMmax,NMOMENTS)
+        expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
     
-    for ind in list(range((cf.n_interpol))):
+    for ind in list(range((n_interpol))):
         MatCoef[0, ind] = S11carre_tt[kTmat[ind]]
         MatCoef[1, ind] = S22carre_tt[kTmat[ind]]
         MatCoef[2, ind] = ReS22fmS11f_tt[kTmat[ind]]
@@ -217,7 +212,7 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
 #    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
 def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
     ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
+    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings):
     
     """#LAMm = longueur d'onde radar en m (val)
        ELEV = Elevation en radians (tab)
@@ -266,42 +261,42 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
 
     #if (abs(LAM-LAMmin) < LAMstep/10):
     if (LAM<LAMmin):
-        print("Warning : LAM = ",LAM, " < LAMmin=",LAMmin)
+        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " < LAMmin=",LAMmin)
         LAM=LAMmin
     #if (abs(LAM-LAMmax) < LAMstep/10):
     if (LAM > LAMmax):
-        print("Warning : LAM = ",LAM, " > LAMmax=",LAMmax)
+        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " > LAMmax=",LAMmax)
         LAM=LAMmax
     
     if (len(ELEV[ELEV<ELEVmin])>0):
-        print("Warning: ELEV < ELEVmin: ",ELEV[ELEV<ELEVmin])
+        if shutdown_warnings == False : print("Warning: ELEV < ELEVmin: ",ELEV[ELEV<ELEVmin])
     ELEV[ELEV<ELEVmin]=ELEVmin
     
     if (len(ELEV[ELEV>ELEVmax])>0):
-        print("Warning: ELEV > ELEVmax: ",ELEV[ELEV>ELEVmax])
+        if shutdown_warnings == False : print("Warning: ELEV > ELEVmax: ",ELEV[ELEV>ELEVmax])
     ELEV[ELEV>ELEVmax]=ELEVmax
     
     if (len(Tc[Tc<Tcmin])>0):
-        print("Warning: Tc < Tcmin: ",Tc[Tc<Tcmin])
+        if shutdown_warnings == False : print("Warning: Tc < Tcmin: ",Tc[Tc<Tcmin])
     Tc[Tc<Tcmin]=Tcmin
     
     if (len(Tc[Tc>Tcmax])>0):
-        print("Warning: Tc > Tcmax: ",Tc[Tc>Tcmax])
+        if shutdown_warnings == False : print("Warning: Tc > Tcmax: ",Tc[Tc>Tcmax])
     Tc[Tc>Tcmax]=Tcmax
     
     if (len(P3[P3<P3min])>0):
-        print("Warning: P3 < P3min: ",P3[P3<P3min])
+        if shutdown_warnings == False : print("Warning: P3 < P3min: ",P3[P3<P3min])
     P3[P3<P3min]=P3min
  
     if (len(P3[P3>P3max])>0):
-        print("Warning: P3 > P3max: ",P3[P3>P3max])
+        if shutdown_warnings == False : print("Warning: P3 > P3max: ",P3[P3>P3max])
     P3[P3>P3max]=P3max
 
     if (len(expM[expM<expMmin])>0):
-        print("Warning: expM < expMmin: ",expM[expM<expMmin])
+        if shutdown_warnings == False : print("Warning: expM < expMmin: ",expM[expM<expMmin])
 
     if (len(expM[expM>expMmax])>0):
-        print("Warning: expM > expMmax: ",expM[expM>expMmax])
+        if shutdown_warnings == False : print("Warning: expM > expMmax: ",expM[expM>expMmax])
     expM[expM>expMmax]=expMmax
     
     #    condok=np.where((LAM >=LAMmin) & (LAM<=LAMmax) & (ELEV>=ELEVmin) & (ELEV<=ELEVmax) 
@@ -312,9 +307,10 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
                      & (expM >=expMmin) & (expM<=expMmax),1.,float('NaN'))
     
     
-    print("Tc isnan: ",Tc[np.isnan(condok)])
-    print("expM isnan: ",expM[np.isnan(condok)])
-    print("P3 isnan: ",P3[np.isnan(condok)])
+    if shutdown_warnings == False : 
+        print("Tc isnan: ",Tc[np.isnan(condok)])
+        print("expM isnan: ",expM[np.isnan(condok)])
+        print("P3 isnan: ",P3[np.isnan(condok)])
     
     # Looking for the location in the table of the values given as input in the 
     # function
@@ -498,7 +494,7 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
     
     ncoef=5
     nval=Mred.shape[0]
-    print("INTERPOL: nval=",nval)
+    print("  INTERPOL: nval=",nval)
     VectCoef={}
 
     #--- Interpolation linéaire ---

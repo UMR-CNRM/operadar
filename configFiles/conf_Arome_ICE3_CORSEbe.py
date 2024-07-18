@@ -11,8 +11,8 @@ import datetime as dt
 # ====  Microphysics scheme options 
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
-htypes_model=['vv','cc','rr','ii','ss','gg','hh'] # available model variables
-list_types_tot = ['rr','ii','ss','gg','wg','hh','wh']
+htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables
+list_types_tot = ['rr','ii','ss','gg','wg']
 
 # ==== Real or Ideal case
 real_case=True
@@ -22,17 +22,17 @@ MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 # ==== Directories / files name options 
-commonPath  = "/scratch/work/vie/CORSE/03_run/LIMAH/"
-commonFilename = "LIMAH.1.SEG01." #08:00.fa"
-outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/LIMAAG/dpolvar/"
-csvPath = "./study_cases/CORSE_MesoNH.csv"
+commonPath  = "/scratch/work/mandementm/EXTRACTION/20220818_T0000P/"
+commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"
+outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/AROME/dpolvar/"
+csvPath = "./study_cases/CORSE_Arome.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 
 
 # ==== Forward operator options
 singletype=False #False #True # if True: computes dpol var for each type
-step = dt.timedelta(minutes=60)
-step_seconds = 15*60
+step = dt.timedelta(hours=1)
+step_seconds = 3600.
 save_npz    = False
 save_netcdf = True
 
