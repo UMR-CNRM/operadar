@@ -22,6 +22,16 @@
 
 import numpy as np
 import math
+from pathlib import Path
+
+# ========== Create tree structure of the given output path ===================
+def create_tree_structure_outFiles(output_path):  # MODIF --> dans une fonction externe
+        output_path = Path(output_path)
+        if not output_path.exists():
+            output_path.mkdir(exist_ok=True, parents=True)
+            print ('Creating output directories :',output_path)
+        else:
+            print ('Output directories exist :',output_path) 
 
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================

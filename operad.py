@@ -138,16 +138,9 @@ for _,row in studyCases.iterrows():
         ech += cf.step
     
     # ===== Testing existence of the output directory (or creates it) ===== #
-    output_dir = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
-    if not Path(output_dir).exists():
-        try:
-            output_dir.mkdir(exist_ok=True, parents=True)
-            print ('Creating output directories :',output_dir)
-        except:    
-            print ('Error in creation of',output_dir) ; sys.exit()
-    else:
-        print ('Output directories exist :',output_dir)            
-
+    output_path = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+    ope_lib.create_tree_structure_outFiles(output_path)
+    
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
     liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
 
@@ -162,7 +155,7 @@ for _,row in studyCases.iterrows():
         
         
         time = datetime.strftime('%H:%M')
-        outFile = output_dir + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
+        outFile = output_path + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
 
 #        # ----- Testing existence of the output file ----- #
 #        if Path(outFile + ".nc").exists():
@@ -199,7 +192,7 @@ for _,row in studyCases.iterrows():
             #ech="027"
             print(ech)
             modelfile=pathmodel+cf.commonFilename+ech+".nc"
-            output_dir = f"{cf.outPath}/k{cf.MixedPhase}"
+            output_path = f"{cf.outPath}/k{cf.MixedPhase}"
             [M, Tc, CC, CCI, lat,lon, X, Y, Z] = meso.read_mesonh(modelfile = modelfile,
                                                             micro = micro,
                                                             lon_min = lon_min, lon_max = lon_max,
@@ -216,7 +209,7 @@ for _,row in studyCases.iterrows():
             # Paths
             #pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
             #pathmodel = cf.commonPath
-            #output_dir = f"{pathmodel}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+            #output_path = f"{pathmodel}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
             modelfile=cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"+cf.commonFilename+model_hour+".fa"
             if extract_once :
                 [M, Tc, CC, CCI, Z, X, Y, lon, lat] = aro.read_arome(modelfile = modelfile,
