@@ -24,7 +24,7 @@ n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T
 # ========== Directories / file's name ========= #
 # Tmatrix directory
 table_ind = "" # number of the selected Tmatrix table 
-repTmat   = "/cnrm/precip/users/augros/Programmes/TMATRIX/DPOLSIMUL"
+repTmat   = "/cnrm/precip/SAVE/davidcl/THESE/DPOLSIMUL"
 
 # Output directory
 pathTmat = repTmat+"/OUTPUT/"

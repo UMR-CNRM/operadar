@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+"""
+ *   Configuration file for operad.py depending on the microphysics scheme
+ *
+ *   Please change the name of the file accordingly :
+ *   --> conf_Arome_microphysics.py
+"""
 import datetime as dt
 
 # ==========  Model simulation options ===============
@@ -36,8 +41,8 @@ pathTmat = repTmat+"/OUTPUT/"
 # Model files paths
 commonPath  = f"/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/"
 commonFilename = "historic.arome.franmg-01km30+00"
-outPath = f"/cnrm/precip/SAVE/davidcl/THESE/operadar_files_test"
-csvPath = "/cnrm/precip/SAVE/davidcl/THESE/testCase.csv"
+outPath = f"/cnrm/precip/SAVE/davidcl/THESE/operadar_files"
+csvPath = "/cnrm/precip/SAVE/davidcl/THESE/studyCases_from_ods.csv"
 
 # ========== Constants =======================
 RT = 6371.229*10**3 # Earth radius
