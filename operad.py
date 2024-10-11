@@ -66,6 +66,8 @@ The modifications are recorded via git:
 
 # External modules
 import sys
+sys.path.append('/cnrm/precip/SAVE/davidcl/utilPythonFunc/')
+from get_data_paths import get_vortex_experiments
 import math
 import time as tm
 import numpy as np
@@ -79,7 +81,6 @@ import read_mesonh as meso
 import read_tmatrix as read_tmat
 import save_dpolvar as save
 from pathlib import Path
-from vortex_experiments import set_vortex_experiments
 
 
 # ===== Configuration files ===== #
@@ -94,25 +95,26 @@ model = sys.argv[1]
 micro = sys.argv[3]
 
 df = pd.read_csv(settings.csvPath, delimiter=";")
-time_columns = ["start_time", "end_time"]
-df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y%m%d%H%M"))
+time_columns = ["model_start_time", "model_end_time"]
+df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y-%m-%d %H:%M"))
+subdf = df[(df.studied == 'lima49t')&(df.olive == 'ok')&(df.operad == 'todo')]
 
 if sys.argv[2] == "all" :
-    studyCases = df
+    studyCases = subdf
 else :
     date  = dt.datetime.strptime(sys.argv[2], "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
-    studyCases = df.loc[df['start_time'].dt.date == date]
+    studyCases = subdf.loc[subdf['model_start_time'].dt.date == date]
 
-for _,row in studyCases.iterrows():
-    run  = str(row.run_arome).zfill(2)
-    deb = row.start_time
-    fin = row.end_time
+for idx,row in studyCases.iterrows():
+    run  = int(row.model_run)
+    deb = row.model_start_time
+    fin = row.model_end_time
     radar_ids = "-".join([str(x) for x in row.radar_id_list.strip().split(',')])
     radar_band = str(row.radar_band)
-    
+    domain = [float(x) for x in row.model_domain.strip().split(',')]
     # Zoom
-    lat_min = row.latmin ; lat_max = row.latmax
-    lon_min = row.lonmin ; lon_max = row.lonmax
+    lat_min = domain[2] ; lat_max = domain[3]
+    lon_min = domain[0] ; lon_max = domain[1]
 
     # Time list
     datetimelist=[]
@@ -122,24 +124,24 @@ for _,row in studyCases.iterrows():
         ech += settings.step
 
     # Vortex experiment name
-    expeOLIVE = set_vortex_experiments(run,micro)
+    expeOLIVE = get_vortex_experiments(row,micro)
 
     # Paths
-    pathmodel = settings.commonPath_fa + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
-    pathfick = f"{settings.outPath}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
-
-
+    pathmodel = settings.commonPath_fa + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{str(run).zfill(2)}00P/forecast/"
+    pathfick1 = f"{settings.outPath}/{deb.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+    pathfick2 = f"{settings.outPath}/{fin.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+    
     # ===== Testing existence of the output directory (or creates it) ===== #
-    output_dir = Path(pathfick)
-    if not output_dir.exists():
-        try:
-            output_dir.mkdir(exist_ok=True, parents=True)
-            print ('Creating output directories :',output_dir)
-        except:    
-            print ('Error in creation of',output_dir) ; sys.exit()
-    else:
-        print ('Output directories exist :',output_dir)            
-
+    for pathfick in [pathfick1,pathfick2]:
+        output_dir = Path(pathfick)
+        if not output_dir.exists():
+            try:
+                output_dir.mkdir(exist_ok=True, parents=True)
+                print ('Creating output directories :',output_dir)
+            except:    
+                print ('Error in creation of',output_dir) ; sys.exit()
+        else:
+            print ('Output directories exist :',output_dir)            
 
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
     liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
@@ -148,7 +150,8 @@ for _,row in studyCases.iterrows():
     # ===== Loop over timesteps ===== #
     read_tmatrix = True
     extract_once = True
-    for datetime in datetimelist: 
+    for datetime in datetimelist:
+        pathfick = f"{settings.outPath}/{datetime.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
         time = datetime.strftime('%H:%M')
         outFile = pathfick + f"/k_{model}_{radar_band}_{str(int(settings.distmax_rad/1000.))}_ech{time}_2"
 
@@ -189,12 +192,13 @@ for _,row in studyCases.iterrows():
         # ----- Reading model variables ----- #
         # return 3D model variables + coordinates
         print("Reading model variables") ; deb_timer = tm.time()  
-        model_hour = (datetime - dt.timedelta(hours=int(run))).strftime('%H:%M')
-        
+        dayDelta = (datetime.date() - deb.date()).days
+        model_hour = datetime.hour + 24*dayDelta - run
+        model_time = str(model_hour).zfill(2)+datetime.strftime(':%M')
         if (model=="MesoNH"):
             [M, Tc, CC, CCI, X, Y, Z] = meso.read_mesonh(micro,time) 
         elif (model=="Arome") :
-            modelfile=pathmodel+settings.commonFilename+model_hour+".fa"
+            modelfile=pathmodel + settings.commonFilename + model_time+".fa"
             if extract_once :
                 [M, Tc, CC, CCI, Z, lon, lat] = aro.read_arome(modelfile = modelfile,
                                                             microphysics = micro,
@@ -341,6 +345,10 @@ for _,row in studyCases.iterrows():
             print("model = "+model," => the save dpolvar option is available for Arome or MesoNH only")
     
         del Vm_k
+        
+    df.loc[idx,'operad'] = 'ok'
+    df.loc[idx,f'zdrCol_{micro}'] = 'todo'
+    df.to_csv(f'/cnrm/precip/users/davidcl/studyCases_operad_{micro}.csv',sep=';',index=False,date_format='%Y-%m-%d %H:%M')
 
 end_program_timer = tm.time()
 elapsed_time = end_program_timer - begining_program_timer
