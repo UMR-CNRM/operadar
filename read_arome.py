@@ -68,7 +68,7 @@ def read_arome(modelfile: str,
     # ======== Hydrometeor contents and temperature
     [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15
-    [CC , CCI] = arolib.get_concentrations(ficsubdo, p,microphysics,hydrometeors_list)
+    [CC , CCI] = arolib.get_concentrations(ficsubdo, p,microphysics,hydrometeors_list,M)
     
     # ========= Altitude z of each level
     Z = arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)

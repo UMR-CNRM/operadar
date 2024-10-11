@@ -8,7 +8,7 @@
       3 - microphysics scheme name in capital letter 
   _________________________________________
   Example :
-   >>> ./exec_operad.sh AROME 20220522 ICE4
+   >>> ./exec_operad.sh Arome 20220522 ICE4
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)
@@ -26,9 +26,9 @@ fi
 
 cp ./configFiles/conf_$1_$3.py operad_conf.py
 
-currentTime=`date +"%F %R"`
+currentTime=`date +"%F %T"`
 
-nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$2_$3.txt 2> nohupOUT/err_$2_$3.txt &
+nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$2_$3.txt 2>&1 &
 
 echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
 

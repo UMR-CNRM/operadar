@@ -1,6 +1,6 @@
 import numpy as np
 import epygram
-import multiprocessing as mp
+import math
 import time as tm
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
@@ -89,11 +89,15 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
 
 
 # ========== Hydrometeor concentrations =============================
-def get_concentrations(ficsubdo, p, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800.):
+def get_concentrations(ficsubdo, p, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800.,hydrometeor_content=None):
 
     cc_rain = np.empty(p.shape)
     cc_ice  = iceCC_cst*np.ones(p.shape)
-    
+    if microphysics == "ICE3":
+        #print(hydrometeor_content["rr"])
+        cc_rain = 8e6 * SlopeParameterICE3(M= hydrometeor_content["rr"],
+                                           alpha= 1, nu=1, a=524, b=3, C=8e6, X=-1,
+                                           ) # A TESTER
     if microphysics[0:4] == "LIMA":
         extract_rr_cc = ficsubdo.readfields('S0*N_RAIN')
         extract_ii_cc = ficsubdo.readfields('S0*N_ICE')
@@ -114,4 +118,15 @@ def get_altitude(A, B, T, p, pdep, Psurf, phis, R):
     z = epygram.profiles.hybridP2altitude(A, B, R, T, Psurf, 'geometric', Pdep=pdep, Phi_surf=phis.getdata(), Ptop=np.zeros(Psurf.shape))
 
     return z
-#===============================================================================
+#===========Slope parameter (only for ICE3)==========================================
+"""
+   INPUTS :
+    - M          = hydrometeor content
+    - nu & alpha = dispersion parameters
+    - a & b      = prognostic variables
+    - C          = densite volumique de particules ?
+    - X
+"""
+def SlopeParameterICE3(M,alpha,nu,a,b,C,X):
+    lambda_hydrometeor =((M*math.gamma(nu))/(a*C*math.gamma(nu+b/alpha)))**(1.0/(X-b))      
+    return lambda_hydrometeor 
