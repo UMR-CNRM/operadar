@@ -20,9 +20,12 @@
 
 #===========================================================================
 
-import numpy as np
 import math
+import numpy as np
+import pandas as pd
+import datetime as dt
 from pathlib import Path
+
 
 # ========== Create tree structure of the given output path ===================
 def create_tree_structure_outFiles(output_path):  # MODIF --> dans une fonction externe
@@ -33,6 +36,15 @@ def create_tree_structure_outFiles(output_path):  # MODIF --> dans une fonction 
         else:
             print ('Output directories exist :',output_path) 
 
+
+# ========== Create datetime list for the internal loop ===================
+def create_datetime_list(debut,fin,pas):    
+    datetimelist=[]
+    ech = debut
+    while ech <= fin :
+        datetimelist += [ech]
+        ech += pas
+    return datetimelist
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
 def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fwmin, Fwmax, Fwstep):
