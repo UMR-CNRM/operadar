@@ -80,6 +80,7 @@ from vortex_experiments import get_vortex_experiments
 import operad_lib as ope_lib
 import read_tmatrix as read_tmat
 import save_dpolvar as save
+import csv_lib as csv_lib
 
 
 # ===== Configuration files ===== #
@@ -104,50 +105,57 @@ elif (model=="Arome"):
     import read_arome as aro
 
 
-# ===== Reading dates in study cases csv file 
-df = pd.read_csv(cf.csvPath, delimiter=";")
-time_columns = ["model_start_time", "model_end_time"]
-df[time_columns] = df[time_columns].apply(lambda x: pd.to_datetime(x, format="%Y-%m-%d %H:%M"))
+# ===== Reading dates in case(s) study csv file
+studyCases = csv_lib.read_csv_file(csv_file_path=cf.csvPath,
+                                   which_date=dateconf,
+                                   time_columns_name=cf.csv_time_columns,
+                                   csv_datetime_format=cf.csv_datetime_format,
+                                   csv_delimiter=cf.csv_delimiter,
+                                   )
 
-if dateconf == "all" :
-    studyCases = df
-else :
-    date  = dt.datetime.strptime(dateconf, "%Y%m%d").date() # date à laisser si plusieurs cas pour une même date , plutot pas mettre la date + l'heure de début ?
-    studyCases = df.loc[df['model_start_time'].dt.date == date]
 
-# ===== Loop over study cases
-for _,row in studyCases.iterrows():
-    run  = int(row.model_run)
-    deb = row.model_start_time
-    fin = row.model_end_time
-    radar_ids = "-".join([str(x) for x in row.radar_id_list.strip().split(',')])
-    radar_band = str(row.radar_band)
+# ===== Loop over study cases ===== #
+previous_radar_band = None
+
+for _,csv_row in studyCases.iterrows():
+    deb,fin,run,radar_band,output_path = csv_lib.extract_csv_info(csv_row=csv_row,
+                                                                  time_columns_name=cf.csv_time_columns,
+                                                                  model_run_column_name=cf.csv_model_run_column,
+                                                                  microphysics_scheme=micro,
+                                                                  )
+    lat_min,lat_max,lon_min,lon_max = csv_lib.extract_csv_domain(csv_row=csv_row,
+                                                                 domain_columns_name=cf.csv_domain_columns)
     
-    # Zoom
-    domain = [float(x) for x in row.model_domain.strip().split(',')]
-    lat_min = domain[2] ; lat_max = domain[3]
-    lon_min = domain[0] ; lon_max = domain[1]
-    #lat_min = row.latmin ; lat_max = row.latmax
-    #lon_min = row.lonmin ; lon_max = row.lonmax
-
-    # Time list
-    datetimelist=[]
-    ech = deb
-    while ech <= fin :
-        datetimelist += [ech]
-        ech += cf.step
-    
-    # ===== Testing existence of the output directory (or creates it) ===== #
-    output_path = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+    # ----- Testing existence of the output directory (or creates it) ----- #
     ope_lib.create_tree_structure_outFiles(output_path)
+    # ----- Create the datetime list for the following loop ----- #
+    datetimelist = ope_lib.create_datetime_list(deb,fin,cf.step)
     
-    liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
-    liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
+    
+    liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"] # A SUPPRIMER ?
+    liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"] # REMPLACER PAR LA VALEUR DANS LE FICHIER DE CONFIG ?
 
-
-    # ===== Loop over timesteps ===== #
-    read_tmatrix = True
+    # ----- Reading Tmatrix tables ----- #
+    if radar_band != previous_radar_band :
+        print(f"Reading Tmatrix tables for {micro} in {radar_band} band")
+        deb_timer = tm.time()
+        [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,       # TRANSFORMER EN DICT ?
+        Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
+        expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
+        Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
+        ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
+                                                                                                        radar_band,
+                                                                                                        micro,
+                                                                                                        cf.list_types_tot)
+        LAM = LAMmin["rr"]/1000.
+        previous_radar_band = radar_band
+        print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
+    else :
+        print(f"Tmatrix tables for {micro} in {radar_band} band already in memory")
+        
+    # ----- Loop over timesteps ----- #
     extract_once = True
+        
     for datetime in datetimelist: 
         #day=datetime.strftime('%Y%m%d')
         #time = datetime.strftime('%H%M%S')
@@ -163,27 +171,19 @@ for _,row in studyCases.iterrows():
 #            continue   
         print("-------",datetime,"-------")
         
-        # ----- Reading Tmatrix tables ----- #
-        if read_tmatrix :
-            print("Reading Tmatrix tables")
-            deb_timer = tm.time()
-   
-            [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, 
-            Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
-            expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
-            Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
-            ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
-                                                                                                          radar_band,
-                                                                                                          micro,
-                                                                                                          cf.list_types_tot)
-            LAM = LAMmin["rr"]/1000.
-            read_tmatrix = False
-            print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
             
         # ----- Reading model variables ----- #
         print("Reading model variables") ; deb_timer = tm.time()  
         
-        
+def read_model_variables(model):
+    if model == "MesoNH":
+        print()
+    elif model == "Arome":
+        print()
+    else :
+        print('Not a valid model name. Can be either "MesoNH" or "Arome"')
+        break
+       
         if (model=="MesoNH"):
             pathmodel = cf.commonPath
             datetime_run=dt.datetime.strptime(run,'%Y%m%d%H%M%S')
@@ -204,7 +204,7 @@ for _,row in studyCases.iterrows():
             
             # Vortex experiment name
             #expeOLIVE = set_vortex_experiments(run,micro)
-            expeOLIVE = get_vortex_experiments(row,micro)
+            expeOLIVE = get_vortex_experiments(csv_row,micro)
 
             # Paths
             #pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
