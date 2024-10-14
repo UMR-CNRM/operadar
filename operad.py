@@ -74,7 +74,6 @@ import datetime as dt
 
 from pathlib import Path
 sys.path.insert(0, "./lib")
-from vortex_experiments import get_vortex_experiments
 
 # 0perad modules
 import operad_lib as ope_lib
@@ -98,11 +97,6 @@ micro = sys.argv[3]
 # For tests only with spyder (to comment if running with exec_operad.sh)
 #model,dateconf,micro="MesoNH","20220818","ICE3"
 #model,dateconf,micro="Arome","20220818","ICE3"
-
-if (model=="MesoNH"):
-    import read_mesonh as meso
-elif (model=="Arome"):
-    import read_arome as aro
 
 
 # ===== Reading dates in case(s) study csv file
@@ -155,81 +149,28 @@ for _,csv_row in studyCases.iterrows():
         
     # ----- Loop over timesteps ----- #
     extract_once = True
-        
     for datetime in datetimelist: 
-        #day=datetime.strftime('%Y%m%d')
-        #time = datetime.strftime('%H%M%S')
-        #outFile = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
-        
-        
-        time = datetime.strftime('%H:%M')
-        outFile = output_path + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{time}_2"
+        outFile = ope_lib.define_out_filepath(datetime,output_path,micro,model,radar_band)
+        model_file_path= ope_lib.define_model_path(model,datetime,run,csv_row,micro,deb)
 
-#        # ----- Testing existence of the output file ----- #
-#        if Path(outFile + ".nc").exists():
-#            print("netcdf file for",time,"already exists")
-#            continue   
+        # ----- Testing existence of the output file ----- #
+        if Path(outFile).exists():
+            print("netcdf file for",datetime.strftime('%H:%M'),"already exists")
+            continue   
+        
         print("-------",datetime,"-------")
         
-            
         # ----- Reading model variables ----- #
         print("Reading model variables") ; deb_timer = tm.time()  
-        
-def read_model_variables(model):
-    if model == "MesoNH":
-        print()
-    elif model == "Arome":
-        print()
-    else :
-        print('Not a valid model name. Can be either "MesoNH" or "Arome"')
-        break
-       
-        if (model=="MesoNH"):
-            pathmodel = cf.commonPath
-            datetime_run=dt.datetime.strptime(run,'%Y%m%d%H%M%S')
-            model_ech=((datetime - datetime_run).total_seconds())/cf.step_seconds
-            ech=(str(int(model_ech))).zfill(3)
-            #ech="027"
-            print(ech)
-            modelfile=pathmodel+cf.commonFilename+ech+".nc"
-            output_path = f"{cf.outPath}/k{cf.MixedPhase}"
-            [M, Tc, CC, CCI, lat,lon, X, Y, Z] = meso.read_mesonh(modelfile = modelfile,
-                                                            micro = micro,
-                                                            lon_min = lon_min, lon_max = lon_max,
-                                                            lat_min = lat_min, lat_max = lat_max,
-                                                            hydrometeors_list = cf.htypes_model,
-                                                            real_case = cf.real_case)
-        elif (model=="Arome") :
-            model_hour = (datetime - dt.timedelta(hours=int(run))).strftime('%H:%M')
-            
-            # Vortex experiment name
-            #expeOLIVE = set_vortex_experiments(run,micro)
-            expeOLIVE = get_vortex_experiments(csv_row,micro)
-
-            # Paths
-            #pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
-            #pathmodel = cf.commonPath
-            #output_path = f"{pathmodel}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
-            modelfile=cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"+cf.commonFilename+model_hour+".fa"
-            if extract_once :
-                [M, Tc, CC, CCI, Z, X, Y, lon, lat] = aro.read_arome(modelfile = modelfile,
-                                                            micro = micro,
-                                                            extract_once = extract_once,
-                                                            lon_min = lon_min, lon_max = lon_max,
-                                                            lat_min = lat_min, lat_max = lat_max,
-                                                            hydrometeors_list = cf.htypes_model,
-                                                            )
-            else :
-                [M, Tc, CC, CCI, Z, X, Y] = aro.read_arome(modelfile = modelfile,
-                                                    micro = micro,
-                                                    extract_once = extract_once,
-                                                    lon_min = lon_min, lon_max = lon_max,
-                                                    lat_min = lat_min, lat_max = lat_max,
-                                                    hydrometeors_list = cf.htypes_model,
-                                                    )
-        else:
-            print("model = "+model+" => needs to be either Arome or MesoNH")
-        extract_once = False    
+        if extract_once :
+            [M, Tc, CC, CCI, lat,lon, X, Y, Z] = ope_lib.read_model_variables(model,datetime,run,micro,
+                                                                              lon_min,lon_max,lat_min,lat_max,
+                                                                              model_file_path,extract_once)
+            extract_once = False
+        else :
+            [M, Tc, CC, CCI, _,_, X, Y, Z] = ope_lib.read_model_variables(model,datetime,run,micro,
+                                                                              lon_min,lon_max,lat_min,lat_max,
+                                                                              model_file_path,extract_once)
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
         
         # ----- Compute radar geometry variables ----- #
@@ -325,7 +266,7 @@ def read_model_variables(model):
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
                 # Writing dpol var for a single hydrometeor type hydromet
-                outFileType = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}_{hydromet}"
+                outFileType = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d%H%M%S')}_{hydromet}"
                 
                 save.save_dpolvar(M[hydromet], CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType)
                 del Vm_t

@@ -25,6 +25,8 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 from pathlib import Path
+import operad_conf as cf
+from vortex_experiments import get_vortex_experiments
 
 
 # ========== Create tree structure of the given output path ===================
@@ -45,6 +47,59 @@ def create_datetime_list(debut,fin,pas):
         datetimelist += [ech]
         ech += pas
     return datetimelist
+
+
+# ========== Define paths ===================
+def define_out_filepath(datetime,output_path,micro,model,radar_band):
+            if model == "MesoNH":
+                out_filepath = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d%H%M%S')}"
+            elif model == "Arome":
+                out_filepath = output_path + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{datetime.strftime('%H:%M')}_2"
+            return out_filepath
+
+def define_model_path(model,datetime,run,csv_row,micro,deb):
+    if model == "MesoNH":
+        if run == None : 
+            model_ech=(datetime.total_seconds())/cf.step_seconds
+        else :
+            model_ech=((datetime - dt.datetime.strptime(run,'%Y%m%d%H%M%S')).total_seconds())/cf.step_seconds
+        model_path=cf.commonPath+cf.commonFilename+(str(int(model_ech))).zfill(3)+".nc"
+    elif model == "Arome":
+        import read_arome as aro
+        model_ech = (datetime - dt.timedelta(hours=int(run))).strftime('%H:%M')
+        # Vortex experiment name
+        if cf.arome_experience_name == None :
+            expeOLIVE = get_vortex_experiments(csv_row,micro)
+        else :
+            expeOLIVE = cf.arome_experience_name
+        model_path=cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"+cf.commonFilename+model_ech+".fa" 
+    return model_path        
+        
+        
+# ========== Wrap the extraction of model variables ===================
+def read_model_variables(model,datetime,run,micro,lonmin,lonmax,latmin,latmax,filepath,extract_once):
+    if model == "MesoNH":
+        import read_mesonh as meso
+        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = meso.read_mesonh(modelfile = filepath,
+                                                        micro = micro,
+                                                        lon_min = lonmin, lon_max = lonmax,
+                                                        lat_min = latmin, lat_max = latmax,
+                                                        hydrometeors_list = cf.htypes_model,
+                                                        real_case = cf.real_case)
+    elif model == "Arome":
+        import read_arome as aro
+        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = aro.read_arome(modelfile = filepath,
+                                                    micro = micro,
+                                                    extract_once = extract_once,
+                                                    lon_min = lonmin, lon_max = lonmax,
+                                                    lat_min = latmin, lat_max = latmax,
+                                                    hydrometeors_list = cf.htypes_model,
+                                                    )
+    else :
+        print('Not a valid model name. Can be either "MesoNH" or "Arome"')
+    
+    return [M, Tc, CC, CCI, lat,lon, X, Y, Z]
+
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
 def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fwmin, Fwmax, Fwstep):
