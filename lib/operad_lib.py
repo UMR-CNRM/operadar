@@ -172,24 +172,28 @@ output: * distmat_mod: 3D matrix in model geometry with distance to radar
         * mask_distmax
 
 """
-def compute_radargeo(X,Y,Z,X0,Y0,Z0,distmax_rad,RT,elevmax):
-
-    XX,YY=np.meshgrid(X-X0,Y-Y0)
+def compute_radargeo(model,X,Y,Z,elevmax):
+    if (cf.radarloc=="center"):
+        X0 = np.nanmean(X)
+        Y0 = np.nanmean(Y) 
+        Z0 = 0.  
+    
+        XX,YY=np.meshgrid(X-X0,Y-Y0)
+            
+        radardist=(XX**2+YY**2)**0.5 #2D array with radar distance
+                                                # for each model point
+        radardist3D=np.ones(Z.shape)
+        for level in range(Z.shape[0]):
+            radardist3D[level,:,:]=radardist
         
-    radardist=(XX**2+YY**2)**0.5 #2D array with radar distance
-                                               # for each model point
-    radardist3D=np.ones(Z.shape)
-    for level in range(Z.shape[0]):
-        radardist3D[level,:,:]=radardist
-    
-    mask_distmax=(radardist3D<distmax_rad)
-    
-    # radar elevation
-    tanel = Z/radardist3D-3.*radardist3D/(8.*RT)
-    el = np.arctan(tanel)*180./math.pi
-    el[el<0] = 0.
-    el[el>elevmax] = elevmax
-    el[:,:,:]=0.
+        mask_distmax=(radardist3D<cf.distmax_rad)
+        
+        # radar elevation
+        tanel = Z/radardist3D-3.*radardist3D/(8.*cf.RT)
+        el = np.arctan(tanel)*180./math.pi
+        el[el<0] = 0.
+        el[el>elevmax] = elevmax
+        el[:,:,:]=0.
     
     return mask_distmax,el
 
@@ -217,7 +221,7 @@ and compute water fraction for wet species
 * input: M, mixed phase option (Fwpos, Tpos, Fwposg)
  *output: Fw 3D, M with addition of wet hydrometeor types wg, wh 
 """
-def compute_mixedphase(M,MixedPhase,expMmin,micro):
+def compute_mixedphase(M,Tc,MixedPhase,expMmin,micro):
     
     # Bright band (or mixed phase) mask 
    # Mtot=np.copy(M['rr'])
