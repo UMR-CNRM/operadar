@@ -122,6 +122,10 @@ for _,csv_row in studyCases.iterrows():
     
     # ----- Testing existence of the output directory (or creates it) ----- #
     ope_lib.create_tree_structure_outFiles(output_path)
+    if cf.singletype :
+        outpath_singleType = f"{cf.outPath}/{datetime.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_single_type_hydrometeor"
+        ope_lib.create_tree_structure_outFiles(outpath_singleType)
+        
     # ----- Create the datetime list for the following loop ----- #
     datetimelist = ope_lib.create_datetime_list(deb,fin,cf.step)
     
@@ -174,29 +178,20 @@ for _,csv_row in studyCases.iterrows():
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
         
         # ----- Compute radar geometry variables ----- #
-        print("Compute radar geometry: elevation (el) and distance mask (mask_distmax)") ; deb_timer = tm.time()
+        print("Compute radar geometry and mixed phase") ; deb_timer = tm.time()
         np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
+        el = np.zeros(Tc.shape)
+        mask_distmax = (el >= 0.)
+        if (model=="MesoNH"):
+            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z,ELEVmax["rr"])
 
-        if (model=="Arome"):
-            el = np.zeros(Tc.shape)
-            mask_distmax = (el >= 0.)
-        
-        elif (model=="MesoNH"):
-            if (cf.radarloc=="center"):
-                X0 = np.nanmean(X)
-                Y0 = np.nanmean(Y) 
-                Z0 = 0.
-            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z, X0, Y0, Z0,
-                                                        cf.distmax_rad,
-                                                        cf.RT,ELEVmax["rr"],
-                                                        )
-
-        mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, micro) # precip mask
+        mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, micro)
         
         # ------ Mixed phase parametrization -------- #
-        [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, micro) 
+        [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, expMmin, micro) 
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
-        
+ 
+        ############################### REPRENDRE LA ###############################   
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
         Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
@@ -266,8 +261,8 @@ for _,csv_row in studyCases.iterrows():
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
                 # Writing dpol var for a single hydrometeor type hydromet
-                outFileType = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d%H%M%S')}_{hydromet}"                
-                save.save_dpolvar(M[hydromet], CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType)
+                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}"         
+                save.save_dpolvar({hydromet:M[hydromet]}, CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType,singleType=True)
                 del Vm_t
     
         for var in liste_var_calc:
