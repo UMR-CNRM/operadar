@@ -39,7 +39,7 @@ currentTime=`date +"%F %R"`
 #python3 -i operad.py $1 $2 $3
 
 # --- For multiple times running ---
-nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
+nohup python3 -u operad.py $1 $2 $3 > nohupOUT/out_$1_$2_$3.txt 2>&1  &
 
 echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
 

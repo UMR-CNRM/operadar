@@ -7,11 +7,11 @@ import datetime as dt
 LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation # but a constant mu is applied in the PSD  for the dpol variables calculation 
 CCIconst=800.
 htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables
-list_types_tot = ['rr','ii','ss','gg','wg']
+list_types_tot = ['rr','ii','ss','gg','wg','cc']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
  
-singletype=False #False #True # if True: computes dpol var for each type
+singletype=True #False #True # if True: computes dpol var for each type
 
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
