@@ -84,8 +84,8 @@ def read_arome(modelfile: str,
     ficA.close()
     ficsubdo.close()
     
-    if extract_once : return M, Tc, CC, CCI, Z, X, Y, lon, lat
-    else : return M, Tc, CC, CCI, Z, X, Y
+    if extract_once : return M, Tc, CC, CCI, lat, lon, X, Y, Z
+    else : return M, Tc, CC, CCI, None, None, X, Y, Z
 
 # =============================================================================
 

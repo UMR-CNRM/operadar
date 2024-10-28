@@ -20,6 +20,8 @@ output: file saved
 def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile):
     
     # M dict formatting for dataset
+    print(M)
+    print(M.shape)
     hydromet_list = list(M.keys())
     contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg to g/kg
     
