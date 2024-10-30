@@ -123,7 +123,7 @@ for _,csv_row in studyCases.iterrows():
     # ----- Testing existence of the output directory (or creates it) ----- #
     ope_lib.create_tree_structure_outFiles(output_path)
     if cf.singletype :
-        outpath_singleType = f"{cf.outPath}/{datetime.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_single_type_hydrometeor"
+        outpath_singleType = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{str(run).zfill(2)}Z_{micro}_single_type_hydrometeor"
         ope_lib.create_tree_structure_outFiles(outpath_singleType)
         
     # ----- Create the datetime list for the following loop ----- #
@@ -158,7 +158,7 @@ for _,csv_row in studyCases.iterrows():
         model_file_path= ope_lib.define_model_path(model,datetime,run,csv_row,micro,deb)
 
         # ----- Testing existence of the output file ----- #
-        if Path(outFile).exists():
+        if Path(outFile).exists() and (cf.singletype == False) :
             print("netcdf file for",datetime.strftime('%H:%M'),"already exists")
             continue   
         
@@ -190,8 +190,7 @@ for _,csv_row in studyCases.iterrows():
         # ------ Mixed phase parametrization -------- #
         [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, expMmin, micro) 
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
- 
-        ############################### REPRENDRE LA ###############################   
+    
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
         Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
@@ -278,7 +277,8 @@ for _,csv_row in studyCases.iterrows():
         print("  --> Done in",round(tm.time() - deb_timer,2),"seconds")
         
         # ----- Save dpol var for all hydromet in netcdf and/or npz file
-        save.save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
+        if not Path(outFile).exists():
+            save.save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
     
         del Vm_k
 
