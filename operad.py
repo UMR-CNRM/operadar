@@ -198,8 +198,13 @@ for _,csv_row in studyCases.iterrows():
         print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot) ; deb_timer = tm.time()
         for hydromet in cf.list_types_tot:
             if (cf.singletype):
+                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}"         
                 Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
+                if Path(outFile+".nc").exists() and Path(outFileType+".nc").exists() :
+                    print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydromet,"already exist")
+                    continue   
+        
             # Compute NMOMENTS
             NMOMENTS = ope_lib.compute_nmoments(micro,hydromet)
             
@@ -260,7 +265,6 @@ for _,csv_row in studyCases.iterrows():
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
                 # Writing dpol var for a single hydrometeor type hydromet
-                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}"         
                 save.save_dpolvar({hydromet:M[hydromet]}, CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType,singleType=True)
                 del Vm_t
     

@@ -44,8 +44,8 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile,singleTy
                      )
         
     ds=xr.Dataset(data_vars = toSave,
-                  coords=dict(y   = (["y"], Y.astype('f4')),
-                              x   = (["x"], X.astype('f4')),
+                  coords=dict(y   = (["y"],np.arange(Tc.shape[1]).astype('i4')),# Y.astype('f4')),
+                              x   = (["x"],np.arange(Tc.shape[2]).astype('i4')),# X.astype('f4')),
                               lon = (["y","x"], lon.astype('f4')),
                               lat = (["y","x"], lat.astype('f4')),
                               level=(["level"], np.arange(Z.shape[0]).astype('i4')),
@@ -53,6 +53,7 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile,singleTy
                               time = (datetime),
                               #Radloc = (["radpos"],Radpos),
                             ),
+                  attrs=dict(horizontal_resolution="1.3 km"),
                   )    
     ds.to_netcdf(outfile+".nc")
     ds.close()
