@@ -52,9 +52,9 @@ def create_datetime_list(debut,fin,pas):
 # ========== Define paths ===================
 def define_out_filepath(datetime,output_path,micro,model,radar_band):
             if model == "MesoNH":
-                out_filepath = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d%H%M%S')}"
+                out_filepath = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d%H%M%S')}.nc"
             elif model == "Arome":
-                out_filepath = output_path + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{datetime.strftime('%H:%M')}_2"
+                out_filepath = output_path + f"/k_{model}_{radar_band}_{str(int(cf.distmax_rad/1000.))}_ech{datetime.strftime('%H:%M')}_2.nc"
             return out_filepath
 
 def define_model_path(model,datetime,run,csv_row,micro,deb):

@@ -55,10 +55,10 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile,singleTy
                             ),
                   attrs=dict(horizontal_resolution="1.3 km"),
                   )    
-    ds.to_netcdf(outfile+".nc")
+    ds.to_netcdf(outfile)
     ds.close()
     del ds
-    print("Saving model and dpol variables in: ",outfile+".nc")
+    print("Saving model and dpol variables in: ",outfile)
 
     
     # # =========== Plot Zh at first level to test (level 2 = 10 m in MesoNH)=======
