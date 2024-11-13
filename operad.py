@@ -12,57 +12,13 @@ calculation of dpol radar variables for each model grid point
     * the scattering coefficients tables (output files of Tmatrix) recorded for
     a range of T, M, CC (if 2 moments) 
 - OUTPUT : 
-    * netcdf or .npz file with modele points i,j,k and dpol var Zh, Zdr, Kdp, Rhohv 
+    * netcdf file with modele points i,j,k and dpol var Zh, Zdr, Kdp, Rhohv 
     
 The modifications are recorded via git:
     git status (to see the modified and not recorded files)
     git log (for the historic of all modifications)
     git gui (visual tool for git)
 """
-
-#===================================================================================
-# C. Augros 12/05/2020
-# - selection of Tmat version using repTmat
-# - new variables: CCI, mu for LIMT, Dv
-# - new functions to calculate Dm and SlopeParameter for LIMT :
-# MeanMassDiameterLIMT SlopeparameterLIMT in plot_MesoNH_bib.py
-# - 2 options for mixed phase: Tpos or Fwpos
-
-
-# C. Augros 20/05/2020
-# - simplification/reorganization of the code
-# - for each hydrometeor type, dpol variables are calculated only for M > Mmin
-# - mask for all hydromet (Mtot > Mmin) and for radar distance 
-# - removal of the subdomains
-# - bug corrections in the mixed phase with a new option: MixedPhase="Fwpos" or "Tpos"
-# => higher Zh and Zdr for T<0 with Fwpos !!!
-# # - new option for the output file: native python compressed format (.npz):
-# faster !!!!!
-# - calculation of dpol variables for each hydromet type if option singletype=True
-# => variables are saved in separate files
-
-# C. Augros 06/2020
-# - 3 options available for the mixed phase:
-# * Tpos : wet graupel only for T >= 0
-# * Fwpos : wet graupel for Fw > 0 and Mwg=Mg+Mr if Fw >0
-# * Fwposg: wet graupel for Fw > 0 and Mwg=Mg if Fw >0
-# - new LIMToption="" or "cstmu" => the model variables are taken from LIMT simulation
-                # but a constant mu is applied in the PSD  for the dpol variables calculation 
-
-# C. Augros 7/04/2023
-# New version with addition of functions (in operad_lib) + configuration file (operad_conf.py)
-# Objective = 
-# * include in this unique code the MesoNH/AROME options with ICE3/ICE4 or LIMA microphysics
-# * improve the lisibility and efficiency
-# 
-# Next step = simplify also plot_Hcut... ==> gather everything on git
-                
-# C. Augros 19/04/2023
-# Code ok for Arome (ICE3/ICE4?) and MesoNH
-# output = netcdf file (dataset with xarray)                
-# implemented on github, see last changes on : https://github.com/UMR-CNRM/operadar/               
-#=====================================================================================
-
 
 # External modules
 import sys
@@ -93,10 +49,6 @@ begining_program_timer = tm.time()
 model = sys.argv[1]
 dateconf = sys.argv[2]
 micro = sys.argv[3]
-
-# For tests only with spyder (to comment if running with exec_operad.sh)
-#model,dateconf,micro="MesoNH","20220818","ICE3"
-#model,dateconf,micro="Arome","20220818","ICE3"
 
 
 # ===== Reading dates in case(s) study csv file
@@ -137,15 +89,8 @@ for _,csv_row in studyCases.iterrows():
     if radar_band != previous_radar_band :
         print(f"Reading Tmatrix tables for {micro} in {radar_band} band")
         deb_timer = tm.time()
-        [LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,       # TRANSFORMER EN DICT ?
-        Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, Fwmax,
-        expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, 
-        Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, S22carre_t,
-        ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
-                                                                                                        radar_band,
-                                                                                                        micro,
-                                                                                                        cf.list_types_tot)
-        LAM = LAMmin["rr"]/1000.
+        dict_Tmatrix = read_tmat.Read_TmatrixClotilde(cf.pathTmat,radar_band,micro,cf.list_types_tot)
+        LAM = dict_Tmatrix['LAMmin']["rr"]/1000.
         previous_radar_band = radar_band
         print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
     else :
@@ -183,12 +128,12 @@ for _,csv_row in studyCases.iterrows():
         el = np.zeros(Tc.shape)
         mask_distmax = (el >= 0.)
         if (model=="MesoNH"):
-            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z,ELEVmax["rr"])
+            [mask_distmax, el] = ope_lib.compute_radargeo(X, Y, Z,dict_Tmatrix['ELEVmax']["rr"])
 
-        mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, micro)
+        mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, dict_Tmatrix['expMmin'], micro)
         
         # ------ Mixed phase parametrization -------- #
-        [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, expMmin, micro) 
+        [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, dict_Tmatrix['expMmin'], micro) 
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
     
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
@@ -212,14 +157,14 @@ for _,csv_row in studyCases.iterrows():
             [mask_tot, M_temp,
             el_temp, Tc_temp, Fw_temp] = ope_lib.singletype_mask(M[hydromet], el, Tc,
                                                                 Fw,mask_precip_dist,
-                                                                expMmin, micro, hydromet
+                                                                dict_Tmatrix['expMmin'], micro, hydromet
                                                                 )
             
             # Define P3 : CC (2 moments) or Fw (1 moment)
             [P3, P3min, P3max, P3step] = ope_lib.defineP3(hydromet, NMOMENTS, CC, CCI,
                                                         mask_tot, Fw_temp,
-                                                        expCCmin,expCCmax, expCCstep,
-                                                        Fwmin[hydromet], Fwmax[hydromet], Fwstep[hydromet]
+                                                        dict_Tmatrix['expCCmin'],dict_Tmatrix['expCCmax'], dict_Tmatrix['expCCstep'],
+                                                        dict_Tmatrix['Fwmin'][hydromet], dict_Tmatrix['Fwmax'][hydromet], dict_Tmatrix['Fwstep'][hydromet]
                                                         )
             
             # Extract scattering coefficients for singletype
@@ -227,12 +172,12 @@ for _,csv_row in studyCases.iterrows():
             S22carre,
             ReS22fmS11f,
             ReS22S11,
-            ImS22S11] = read_tmat.get_scatcoef(S11carre_t[hydromet],S22carre_t[hydromet],
-                                                ReS22fmS11f_t[hydromet],ReS22S11_t[hydromet],ImS22S11_t[hydromet],
-                                                LAMmin[hydromet], LAMmax[hydromet], LAMstep[hydromet],
-                                                ELEVmin[hydromet], ELEVmax[hydromet], ELEVstep[hydromet],
-                                                Tcmin[hydromet], Tcmax[hydromet], Tcstep[hydromet],
-                                                P3min, P3max, P3step, expMmin,expMstep,expMmax,
+            ImS22S11] = read_tmat.get_scatcoef(dict_Tmatrix['S11carre_t'][hydromet],dict_Tmatrix['S22carre_t'][hydromet],
+                                                dict_Tmatrix['ReS22fmS11f_t'][hydromet],dict_Tmatrix['ReS22S11_t'][hydromet],dict_Tmatrix['ImS22S11_t'][hydromet],
+                                                dict_Tmatrix['LAMmin'][hydromet], dict_Tmatrix['LAMmax'][hydromet], LAMstep[hydromet],
+                                                dict_Tmatrix['ELEVmin'][hydromet], dict_Tmatrix['ELEVmax'][hydromet], dict_Tmatrix['ELEVstep'][hydromet],
+                                                dict_Tmatrix['Tcmin'][hydromet], dict_Tmatrix['Tcmax'][hydromet], dict_Tmatrix['Tcstep'][hydromet],
+                                                P3min, P3max, P3step, dict_Tmatrix['expMmin'],dict_Tmatrix['expMstep'],dict_Tmatrix['expMmax'],
                                                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,cf.n_interpol,shutdown_warnings=True,
                                                 )
                 

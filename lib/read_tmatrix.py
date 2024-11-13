@@ -42,68 +42,60 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
         schema_micro="LIMA"
 
     # Dictionnaries initialization
-    LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
-    Tcmin, Tcstep, Tcmax = {}, {}, {}
-    Fwmin, Fwstep, Fwmax = {}, {}, {}
-    # LAM_t = {}
-    Tc_t, ELEV_t, Fw_t, M_t = {}, {}, {}, {}
-    S11carre_t, S22carre_t = {}, {}
-    ReS22S11_t, ImS22S11_t = {}, {}
-    ReS22fmS11f_t, ImS22ft_t, ImS11ft_t,RRint_t = {}, {}, {},{}
-        
-#    if bande =='S':
-#        LAMstr='106.2'
-#    elif bande=='C':
-#        LAMstr="053.2"
+    dict_Tmatrix = dict(LAMmin = {}, LAMstep = {}, LAMmax = {},
+                        ELEVmin = {}, ELEVstep = {}, ELEVmax = {},
+                        Tcmin = {}, Tcstep = {}, Tcmax = {},
+                        Fwmin = {}, Fwstep = {}, Fwmax = {},
+                        Tc_t = {}, ELEV_t = {}, Fw_t = {}, M_t = {}, # LAM_t = {},
+                        S11carre_t = {},
+                        S22carre_t = {},
+                        ReS22S11_t = {},
+                        ImS22S11_t = {},
+                        ReS22fmS11f_t = {},
+                        ImS22ft_t = {},
+                        ImS11ft_t = {},
+                        RRint_t = {},
+                        )
+    #    if bande =='S':
+    #        LAMstr='106.2'
+    #    elif bande=='C':
+    #        LAMstr="053.2"
     
     for t in list_types_tot: 
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+LAMstr+'_'+t+table_ind
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
         nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
         
-        print("  Reading min/step/max for",t)
+        print("  Reading min/step/max and scattering coef for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
-        LAMmin[t]= np.copy(df["LAMmin"])[0]
-        LAMstep[t]= np.copy(df["LAMmin"])[0]
-        LAMmax[t]= np.copy(df["LAMmin"])[0]
-        ELEVmin[t]= np.copy(df["ELEVmin"])[0]
-        ELEVstep[t]= np.copy(df["ELEVstep"])[0]
-        ELEVmax[t]= np.copy(df["ELEVmax"])[0]
-        Tcmin[t]= np.copy(df["Tcmin"])[0]
-        Tcstep[t]= np.copy(df["Tcstep"])[0]
-        Tcmax[t]= np.copy(df["Tcmax"])[0]
-        Fwmin[t]= np.copy(df["Fwmin"])[0]
-        Fwstep[t]= np.copy(df["Fwstep"])[0]
-        Fwmax[t]= np.copy(df["Fwmax"])[0]
-
-        print("  Reading scattering coef for",t)
         df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
-        Tc_t[t] = np.copy(df_scat['Tc'])
-        ELEV_t[t] = np.copy(df_scat['ELEV'])
-        Fw_t[t] = np.copy(df_scat['P3'])
-        M_t[t] = np.copy(df_scat['M'])
-        S11carre_t[t] = np.copy(df_scat['S11carre'])
-        S22carre_t[t] = np.copy(df_scat['S22carre'])
-        ReS22S11_t[t] = np.copy(df_scat['ReS22S11'])
-        ImS22S11_t[t] = np.copy(df_scat['ImS22S11'])
-        ReS22fmS11f_t[t] = np.copy(df_scat['ReS22fmS11f'])
-        ImS22ft_t[t] = np.copy(df_scat['ImS22ft'])
-        ImS11ft_t[t] = np.copy(df_scat['ImS11ft'])
-        RRint_t[t] = np.copy(df_scat['RRint'])
+        for key in dict_Tmatrix.keys():
+            if key[0:3] == 'LAM' :
+                dict_Tmatrix[key][t] = np.copy(df['LAMmin'])[0] # keep the wavelength constant
+            elif key == 'Fw_t':
+                dict_Tmatrix[key][t] = np.copy(df_scat['P3'])
+            else : 
+                try : 
+                    dict_Tmatrix[key][t] = np.copy(df[key])[0]
+                except :
+                    dict_Tmatrix[key][t] = np.copy(df_scat[key[:-2]])
+            
         del df_scat
        
     # For M and CC: same min/step/max for all types
-    expMmin= np.copy(df["expMmin"])[0]
-    expMstep= np.copy(df["expMstep"])[0]
-    expMmax= np.copy(df["expMmax"])[0]
-    expCCmin= np.copy(df["expCCmin"])[0]
-    expCCstep= np.copy(df["expCCstep"])[0]
-    expCCmax= np.copy(df["expCCmax"])[0]
+    for key in ['expMmin','expMstep','expMmax','expCCmin','expCCstep','expCCmax']:
+        dict_Tmatrix[key] = np.copy(df[key])[0]
+    
     del df
    
-    return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
-    Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, \
-    S22carre_t, ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t
+    return dict_Tmatrix
+
+    # Contenu du dictionnaire :
+    # LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
+    # Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, \
+    # S22carre_t, ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t
+    #
+    # --> Tc_t, ELEV_t, Fw_t, M_t, ImS22ft_t, ImS11ft_t non utilisés dans operad.py !!!
 
 
 def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
