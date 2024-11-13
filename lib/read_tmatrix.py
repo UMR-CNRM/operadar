@@ -34,9 +34,9 @@ min/step/max parameters
 def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
 
     # Choice of the right table depending on the microphysics
-    if schema_micro == "ICE3" or schema_micro == "ICE4" :
+    if schema_micro[0:3] == "ICE" :
         schema_micro = "ICE3"
-    elif schema_micro == "LIMASG" or schema_micro == "LIMAAG" or schema_micro == "LIMA" :
+    elif schema_micro[0:4] == "LIMA" :
         schema_micro = "LIMA"
     elif schema_micro=="LIMT": # and cf.LIMToption=="cstmu":
         schema_micro="LIMA"
