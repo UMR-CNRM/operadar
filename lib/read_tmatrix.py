@@ -166,28 +166,22 @@ def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
  * ouput :
      - scattering coef for type t within mask
 """
-def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,\
-                 LAMmint, LAMmaxt, LAMstept,\
-                 ELEVmint, ELEVmaxt, ELEVstept,\
-                 Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-                 expMmin,expMstep,expMmax,\
+def get_scatcoef(dict_Tmatrix,hydromet, P3min, P3max, P3step,
                  NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
                                                                
     # Find position in the T-matrix table
-    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
-        Tc_temp,P3, M_temp, LAMmint, LAMmaxt,\
-        LAMstept, ELEVmint, ELEVmaxt, ELEVstept, Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-        expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings)
+    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,Tc_temp,P3, M_temp,dict_Tmatrix,hydromet,
+                                                              P3min,P3max,P3step,NMOMENTS,shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
     
     for ind in list(range((n_interpol))):
-        MatCoef[0, ind] = S11carre_tt[kTmat[ind]]
-        MatCoef[1, ind] = S22carre_tt[kTmat[ind]]
-        MatCoef[2, ind] = ReS22fmS11f_tt[kTmat[ind]]
-        MatCoef[3, ind] = ReS22S11_tt[kTmat[ind]]
-        MatCoef[4, ind] = ImS22S11_tt[kTmat[ind]]
+        MatCoef[0, ind] = dict_Tmatrix['S11carre_t'][hydromet][kTmat[ind]]
+        MatCoef[1, ind] = dict_Tmatrix['S22carre_t'][hydromet][kTmat[ind]]
+        MatCoef[2, ind] = dict_Tmatrix['ReS22fmS11f_t'][hydromet][kTmat[ind]]
+        MatCoef[3, ind] = dict_Tmatrix['ReS22S11_t'][hydromet][kTmat[ind]]
+        MatCoef[4, ind] = dict_Tmatrix['ImS22S11_t'][hydromet][kTmat[ind]]
     
     # Interpol scat coef values
     [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
@@ -202,9 +196,7 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
 #def  CALC_KTMAT(LAMm,ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
 #    ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
 #    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
-def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
-    ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings):
+def  CALC_KTMAT(ELEV,Tc,P3r,M,dict_Tmatrix,hydromet,P3min,P3max,P3step,NMOMENTS,shutdown_warnings):
     
     """#LAMm = longueur d'onde radar en m (val)
        ELEV = Elevation en radians (tab)
@@ -222,7 +214,10 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
        corresponding to the upper and lower bounds of LAM, ELEV, Tc, P3, M for 
        => used for the interpolation of these coefficients    
     """
-
+    LAMmin,LAMmax,LAMstep = dict_Tmatrix['LAMmin'][hydromet], dict_Tmatrix['LAMmax'][hydromet], dict_Tmatrix['LAMstep'][hydromet]
+    ELEVmin,ELEVmax,ELEVstep = dict_Tmatrix['ELEVmin'][hydromet], dict_Tmatrix['ELEVmax'][hydromet], dict_Tmatrix['ELEVstep'][hydromet]
+    Tcmin,Tcmax,Tcstep = dict_Tmatrix['Tcmin'][hydromet], dict_Tmatrix['Tcmax'][hydromet], dict_Tmatrix['Tcstep'][hydromet]
+    expMmin,expMstep,expMmax = dict_Tmatrix['expMmin'],dict_Tmatrix['expMstep'],dict_Tmatrix['expMmax']
      
     kTmat={}
     
