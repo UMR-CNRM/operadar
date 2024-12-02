@@ -166,7 +166,7 @@ def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
  * ouput :
      - scattering coef for type t within mask
 """
-def get_scatcoef(dict_Tmatrix,hydromet, P3min, P3max, P3step,
+def get_scatcoef(dict_Tmatrix:dict,hydromet:str, P3min, P3max, P3step,
                  NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
                                                                
     # Find position in the T-matrix table

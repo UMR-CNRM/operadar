@@ -102,17 +102,17 @@ def read_model_variables(model,datetime,run,micro,lonmin,lonmax,latmin,latmax,fi
 
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
-def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fwmin, Fwmax, Fwstep):
+def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,dict_Tmatrix,hydromet):                                                    
     if(NMOMENTS==2):
         if (t =='rr'):
             CC_temp=CC[mask_tot]
         else: # t='ii'
             CC_temp=CCI[mask_tot]
         P3=np.copy(CC_temp)
-        P3min,P3max,P3step=expCCmin, expCCmax, expCCstep                    
+        P3min,P3max,P3step=dict_Tmatrix['expCCmin'],dict_Tmatrix['expCCmax'], dict_Tmatrix['expCCstep']                    
     elif (NMOMENTS==1):
         P3=np.copy(Fw_temp)
-        P3min,P3max,P3step=Fwmin, Fwmax, Fwstep
+        P3min,P3max,P3step=dict_Tmatrix['Fwmin'][hydromet], dict_Tmatrix['Fwmax'][hydromet], dict_Tmatrix['Fwstep'][hydromet]
         
     return P3, P3min, P3max, P3step
 
