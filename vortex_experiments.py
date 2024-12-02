@@ -34,3 +34,5 @@ def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
         return listExpe[2]
     elif microphysics_scheme == 'LIMAAG' :
         return listExpe[3]
+    elif microphysics_scheme == 'LIMA49t' :
+        return listExpe[4]
