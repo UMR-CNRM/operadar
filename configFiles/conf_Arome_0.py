@@ -24,7 +24,7 @@ n_interpol = 32                             # nb bornes to interpol (2**5: min e
 MixedPhase="Fwposg"                         # 'Tpos' or 'Fwpos' or 'Fwposg'
 singletype=False                            # if True: computes dpol var for each type
 list_types_tot = ['rr','ii','ss','gg','wg'] # only for T-matrix computation
-method = ['Tmat','Rayleigh','Rayleigh','Tmat','Tmat']
+method = ['Tmatrix','Rayleigh','Rayleigh','Tmatrix','Tmatrix']
 
 
 # Radar simulation options
