@@ -96,68 +96,63 @@ def read_model_variables(model,datetime,run,micro,lonmin,lonmax,latmin,latmax,fi
                                                     hydrometeors_list = cf.htypes_model,
                                                     )
     else :
-        print('Not a valid model name. Can be either "MesoNH" or "Arome"')
+        print('\tNot a valid model name. Can be either "MesoNH" or "Arome"')
     
     return [M, Tc, CC, CCI, lat,lon, X, Y, Z]
 
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
-def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,dict_Tmatrix,hydromet):                                                    
+def extract_P3_bornes(NMOMENTS:int,dict_Tmatrix:dict,hydromet:str):                                                    
     if(NMOMENTS==2):
-        if (t =='rr'):
-            CC_temp=CC[mask_tot]
-        else: # t='ii'
-            CC_temp=CCI[mask_tot]
-        P3=np.copy(CC_temp)
         P3min,P3max,P3step=dict_Tmatrix['expCCmin'],dict_Tmatrix['expCCmax'], dict_Tmatrix['expCCstep']                    
     elif (NMOMENTS==1):
-        P3=np.copy(Fw_temp)
         P3min,P3max,P3step=dict_Tmatrix['Fwmin'][hydromet], dict_Tmatrix['Fwmax'][hydromet], dict_Tmatrix['Fwstep'][hydromet]
         
-    return P3, P3min, P3max, P3step
+    return P3min, P3max, P3step
 
 # ========== Compute NMOMENTS ===================
-def compute_nmoments(micro,t):
+"""def compute_nmoments(micro,t):
     if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG") and (t =='rr'))):
         NMOMENTS=2             
     else:
         NMOMENTS=1
-    return NMOMENTS
+    return NMOMENTS"""
 
 
 # ========== Compute single type mask ===================
-"""
-Compute mask for each type and apply to el, Tc, M, Fw
- * in: M, el, Tc, Fw, mask_precip_dist, expMmin, micro, t
- * out: mask_tot, M_temp,el_temp, Tc_temp, Fw_temp, P3,
- P3min,P3max,P3step
- [mask_tot, M_temp, el_temp, Tc_temp, Fw_temp, P3, P3min, P3max, P3step]=\
-     ope_lib.singletype_mask(M, el, Tc, Fw,mask_precip_dist, expMmin,micro)
-"""
-def singletype_mask(Mt, el, Tc, Fw, mask_precip_dist, expMmin,micro,t):
+def singletype_mask(Mt, el, Tc, Fw, CC, CCI, mask_precip_dist, expMmin,hydromet,NMOMENTS):
+    """
+    Select only precipitation grid points by computing a mask for each
+    hydrometeor type on the following arrays
+    - elevations
+    - Tc
+    - M
+    - Fw and/or concentrations (2 moments only)
+    
+    Returns
+    -------
+    - mask used for selecting precip points
+    - elevations masked array
+    - Tc masked array
+    - M masked array
+    - Fw masked array (1-moement) or concentrations masked array (2-moment)
+    """
 
-    # mask_M : selection of precip points only
-    mask_M=(Mt>10**expMmin)
+    mask_M=(Mt>10**expMmin) # selection of precip points only
     mask_tot=(mask_precip_dist & mask_M)
     el_temp=el[mask_tot]
     Tc_temp=Tc[mask_tot]
     Fw_temp=Fw[mask_tot]
     M_temp=Mt[mask_tot]
     
-    # if((t =='ii') or ((micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG") and (t =='rr'))):
-    #     NMOMENTS=2
-    #     if (t =='rr'):
-    #         CC_temp=CC[mask_tot]
-    #     else: # t='ii'
-    #         CC_temp=CCI[mask_tot]
-    #     P3=np.copy(CC_temp)
-    #     P3min,P3max,P3step=expCCmin, expCCmax, expCCstep                    
-    # else:
-    #     NMOMENTS=1
-    #     P3=np.copy(Fw_temp)
-    #     P3min,P3max,P3step=Fwmin[t], Fwmax[t], Fwstep[t]
-        
-    return mask_tot, M_temp, el_temp, Tc_temp, Fw_temp #, P3, P3min, P3max, P3step
+    if(NMOMENTS==2):
+        if (hydromet =='rr'):
+            CC_temp=CC[mask_tot]
+        elif (hydromet =='ii'):
+            CC_temp=CCI[mask_tot]
+        return mask_tot, M_temp, el_temp, Tc_temp, CC_temp 
+            
+    return mask_tot, M_temp, el_temp, Tc_temp, Fw_temp 
 
 # ============== Compute radar geometry ==========
 """
@@ -232,7 +227,7 @@ def compute_mixedphase(M,Tc,MixedPhase,expMmin,micro):
         #Mtot=M['rr']+M['gg']+M['ss']+M['ii']							
         maskBB=((M["rr"] > 10**expMmin) & (M["gg"]> 10**expMmin))
     
-    print("  Calculation of Fw for wet graupel")
+    print("\tCalculation of Fw for wet graupel")
     Fw = np.zeros(np.shape(M["rr"]))                          
  
     if(micro =="LIMAAG" or micro =="ICE4"):

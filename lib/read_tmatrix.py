@@ -19,6 +19,8 @@ Contains routines to :
 import numpy as np
 import pandas as pd
 import math
+from operad_lib import extract_P3_bornes
+
 
 #============== Read_Tmatrix2020
 """
@@ -66,7 +68,7 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
         nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
         
-        print("  Reading min/step/max and scattering coef for",t)
+        print("\tReading min/step/max and scattering coef for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
         df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         for key in dict_Tmatrix.keys():
@@ -166,9 +168,12 @@ def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
  * ouput :
      - scattering coef for type t within mask
 """
-def get_scatcoef(dict_Tmatrix:dict,hydromet:str, P3min, P3max, P3step,
-                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
-                                                               
+def get_scatcoef(dict_Tmatrix:dict,hydromet:str,
+                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):
+
+    # Define the appropriate min/max/step acoridng to the moment and hydrometeor
+    [P3min, P3max, P3step] = extract_P3_bornes(NMOMENTS,dict_Tmatrix,hydromet)
+                                                              
     # Find position in the T-matrix table
     [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,Tc_temp,P3, M_temp,dict_Tmatrix,hydromet,
                                                               P3min,P3max,P3step,NMOMENTS,shutdown_warnings)

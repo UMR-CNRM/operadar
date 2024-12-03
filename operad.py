@@ -87,9 +87,13 @@ for _,csv_row in studyCases.iterrows():
 
     # ----- Reading Tmatrix tables ----- #
     if radar_band != previous_radar_band :
-        print(f"Reading Tmatrix tables for {micro} in {radar_band} band")
+        print(f"\nReading Tmatrix tables for {micro} in {radar_band} band")
         deb_timer = tm.time()
-        dict_Tmatrix = read_tmat.Read_TmatrixClotilde(cf.pathTmat,radar_band,micro,cf.list_types_tot)
+        dict_Tmatrix = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
+                                                      radar_band,
+                                                      micro,
+                                                      cf.list_types_tot,
+                                                      )
         LAM = dict_Tmatrix['LAMmin']["rr"]/1000.
         previous_radar_band = radar_band
         print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
@@ -99,31 +103,44 @@ for _,csv_row in studyCases.iterrows():
     # ----- Loop over timesteps ----- #
     extract_once = True
     for datetime in datetimelist: 
-        outFile = ope_lib.define_out_filepath(datetime,output_path,micro,model,radar_band)
-        model_file_path= ope_lib.define_model_path(model,datetime,run,csv_row,micro,deb)
-        
+        outFile = ope_lib.define_out_filepath(datetime, output_path,
+                                              micro, model, radar_band,
+                                              )
+        model_file_path= ope_lib.define_model_path(model, datetime,
+                                                   run, csv_row,
+                                                   micro, deb,
+                                                   )
+
         # ----- Testing existence of the output file ----- #
         if Path(outFile).exists() and (cf.singletype == False) :
             print("netcdf file for",datetime.strftime('%H:%M'),"already exists")
             continue   
         
         # ----- If not, creation of the file ----- #
-        print("-------",datetime,"-------")
+        print("\n-------",datetime,"-------")
         # ----- Reading model variables ----- #
-        print("Reading model variables") ; deb_timer = tm.time()  
+        print("\nReading model variables") ; deb_timer = tm.time()  
         if extract_once :
-            [M, Tc, CC, CCI, lat,lon, X, Y, Z] = ope_lib.read_model_variables(model,datetime,run,micro,
-                                                                            lon_min,lon_max,lat_min,lat_max,
-                                                                            model_file_path,extract_once)
+            [M, Tc, CC, CCI, lat,lon, X, Y, Z] = ope_lib.read_model_variables(model, datetime,
+                                                                              run, micro,
+                                                                              lon_min, lon_max,
+                                                                              lat_min, lat_max,
+                                                                              model_file_path,
+                                                                              extract_once,
+                                                                              )
             extract_once = False
         else :
-            [M, Tc, CC, CCI, _,_, X, Y, Z] = ope_lib.read_model_variables(model,datetime,run,micro,
-                                                                            lon_min,lon_max,lat_min,lat_max,
-                                                                            model_file_path,extract_once)
-        print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
+            [M, Tc, CC, CCI, _,_, X, Y, Z] = ope_lib.read_model_variables(model, datetime,
+                                                                          run, micro,
+                                                                          lon_min, lon_max,
+                                                                          lat_min, lat_max,
+                                                                          model_file_path,
+                                                                          extract_once,
+                                                                          )
+        print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
         
         # ----- Compute radar geometry variables ----- #
-        print("Compute radar geometry and mixed phase") ; deb_timer = tm.time()
+        print("\nCompute radar geometry and mixed phase") ; deb_timer = tm.time()
         np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
         el = np.zeros(Tc.shape)
         mask_distmax = (el >= 0.)
@@ -133,40 +150,38 @@ for _,csv_row in studyCases.iterrows():
         
         # ------ Mixed phase parametrization -------- #
         [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, dict_Tmatrix['expMmin'], micro) 
-        print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
+        print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
         Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
         # ----- Loop over hydromet types ----- #
-        print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot) ; deb_timer = tm.time()
-        for hydromet in cf.list_types_tot:
+        print("\nLoop over hydrometeor types :") ; deb_timer = tm.time()
+        for hydromet,moment,method in zip(cf.list_types_tot,cf.n_moments_model,cf.method):
+            print(f"\t{hydromet} is {moment}-moment with {micro}.\n\tChosen method : {method}")
+            
             if (cf.singletype):
-                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}.nc"         
+                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}_{method}.nc"         
                 Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
                 if Path(outFile).exists() and Path(outFileType).exists() :
                     print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydromet,"already exist")
                     continue
+            
             #if method == 'Rayleigh':
             #else :    
-            # Compute NMOMENTS
-            NMOMENTS = ope_lib.compute_nmoments(micro,
-                                                hydromet,
-                                                )
             
             # Compute single type mask
             [mask_tot, M_temp, el_temp, Tc_temp, Fw_temp] = ope_lib.singletype_mask(M[hydromet],
                                                                                     el, Tc, Fw,
                                                                                     mask_precip_dist,
                                                                                     dict_Tmatrix['expMmin'],
-                                                                                    micro,
                                                                                     hydromet,
                                                                                     )
             
             # Define P3 : CC (2 moments) or Fw (1 moment)
-            [P3, P3min, P3max, P3step] = ope_lib.defineP3(hydromet,
-                                                          NMOMENTS,
+            [P3, P3min, P3max, P3step] = ope_lib.extract_P3_bornes(hydromet,
+                                                          moment,
                                                           CC,
                                                           CCI,
                                                           mask_tot,
@@ -181,7 +196,7 @@ for _,csv_row in studyCases.iterrows():
                                                                                            P3min,
                                                                                            P3max,
                                                                                            P3step,
-                                                                                           NMOMENTS,
+                                                                                           moment,
                                                                                            el_temp,
                                                                                            Tc_temp,
                                                                                            P3,
@@ -221,7 +236,8 @@ for _,csv_row in studyCases.iterrows():
                 # Writing dpol var for a single hydrometeor type hydromet
                 save.save_dpolvar({hydromet:M[hydromet]}, CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType,singleType=True)
                 del Vm_t
-        
+                
+        # ------------ end
         for var in liste_var_calc:
             Vm_k[var][~mask_precip_dist] = np.nan 
         
@@ -232,7 +248,7 @@ for _,csv_row in studyCases.iterrows():
         Vm_k["Zdr"][(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
                 (Vm_k["Zhhlin"]/Vm_k["Zvvlin"])[(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)])
         Vm_k["Rhohv"] = np.sqrt(np.divide(Vm_k["S11S22"], Vm_k["S11S11"]*Vm_k["S22S22"]))
-        print("  --> Done in",round(tm.time() - deb_timer,2),"seconds")
+        print("\t--> Done in",round(tm.time() - deb_timer,2),"seconds")
         
         # ----- Save dpol var for all hydromet in netcdf and/or npz file
         if not Path(outFile).exists():
