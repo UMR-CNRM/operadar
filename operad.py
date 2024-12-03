@@ -83,7 +83,6 @@ for _,csv_row in studyCases.iterrows():
     
     
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"] # A SUPPRIMER ?
-    liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"] # REMPLACER PAR LA VALEUR DANS LE FICHIER DE CONFIG ?
 
     # ----- Reading Tmatrix tables ----- #
     if radar_band != previous_radar_band :
@@ -153,7 +152,7 @@ for _,csv_row in studyCases.iterrows():
         print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
-        Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
+        Vm_k = {var:np.zeros(Tc.shape) for var in cf.liste_var_calc}
             
         # ----- Loop over hydromet types ----- #
         print("\nLoop over hydrometeor types :") ; deb_timer = tm.time()
@@ -162,7 +161,7 @@ for _,csv_row in studyCases.iterrows():
             
             if (cf.singletype):
                 outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}_{method}.nc"         
-                Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
+                Vm_t = {var:np.zeros(Tc.shape) for var in cf.liste_var_calc}
             
                 if Path(outFile).exists() and Path(outFileType).exists() :
                     print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydromet,"already exist")
@@ -172,41 +171,27 @@ for _,csv_row in studyCases.iterrows():
             #else :    
             
             # Compute single type mask
-            [mask_tot, M_temp, el_temp, Tc_temp, Fw_temp] = ope_lib.singletype_mask(M[hydromet],
-                                                                                    el, Tc, Fw,
-                                                                                    mask_precip_dist,
-                                                                                    dict_Tmatrix['expMmin'],
-                                                                                    hydromet,
-                                                                                    )
+            [mask_tot, M_masked, elevation_masked, Tc_masked, P3_masked] = ope_lib.singletype_mask(M[hydromet],
+                                                                                                el, Tc, Fw,
+                                                                                                CC, CCI,
+                                                                                                mask_precip_dist,
+                                                                                                dict_Tmatrix['expMmin'],
+                                                                                                hydromet, moment,
+                                                                                                )
             
-            # Define P3 : CC (2 moments) or Fw (1 moment)
-            [P3, P3min, P3max, P3step] = ope_lib.extract_P3_bornes(hydromet,
-                                                          moment,
-                                                          CC,
-                                                          CCI,
-                                                          mask_tot,
-                                                          Fw_temp,
-                                                          dict_Tmatrix,
-                                                          hydromet,
-                                                          )
             
             # Extract scattering coefficients for singletype
-            [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = read_tmat.get_scatcoef(dict_Tmatrix,
-                                                                                           hydromet,
-                                                                                           P3min,
-                                                                                           P3max,
-                                                                                           P3step,
-                                                                                           moment,
-                                                                                           el_temp,
-                                                                                           Tc_temp,
-                                                                                           P3,
-                                                                                           M_temp,
-                                                                                           cf.n_interpol,
-                                                                                           shutdown_warnings=True,
-                                                                                           )
+            [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = read_tmat.get_scatcoef(dict_Tmatrix, hydromet, moment,
+                                                                                        elevation_masked,
+                                                                                        Tc_masked,
+                                                                                        P3_masked,
+                                                                                        M_masked,
+                                                                                        cf.n_interpol,
+                                                                                        shutdown_warnings=True,
+                                                                                        )
                 
             # Single type dpol var computation       
-            Vm_temp = {var:Vm_k[var][mask_tot] for var in liste_var_calc}
+            Vm_temp = {var:Vm_k[var][mask_tot] for var in cf.liste_var_calc}
             Vm_temp["Zhhlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S22carre #lin = linear
             Vm_temp["Zvvlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S11carre
             Vm_temp["Kdp"] = 180.*1e3/math.pi*LAM*ReS22fmS11f
@@ -215,14 +200,14 @@ for _,csv_row in studyCases.iterrows():
             Vm_temp["S22S22"] = np.copy(S22carre)
             
             # Addition of scattering coef for all hydromet
-            for var in liste_var_calc:
+            for var in cf.liste_var_calc:
                 Vm_k[var][mask_tot]+=Vm_temp[var]
                 if (cf.singletype):
                     Vm_t[var][mask_tot]=Vm_temp[var]
                     Vm_t[var][~mask_tot] = np.nan 
             
             del S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
-            del el_temp, Tc_temp, Fw_temp, M_temp, Vm_temp, mask_tot
+            del Vm_temp, mask_tot
 
             #  Dpol variables for single hydrometeor types 
             if (cf.singletype):
@@ -238,7 +223,7 @@ for _,csv_row in studyCases.iterrows():
                 del Vm_t
                 
         # ------------ end
-        for var in liste_var_calc:
+        for var in cf.liste_var_calc:
             Vm_k[var][~mask_precip_dist] = np.nan 
         
         # ----- dpol var calculation
