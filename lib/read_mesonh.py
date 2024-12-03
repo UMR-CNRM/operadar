@@ -25,10 +25,10 @@ def read_mesonh(modelfile: str,
                ):
     
     # === Model file
-    print("Reading "+modelfile)
+    print("\tReading "+modelfile)
     
     # === Extract Dataset 
-    print("Reading ncfile: ",modelfile)
+    print("\tReading ncfile: ",modelfile)
     ncfile1 = Dataset(modelfile,'r')
     #print(ncfile1.variables.keys())
     
@@ -42,7 +42,7 @@ def read_mesonh(modelfile: str,
     for level in range(ZHAT.shape[0]):
         Z[level,:,:]=ZS[:,:]+ZHAT[level]
     time=ncfile1.variables['time'][:]
-    print("MesoNH ncfile time = ",time)
+    print("\tMesoNH ncfile time = ",time)
     
     # === Get lat lon if real case
     if (real_case):
@@ -120,8 +120,8 @@ def read_mesonh(modelfile: str,
     #    Z=ncfile1.variables['level'][:] # but in 3D shape ?
     
     # =====================================================
-    print("Z.shape",Z.shape)
-    print("End reading model variables")
+    print("\tZ.shape",Z.shape)
+    print("\tEnd reading model variables")
     
     if (real_case):
         Mzoom={}

@@ -33,7 +33,7 @@ def read_arome(modelfile: str,
     
     epygram.init_env()
     
-    print("  AROME fa file: ",modelfile)
+    print("\tAROME fa file: ",modelfile)
     ficA = epygram.formats.resource(modelfile, openmode = 'r', fmt = 'FA')
     ps = ficA.readfield('SURFPRESSION')
     X_res=ficA.geometry.grid['X_resolution']
