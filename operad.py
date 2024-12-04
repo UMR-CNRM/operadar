@@ -36,6 +36,7 @@ import operad_lib as ope_lib
 import read_tmatrix as read_tmat
 import save_dpolvar as save
 import csv_lib as csv_lib
+from compute_var_pol import compute_individual_hydrometeor_with_Tmatrix
 
 
 # ===== Configuration files ===== #
@@ -151,95 +152,55 @@ for _,csv_row in studyCases.iterrows():
         [M, Fw] = ope_lib.compute_mixedphase(M,Tc, cf.MixedPhase, dict_Tmatrix['expMmin'], micro) 
         print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
-        # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
-        Vm_k = {var:np.zeros(Tc.shape) for var in cf.liste_var_calc}
+        # Initialization of dict(dpol_var_dict) --> contains all 3D dpol variables (all hydrometeor included)
+        dpol_var_dict = {var:np.zeros(Tc.shape) for var in cf.dpol_var_to_calc}
             
-        # ----- Loop over hydromet types ----- #
+        # ----- Loop over hydrometeor types ----- #
         print("\nLoop over hydrometeor types :") ; deb_timer = tm.time()
-        for hydromet,moment,method in zip(cf.list_types_tot,cf.n_moments_model,cf.method):
-            print(f"\t{hydromet} is {moment}-moment with {micro}.\n\tChosen method : {method}")
+        for hydro,moment,method in zip(cf.list_types_tot,cf.n_moments_model,cf.method):
+            print(f"\t{hydro} is {moment}-moment with {micro}.\n\tChosen method : {method}")
             
+            dict_save_singleType = {}
             if (cf.singletype):
-                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydromet}_{method}.nc"         
-                Vm_t = {var:np.zeros(Tc.shape) for var in cf.liste_var_calc}
-            
+                outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydro}_{method}.nc"
+                for arg,val in zip(['X','Y','Z','lat','lon','echeance','path_save_singleType'],[X,Y,Z,lat,lon,datetime,outFileType]):
+                    dict_save_singleType[arg] = val
                 if Path(outFile).exists() and Path(outFileType).exists() :
-                    print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydromet,"already exist")
+                    print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydro,"already exist")
                     continue
-            
-            #if method == 'Rayleigh':
-            #else :    
-            
-            # Compute single type mask
-            [mask_tot, M_masked, elevation_masked, Tc_masked, P3_masked] = ope_lib.singletype_mask(M[hydromet],
-                                                                                                el, Tc, Fw,
-                                                                                                CC, CCI,
-                                                                                                mask_precip_dist,
-                                                                                                dict_Tmatrix['expMmin'],
-                                                                                                hydromet, moment,
-                                                                                                )
-            
-            
-            # Extract scattering coefficients for singletype
-            [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = read_tmat.get_scatcoef(dict_Tmatrix, hydromet, moment,
-                                                                                        elevation_masked,
-                                                                                        Tc_masked,
-                                                                                        P3_masked,
-                                                                                        M_masked,
-                                                                                        cf.n_interpol,
-                                                                                        shutdown_warnings=True,
-                                                                                        )
-                
-            # Single type dpol var computation       
-            Vm_temp = {var:Vm_k[var][mask_tot] for var in cf.liste_var_calc}
-            Vm_temp["Zhhlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S22carre #lin = linear
-            Vm_temp["Zvvlin"]= 1e18*LAM**4./(math.pi**5.*0.93)*4.*math.pi*S11carre
-            Vm_temp["Kdp"] = 180.*1e3/math.pi*LAM*ReS22fmS11f
-            Vm_temp["S11S22"] = ReS22S11**2+ImS22S11**2
-            Vm_temp["S11S11"] = np.copy(S11carre)
-            Vm_temp["S22S22"] = np.copy(S22carre)
-            
-            # Addition of scattering coef for all hydromet
-            for var in cf.liste_var_calc:
-                Vm_k[var][mask_tot]+=Vm_temp[var]
-                if (cf.singletype):
-                    Vm_t[var][mask_tot]=Vm_temp[var]
-                    Vm_t[var][~mask_tot] = np.nan 
-            
-            del S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
-            del Vm_temp, mask_tot
 
-            #  Dpol variables for single hydrometeor types 
-            if (cf.singletype):
-                Vm_t["Zhh"] = np.copy(Vm_t["Zhhlin"])
-                Vm_t["Zhh"][Vm_t["Zhhlin"]>0] = ope_lib.Z2dBZ(Vm_t["Zhhlin"][Vm_t["Zhhlin"]>0])
-                Vm_t["Zdr"] = np.copy(Vm_t["Zhhlin"])
-                Vm_t["Zdr"][(Vm_t["Zhhlin"]>0) & (Vm_t["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
-                        (Vm_t["Zhhlin"]/Vm_t["Zvvlin"])[(Vm_t["Zhhlin"]>0) & (Vm_t["Zvvlin"]>0)])
-                Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
+            if method == 'Tmatrix':
+                dpol_var_dict = compute_individual_hydrometeor_with_Tmatrix(
+                                hydrometeor=hydro, nmoment=moment, Tmatrix=dict_Tmatrix,
+                                contents = M, elevation= el, temperature=Tc, waterFraction=Fw,
+                                N_rain=CC, N_ice=CCI, mask_precip_dist=mask_precip_dist,
+                                dpolVar_dict=dpol_var_dict, radar_wavelenght=LAM,
+                                args_for_saving_singleType=dict_save_singleType,
+                                                                            )
                 
-                # Writing dpol var for a single hydrometeor type hydromet
-                save.save_dpolvar({hydromet:M[hydromet]}, CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType,singleType=True)
-                del Vm_t
+            #elif method == 'Rayleigh' :
+            #    dpol_var_dict = compute_individual_hydrometeor_with_Rayleigh()
+            else :
+                print('Not a valid methodology :',method)
                 
-        # ------------ end
-        for var in cf.liste_var_calc:
-            Vm_k[var][~mask_precip_dist] = np.nan 
+            
+        for var in cf.dpol_var_to_calc:
+            dpol_var_dict[var][~mask_precip_dist] = np.nan
         
         # ----- dpol var calculation
-        Vm_k["Zhh"] = np.copy(Vm_k["Zhhlin"])
-        Vm_k["Zhh"][Vm_k["Zhhlin"]>0] = ope_lib.Z2dBZ(Vm_k["Zhhlin"][Vm_k["Zhhlin"]>0])
-        Vm_k["Zdr"] = np.copy(Vm_k["Zhhlin"])
-        Vm_k["Zdr"][(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
-                (Vm_k["Zhhlin"]/Vm_k["Zvvlin"])[(Vm_k["Zhhlin"]>0) & (Vm_k["Zvvlin"]>0)])
-        Vm_k["Rhohv"] = np.sqrt(np.divide(Vm_k["S11S22"], Vm_k["S11S11"]*Vm_k["S22S22"]))
+        dpol_var_dict["Zhh"] = np.copy(dpol_var_dict["Zhhlin"])
+        dpol_var_dict["Zhh"][dpol_var_dict["Zhhlin"]>0] = ope_lib.Z2dBZ(dpol_var_dict["Zhhlin"][dpol_var_dict["Zhhlin"]>0])
+        dpol_var_dict["Zdr"] = np.copy(dpol_var_dict["Zhhlin"])
+        dpol_var_dict["Zdr"][(dpol_var_dict["Zhhlin"]>0) & (dpol_var_dict["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
+                (dpol_var_dict["Zhhlin"]/dpol_var_dict["Zvvlin"])[(dpol_var_dict["Zhhlin"]>0) & (dpol_var_dict["Zvvlin"]>0)])
+        dpol_var_dict["Rhohv"] = np.sqrt(np.divide(dpol_var_dict["S11S22"], dpol_var_dict["S11S11"]*dpol_var_dict["S22S22"]))
         print("\t--> Done in",round(tm.time() - deb_timer,2),"seconds")
         
-        # ----- Save dpol var for all hydromet in netcdf and/or npz file
+        # ----- Save dpol var for all hydro in netcdf and/or npz file
         if not Path(outFile).exists():
-            save.save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
+            save.save_dpolvar(M, CC, CCI, dpol_var_dict, Tc, Z, X, Y,lat,lon,datetime,outFile)
     
-        del Vm_k
+        del dpol_var_dict
 
 end_program_timer = tm.time()
 elapsed_time = end_program_timer - begining_program_timer

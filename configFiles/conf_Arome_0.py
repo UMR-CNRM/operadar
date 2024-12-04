@@ -71,4 +71,4 @@ csv_domain_columns = "domain"
 
 
 liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"]
-liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
+dpol_var_to_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
