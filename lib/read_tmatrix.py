@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import math
 from operad_lib import extract_P3_bornes
+import operad_conf as cf
 
 
 #============== Read_Tmatrix2020
@@ -33,7 +34,7 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
+def Read_TmatrixClotilde(pathTmat,bande,schema_micro):
 
     # Choice of the right table depending on the microphysics
     if schema_micro[0:3] == "ICE" :
@@ -63,26 +64,29 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
     #    elif bande=='C':
     #        LAMstr="053.2"
     
-    for t in list_types_tot: 
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+LAMstr+'_'+t+table_ind
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
-        nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
-        
-        print("\tReading min/step/max and scattering coef for",t)
-        df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
-        df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
-        for key in dict_Tmatrix.keys():
-            if key[0:3] == 'LAM' :
-                dict_Tmatrix[key][t] = np.copy(df['LAMmin'])[0] # keep the wavelength constant
-            elif key == 'Fw_t':
-                dict_Tmatrix[key][t] = np.copy(df_scat['P3'])
-            else : 
-                try : 
-                    dict_Tmatrix[key][t] = np.copy(df[key])[0]
-                except :
-                    dict_Tmatrix[key][t] = np.copy(df_scat[key[:-2]])
+    for t,method in zip(cf.list_types_tot,cf.method):
+        if method=='Tmatrix':
+            #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+LAMstr+'_'+t+table_ind
+            #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
+            nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
             
-        del df_scat
+            print("\tReading min/step/max and scattering coef for",t)
+            df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
+            df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
+            for key in dict_Tmatrix.keys():
+                if key[0:3] == 'LAM' :
+                    dict_Tmatrix[key][t] = np.copy(df['LAMmin'])[0] # keep the wavelength constant
+                elif key == 'Fw_t':
+                    dict_Tmatrix[key][t] = np.copy(df_scat['P3'])
+                else : 
+                    try : 
+                        dict_Tmatrix[key][t] = np.copy(df[key])[0]
+                    except :
+                        dict_Tmatrix[key][t] = np.copy(df_scat[key[:-2]])
+                
+            del df_scat
+        else :
+            print("\tMethod for",t,"=",method)
        
     # For M and CC: same min/step/max for all types
     for key in ['expMmin','expMstep','expMmax','expCCmin','expCCstep','expCCmax']:

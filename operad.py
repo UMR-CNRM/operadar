@@ -84,6 +84,7 @@ for _,csv_row in studyCases.iterrows():
     
     
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"] # A SUPPRIMER ?
+    print([[hydro,method] for hydro,method in zip(cf.list_types_tot,cf.method)])
 
     # ----- Reading Tmatrix tables ----- #
     if radar_band != previous_radar_band :
@@ -92,7 +93,6 @@ for _,csv_row in studyCases.iterrows():
         dict_Tmatrix = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
                                                       radar_band,
                                                       micro,
-                                                      cf.list_types_tot,
                                                       )
         LAM = dict_Tmatrix['LAMmin']["rr"]/1000.
         previous_radar_band = radar_band

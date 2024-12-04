@@ -9,7 +9,7 @@ CCIconst=800.
 htypes_model=['vv','cc','rr','ii','ss','gg'] # available model variables
 n_moments_model = [1,1,1,1,1,1]                 # corresponding moments
 list_types_tot = ['rr','ii','ss','gg','wg']
-method = ['Tmatrix','Tmatrix','Tmatrix','Tmatrix','Tmatrix']
+method = ['Tmatrix','Rayleigh','Rayleigh','Tmatrix','Tmatrix']
 
 MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
  
@@ -37,7 +37,7 @@ pathTmat = repTmat+"/OUTPUT/"
 commonPath  = "/home/davidcl/Programmation/data/expeOLIVE/arome/3dvarfr/"
 arome_experience_name = None
 commonFilename = "historic.arome.franmg-01km30+00"
-outPath = "/home/davidcl/Programmation/output_test/operadar_test"
+outPath = "/home/davidcl/Programmation/output_test/operadar_test/rayleigh"
 csvPath = "/home/davidcl/Programmation/data/testCase_convective.csv"
 
 # ========== Constants =======================

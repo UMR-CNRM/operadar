@@ -55,7 +55,9 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile,singleTy
                               #Radloc = (["radpos"],Radpos),
                             ),
                   attrs=dict(horizontal_resolution="1.3 km",
-                             methods=list(zip(cf.list_types_tot,cf.method))),
+                             hydrometeors = cf.list_types_tot,
+                             method_each=cf.method,
+                             ),
                   )    
     ds.to_netcdf(outfile)
     ds.close()
