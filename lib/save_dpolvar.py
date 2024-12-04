@@ -9,6 +9,7 @@ Created on Tue Apr 18 17:00:34 2023
 
 import numpy as np
 import xarray as xr
+import operad_conf as cf
 
 # ================== Save model (Arome or MesoNH) + simulated radar variables ===================================
 
@@ -53,7 +54,8 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile,singleTy
                               time = (datetime),
                               #Radloc = (["radpos"],Radpos),
                             ),
-                  attrs=dict(horizontal_resolution="1.3 km"),
+                  attrs=dict(horizontal_resolution="1.3 km",
+                             methods=list(zip(cf.list_types_tot,cf.method))),
                   )    
     ds.to_netcdf(outfile)
     ds.close()
