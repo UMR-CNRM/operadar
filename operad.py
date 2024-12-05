@@ -36,7 +36,7 @@ import operad_lib as ope_lib
 import read_tmatrix as read_tmat
 import save_dpolvar as save
 import csv_lib as csv_lib
-from compute_var_pol import compute_individual_hydrometeor_with_Tmatrix
+from compute_var_pol import compute_individual_hydrometeor_with_Tmatrix, calculate_var_pol
 
 
 # ===== Configuration files ===== #
@@ -53,11 +53,9 @@ micro = 'ICE3'#sys.argv[3]
 
 
 # ===== Reading dates in case(s) study csv file
-studyCases = csv_lib.read_csv_file(csv_file_path=cf.csvPath,
-                                   which_date=dateconf,
+studyCases = csv_lib.read_csv_file(which_date=dateconf,
                                    time_columns_name=cf.csv_time_columns,
                                    csv_datetime_format=cf.csv_datetime_format,
-                                   csv_delimiter=cf.csv_delimiter,
                                    )
 
 
@@ -84,7 +82,6 @@ for _,csv_row in studyCases.iterrows():
     
     
     liste_var_pol = ["Zhh", "Zdr", "Kdp","Rhohv"] # A SUPPRIMER ?
-    print([[hydro,method] for hydro,method in zip(cf.list_types_tot,cf.method)])
 
     # ----- Reading Tmatrix tables ----- #
     if radar_band != previous_radar_band :
@@ -114,7 +111,14 @@ for _,csv_row in studyCases.iterrows():
         # ----- Testing existence of the output file ----- #
         if Path(outFile).exists() and (cf.singletype == False) :
             print("netcdf file for",datetime.strftime('%H:%M'),"already exists")
-            continue   
+            continue
+        if  Path(outFile).exists() and (cf.singletype == True):
+            fileList = []
+            for hydro,method in zip(cf.list_types_tot,cf.method):
+                fileList += [Path(f"{outpath_singleType}/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydro}_{method}.nc")]
+            if all(list(map(Path.exists,fileList))):
+                print("netcdf file for",datetime.strftime('%H:%M'),f"and individual netcdfs for {cf.list_types_tot} already exist")
+                continue
         
         # ----- If not, creation of the file ----- #
         print("\n-------",datetime,"-------")
@@ -165,9 +169,7 @@ for _,csv_row in studyCases.iterrows():
                 outFileType = outpath_singleType + f"/dpolvar_{model}_{micro}_{radar_band}_{datetime.strftime('%Y%m%d_%H%M')}_{hydro}_{method}.nc"
                 for arg,val in zip(['X','Y','Z','lat','lon','echeance','path_save_singleType'],[X,Y,Z,lat,lon,datetime,outFileType]):
                     dict_save_singleType[arg] = val
-                if Path(outFile).exists() and Path(outFileType).exists() :
-                    print("netcdf file for",datetime.strftime('%H:%M'),"and individual",hydro,"already exist")
-                    continue
+                
 
             if method == 'Tmatrix':
                 dpol_var_dict = compute_individual_hydrometeor_with_Tmatrix(
@@ -175,7 +177,7 @@ for _,csv_row in studyCases.iterrows():
                                 contents = M, elevation= el, temperature=Tc, waterFraction=Fw,
                                 N_rain=CC, N_ice=CCI, mask_precip_dist=mask_precip_dist,
                                 dpolVar_dict=dpol_var_dict, radar_wavelenght=LAM,
-                                args_for_saving_singleType=dict_save_singleType,
+                                **dict_save_singleType,
                                                                             )
                 
             #elif method == 'Rayleigh' :
@@ -188,12 +190,7 @@ for _,csv_row in studyCases.iterrows():
             dpol_var_dict[var][~mask_precip_dist] = np.nan
         
         # ----- dpol var calculation
-        dpol_var_dict["Zhh"] = np.copy(dpol_var_dict["Zhhlin"])
-        dpol_var_dict["Zhh"][dpol_var_dict["Zhhlin"]>0] = ope_lib.Z2dBZ(dpol_var_dict["Zhhlin"][dpol_var_dict["Zhhlin"]>0])
-        dpol_var_dict["Zdr"] = np.copy(dpol_var_dict["Zhhlin"])
-        dpol_var_dict["Zdr"][(dpol_var_dict["Zhhlin"]>0) & (dpol_var_dict["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
-                (dpol_var_dict["Zhhlin"]/dpol_var_dict["Zvvlin"])[(dpol_var_dict["Zhhlin"]>0) & (dpol_var_dict["Zvvlin"]>0)])
-        dpol_var_dict["Rhohv"] = np.sqrt(np.divide(dpol_var_dict["S11S22"], dpol_var_dict["S11S11"]*dpol_var_dict["S22S22"]))
+        dpol_var_dict = calculate_var_pol(dpol_var_dict)
         print("\t--> Done in",round(tm.time() - deb_timer,2),"seconds")
         
         # ----- Save dpol var for all hydro in netcdf and/or npz file

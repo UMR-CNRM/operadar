@@ -18,6 +18,7 @@ import sys
 import math
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 # 0perad modules
 sys.path.insert(0, "./lib")
@@ -74,7 +75,7 @@ def compute_individual_hydrometeor_with_Tmatrix(
                                                                                    shutdown_warnings=True,
                                                                                    )
         
-    # Single type dpol var computation       
+    # Single type dpol var computation      
     temp_dict = {var:dpolVar_dict[var][mask_tot] for var in cf.dpol_var_to_calc}
     temp_dict["Zhhlin"]= 1e18*radar_wavelenght**4./(math.pi**5.*0.93)*4.*math.pi*S22carre #lin = linear
     temp_dict["Zvvlin"]= 1e18*radar_wavelenght**4./(math.pi**5.*0.93)*4.*math.pi*S11carre
@@ -95,21 +96,15 @@ def compute_individual_hydrometeor_with_Tmatrix(
     del S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
     del elevation_masked, Tc_masked, M_masked, temp_dict, mask_tot
 
-    #  Dpol variables for single hydrometeor types 
-    if (cf.singletype):
-        dpolVar_dict_1hydro["Zhh"] = np.copy(dpolVar_dict_1hydro["Zhhlin"])
-        dpolVar_dict_1hydro["Zhh"][dpolVar_dict_1hydro["Zhhlin"]>0] = ope_lib.Z2dBZ(dpolVar_dict_1hydro["Zhhlin"][dpolVar_dict_1hydro["Zhhlin"]>0])
-        dpolVar_dict_1hydro["Zdr"] = np.copy(dpolVar_dict_1hydro["Zhhlin"])
-        dpolVar_dict_1hydro["Zdr"][(dpolVar_dict_1hydro["Zhhlin"]>0) & (dpolVar_dict_1hydro["Zvvlin"]>0)] = ope_lib.Z2dBZ( \
-                (dpolVar_dict_1hydro["Zhhlin"]/dpolVar_dict_1hydro["Zvvlin"])[(dpolVar_dict_1hydro["Zhhlin"]>0) & (dpolVar_dict_1hydro["Zvvlin"]>0)])
-        dpolVar_dict_1hydro["Rhohv"] = np.sqrt(np.divide(dpolVar_dict_1hydro["S11S22"], dpolVar_dict_1hydro["S11S11"]*dpolVar_dict_1hydro["S22S22"]))
-        
+    #  Dpol variables for single hydrometeor types
+    if (cf.singletype) and not Path(args_for_saving_singleType['path_save_singleType']).exists():
+        dpolVar_dict_1hydro = calculate_var_pol(dpolVar_dict_1hydro)
         # Writing dpol var for a single hydrometeor type hydrometeor
-        save.save_dpolvar({hydrometeor:contents[hydrometeor]}, N_rain, N_ice, dpolVar_dict_1hydro, temperature,
-                          args_for_saving_singleType['Z'], args_for_saving_singleType['X'],
-                          args_for_saving_singleType['Y'], args_for_saving_singleType['lat'],
-                          args_for_saving_singleType['lon'], args_for_saving_singleType['echeance'],
-                          args_for_saving_singleType['path_save_singleType'],singleType=True,
+        save.save_dpolvar(M={hydrometeor:contents[hydrometeor]}, CC=N_rain, CCI=N_ice, Vm_k=dpolVar_dict_1hydro,Tc=temperature,
+                          Z=args_for_saving_singleType['Z'], X=args_for_saving_singleType['X'],
+                          Y=args_for_saving_singleType['Y'], lat=args_for_saving_singleType['lat'],
+                          lon=args_for_saving_singleType['lon'], datetime=args_for_saving_singleType['echeance'],
+                          outfile=args_for_saving_singleType['path_save_singleType'],singleType=True,
                           )
         del dpolVar_dict_1hydro
         
@@ -118,14 +113,38 @@ def compute_individual_hydrometeor_with_Tmatrix(
     
 #def compute_individual_hydrometeor_with_Rayleigh() : return ?
 
-"""
-def calculate_var_pol(method):
-    
-    ??
-    return varpol_arr
 
-def calculate_Zh(method):
-def calculate_Zdr(method):
-def calculate_Kdp(method):
-def calculate_RhoHV(method):
+def calculate_var_pol(dpolVar_dict):
+    for var in cf.liste_var_pol :
+        if var=="Zhh" or var=="Zh" or var=="zh" :
+            dpolVar_dict = calculate_Zh(dpolVar_dict)
+        elif var=="Zdr" or var=="zdr" :
+            dpolVar_dict = calculate_Zdr(dpolVar_dict)
+        elif var=="Kdp" or var=="kdp" :
+            pass
+            #dpolVar_dict = calculate_Kdp(dpolVar_dict)
+        elif var=="Rhohv" or var=="rhohv" or var=="rho" :
+            dpolVar_dict = calculate_RhoHV(dpolVar_dict)
+            
+    return dpolVar_dict
+
+
+def calculate_Zh(dpolVar_dict):
+    mask_zhh_linear_pos = dpolVar_dict["Zhhlin"]>0
+    dpolVar_dict["Zhh"] = np.copy(dpolVar_dict["Zhhlin"])
+    dpolVar_dict["Zhh"][mask_zhh_linear_pos] = ope_lib.Z2dBZ(dpolVar_dict["Zhhlin"][mask_zhh_linear_pos])
+    return dpolVar_dict
+        
+        
+def calculate_Zdr(dpolVar_dict):
+    mask_zhh_zvv_linear_pos = (dpolVar_dict["Zhhlin"]>0) & (dpolVar_dict["Zvvlin"]>0)
+    dpolVar_dict["Zdr"] = np.copy(dpolVar_dict["Zhhlin"])
+    dpolVar_dict["Zdr"][mask_zhh_zvv_linear_pos] = ope_lib.Z2dBZ((dpolVar_dict["Zhhlin"]/dpolVar_dict["Zvvlin"])[mask_zhh_zvv_linear_pos])
+    return dpolVar_dict
+    
 """
+def calculate_Kdp(method):
+"""
+def calculate_RhoHV(dpolVar_dict):
+    dpolVar_dict["Rhohv"] = np.sqrt(np.divide(dpolVar_dict["S11S22"], dpolVar_dict["S11S11"]*dpolVar_dict["S22S22"]))
+    return dpolVar_dict
