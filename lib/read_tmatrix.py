@@ -19,6 +19,7 @@ Contains routines to :
 import numpy as np
 import pandas as pd
 import math
+import sys
 
 #============== Read_Tmatrix2020
 """
@@ -179,13 +180,13 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
                  ELEVmint, ELEVmaxt, ELEVstept,\
                  Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
                  expMmin,expMstep,expMmax,\
-                 NMOMENTS, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
+                 P3name, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
                                                                
     # Find position in the T-matrix table
     [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
         Tc_temp,P3, M_temp, LAMmint, LAMmaxt,\
         LAMstept, ELEVmint, ELEVmaxt, ELEVstept, Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-        expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings)
+        expMmin,expMstep,expMmax,P3name,shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
@@ -212,9 +213,9 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
 #    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
 def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
     ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS,shutdown_warnings):
+    P3min,P3max,P3step,expMmin,expMstep,expMmax,P3name,shutdown_warnings):
     
-    """#LAMm = longueur d'onde radar en m (val)
+    """
        ELEV = Elevation en radians (tab)
        Tc = température en °C (tab)
        P3r = liquid water fraction (1-moment) or concentration (2-moment)
@@ -223,8 +224,8 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
        ELEVmin,max,step en degrees (val)
        Tcmin,max,step en °C (val)
        P3min,max,step entre 0 et 1 (val)
-       NMOMENTS = 1 or 2 moments (1 moment:  P3=liquid water fraction Fw,
-                                  2 moments: P3= number concentration)
+       expMmin,expMstep,expMmax
+       P3name ("Fw" liquid water fraction or "Nc" number concentration)
 
        return: kTmat, dict with 32 tables with the M shape/size : indexes of the scattering coef (S11..)
        corresponding to the upper and lower bounds of LAM, ELEV, Tc, P3, M for 
@@ -248,13 +249,17 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
     expM[M>0]=(np.log10(M))[M>0]
     
     # 1 moment: P3=Liquid water fraction
-    if (NMOMENTS==1):
+    if (P3name=="Fw"):
         P3=np.copy(P3r)
     # 2 moments: P3=number concentration   
-    else: 
-        P3=np.copy(P3r)
-        P3[P3r>0]=np.log10(P3r[P3r>0])
-        P3[P3r==0]=P3min
+    else :
+        if (P3name=="Nc"): 
+            P3=np.copy(P3r)
+            P3[P3r>0]=np.log10(P3r[P3r>0])
+            P3[P3r==0]=P3min
+        else:
+            print("Error P3name (3d parameter in Tmatrix table), the only options are Fw (liq water fraction) or Nc (number concentration)")
+            sys.exit(1)
     
     # If LAM, ELEV, Tc, P3 or M are outside min and max ranges:
     # warning and the values are set to the min (if below min) or max (if over max)

@@ -26,14 +26,18 @@ fi
 
 currentTime=`date +"%F %R"`
 
+liste_simu="Arome_oper MesoNH_ICE3 MesoNH_LIMA MesoNH_LIMAAG"
+#liste_simu="obs"
+
 # --- For tests -----
 #python3 -i compute_CFADs.py $1
 
 
 # --- For multiple times running ---
-nohup python3 -u compute_CFADs.py $1 >nohupOUT/out_statCFAD_$1.txt 2> nohupOUT/err_statCFAD_$1.txt &
+for simu in $liste_simu;do
+    echo $simu
+    nohup python3 -u compute_CFADs.py $simu >nohupOUT/out_statCFAD_$simu.txt 2> nohupOUT/err_statCFAD_$simu.txt &
 
-echo ${currentTime} $! >> process_id_historic_cfad.txt
+    echo program output redirected to ./nohupOUT/out_statCFAD_$simu.txt
 
-echo program output redirected to ./nohupOUT/out_statCFAD_$1.txt
-echo corresponding process id written in ./process_id_historic_cfad.txt
+done

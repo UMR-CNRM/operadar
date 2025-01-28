@@ -15,7 +15,7 @@ from netCDF4 import Dataset
 import epygram
 
 sys.path.insert(0, "./lib")
-import level2alt as lev2alt
+
 
 # ==== Functions ======
 #plot_map(var,var_lev.lon, var_lev.lat, var_lev, bounds,cmap,lev, fileDir, filename):
@@ -82,20 +82,21 @@ def plot_map(var,lon,lat,data,bounds,cmap,lev,fileDir,filename,imgDir,simu,day, 
 
 # === Declarations ====
     
-interpole=False #True    
+interpole=False #True
+plot_nointerpole=True    
  
 band="C"
 day="20220818"
 lat_min,lat_max,lon_min,lon_max=41.,45.,4.,11.
 
-#simuList = ["Arome_oper","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
+simuList = ["Arome_oper","MesoNH_ICE3","MesoNH_LIMA","MesoNH_LIMAAG"]
 simuList=["Arome_oper"]
 #simuCloe = ["Arome_ICE3","Arome_LIMA","obs"]
 simuCloe =["obs"]
 simuDiag = [] #"MesoNH_Rayleigh"]
 
 #timeList=["0100","0200","0300","0400","0500","0600","0700","0800","0900","1000"]
-timeList=["0600"]
+timeList=["0800"]
 
 dataDir = '/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/'
 imgDir = dataDir+"IMG/"
@@ -105,7 +106,7 @@ statDir = dataDir
 fileDirDict   = {'Arome_oper' : dataDir+'AROME/dpolvar/',
              'MesoNH_ICE3': dataDir+'CT1KM/dpolvar/',
                  'MesoNH_LIMA': dataDir+'LIREF/dpolvar/',
-                 'MesoNH_LIMAAG': dataDir+'LIMAH/dpolvar/',
+                 'MesoNH_LIMAAG': dataDir+'LIMAAG/dpolvar/',
                  'obs' : dataDir+'OBS/',
                  'Arome_ICE3':dataDir+"AROME_ICE3/",
                  'Arome_LIMA':dataDir+"AROME_LIMA/",
@@ -113,9 +114,9 @@ fileDirDict   = {'Arome_oper' : dataDir+'AROME/dpolvar/',
              }
 
 varDict = {
-    'Zh': {'name': 'Reflectivity', 'min': 8, 'max': 64, 'step':4,'unit': 'dBZ'},
-    'Zdr': {'name': 'Differential Reflectivity', 'min': 0, 'max': 8, 'step': 1, 'unit': 'dB'},
-    'Kdp': {'name': 'Specific Differential Phase', 'min': 0, 'max': 10, 'step':1, 'unit': '°/km'}
+    'zh': {'name': 'Reflectivity', 'min': 8, 'max': 64, 'step':4,'unit': 'dBZ'},
+    'zdr': {'name': 'Differential Reflectivity', 'min': 0, 'max': 8, 'step': 1, 'unit': 'dB'},
+    'kdp': {'name': 'Specific Differential Phase', 'min': 0, 'max': 10, 'step':1, 'unit': '°/km'}
 }
 
 
@@ -153,14 +154,96 @@ cmap=plt.get_cmap('radar');cmap.set_under('white') ; cmap.set_over('deeppink')
 
 
 # === SETTINGS === #
-altiList = [] #1000,2000] #2000] #[int(x) for x in np.arange(0,15e3,500)]
+altiList = [1000] #1000,2000] #2000] #[int(x) for x in np.arange(0,15e3,500)]
 levelList=[] #20] #[89] #,87,85,80,75,70,60,50,40,30,20,10,0]
-listVarPol = ['Zh','Zdr','Kdp'] #'zdr','kdp','rhohv'] 
-listVarPol = ['Zh'] 
+listVarPol = ['zh','zdr','kdp'] #'zdr','kdp','rhohv'] 
+listVarPol = ['zh'] 
 listVarHydro = [] #['rr','ii','ss','gg','wg','vv','cc']
 
 listVarTot = listVarPol+listVarHydro
 
+             
+# ======= Cloe nc files after interpolation over altitude z ===
+for simu in simuCloe:
+    print('Plot 2D maps for: ',simu)
+    micro=simu.split("_")[-1]
+    
+    fileDir=fileDirDict[simu]
+    filename=day+"_AJAC-COLL-NIME_"+micro+".nc"
+    f = os.path.join(fileDir, filename)
+    ds = xr.open_dataset(f)
+    #ds=ds.rename({'zh':'Zh','zdr':'Zdr','kdp':'Kdp','rhohv':'Rhohv'})
+        
+    # loop time
+    day_dt = datetime.datetime.strptime(day, "%Y%m%d")
+    for time in timeList:
+        time_dt = datetime.datetime.strptime(time, "%H%M")
+        datetime_combined = datetime.datetime.combine(day_dt.date(), time_dt.time())
+        time_str = datetime_combined.strftime("%Y-%m-%dT%H:%M:%S")
+    
+        # loop variable
+        for var in listVarTot:                
+            vmin,vmax,step=varDict[var]['min'],varDict[var]['max'],varDict[var]['step']
+            bounds = np.arange(vmin, vmax + step, step)  
+            # loop alti
+            for alti in altiList :
+                data=ds[var].sel(z=alti).sel(time=time_str)
+                plot_map(var,data.lon, data.lat, data, bounds,cmap,alti,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
+                
+#            # Max over all levels
+            print("Plot ",var," max")    
+            datamax = ds[var].sel(time=time_str).max(dim='z')
+            plot_map(var,datamax.lon, datamax.lat, datamax, bounds,cmap,-1,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
+            
+    ds.close() ; del ds
+        
+# ======= AROME oper and MesoNH operadar nc files (no interpolation) ===
+if (plot_nointerpole):
+    for simu in simuList:
+        print('Plot 2D maps for: ',simu)
+        fileDir=fileDirDict[simu]
+        dataType=simu
+        if (simu=='Arome_oper'):
+            dataType='Arome_ICE3'
+         
+        for time in timeList:
+            
+            filename="dpolvar_"+dataType+"_"+band+"_"+day+time+"00.nc"
+            
+            if not os.path.isfile(fileDir+filename):
+                old_name = filename[:-5] + ".nc"
+                os.rename(fileDir+old_name, fileDir+filename)
+                print(f"Le fichier a été renommé en : {filename}")
+            
+            if os.path.isfile(fileDir+filename):
+                print('  ',filename)
+                f = os.path.join(fileDir, filename)
+                ds = xr.open_dataset(f)  
+                
+                if (interpole):
+                    ds_interp=lev2alt.interpolate_dataset(ds,lvl_intervals=1,resolV=500,alti_min=0,alti_max=15e3)
+                    ds_interp.to_netcdf(fileDir+dataType+"_"+band+"_"+day+time+"00interp.nc")
+                
+                for var in listVarTot:                
+                    vmin,vmax,step=varDict[var]['min'],varDict[var]['max'],varDict[var]['step']
+                    bounds = np.arange(vmin, vmax + step, step)           
+                    
+                    # Levels
+                    for lev in levelList :
+                        print("Plot ",var," at level ",lev)            
+                        
+                        data = ds[var].sel(level=lev)                    
+                        plot_map(var,data.lon, data.lat, data, bounds,cmap,lev,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
+                        
+                    # Max over all levels
+                    print("Plot ",var," max")    
+                    datamax = ds[var].max(dim='level')
+                    plot_map(var,datamax.lon, datamax.lat, datamax, bounds,cmap,-1,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
+                
+                if (interpole):
+                    ds_interp.close() ; del ds_interp
+                ds.close() ; del ds    
+                
 # ======= MesoNH DIAG files (RARE with Rayleigh scattering) ============
 for simu in simuDiag:
     print('Plot 2D maps for: ',simu)
@@ -192,84 +275,3 @@ for simu in simuDiag:
         datamax = np.nanmax(rare,axis=0)
         plot_map(var,lon, lat, datamax, bounds,cmap,-1,fileDir,modelfile,imgDir,simu,day,heure,lon_min,lon_max,lat_min,lat_max)
 
-# ======= AROME oper and MesoNH operadar nc files (no interpolation) ===
-
-for simu in simuList:
-    print('Plot 2D maps for: ',simu)
-    fileDir=fileDirDict[simu]
-    dataType=simu
-    if (simu=='Arome_oper'):
-        dataType='Arome_ICE3'
-     
-    for time in timeList:
-        
-        filename="dpolvar_"+dataType+"_"+band+"_"+day+time+"00.nc"
-        
-        if not os.path.isfile(fileDir+filename):
-            old_name = filename[:-5] + ".nc"
-            os.rename(fileDir+old_name, fileDir+filename)
-            print(f"Le fichier a été renommé en : {filename}")
-        
-        if os.path.isfile(fileDir+filename):
-            print('  ',filename)
-            f = os.path.join(fileDir, filename)
-            ds = xr.open_dataset(f)  
-            
-            if (interpole):
-                ds_interp=lev2alt.interpolate_dataset(ds,lvl_intervals=1,resolV=500,alti_min=0,alti_max=15e3)
-                ds_interp.to_netcdf(fileDir+dataType+"_"+band+"_"+day+time+"00interp.nc")
-            
-            for var in listVarTot:                
-                vmin,vmax,step=varDict[var]['min'],varDict[var]['max'],varDict[var]['step']
-                bounds = np.arange(vmin, vmax + step, step)           
-                
-                # Levels
-                for lev in levelList :
-                    print("Plot ",var," at level ",lev)            
-                    
-                    data = ds[var].sel(level=lev)                    
-                    plot_map(var,data.lon, data.lat, data, bounds,cmap,lev,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
-                    
-                # Max over all levels
-                print("Plot ",var," max")    
-                datamax = ds[var].max(dim='level')
-                plot_map(var,datamax.lon, datamax.lat, datamax, bounds,cmap,-1,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
-            
-            if (interpole):
-                ds_interp.close() ; del ds_interp
-            ds.close() ; del ds
-              
-# ======= Cloe nc files after interpolation over altitude z ===
-for simu in simuCloe:
-    print('Plot 2D maps for: ',simu)
-    micro=simu.split("_")[-1]
-    
-    fileDir=fileDirDict[simu]
-    filename=day+"_AJAC-COLL-NIME_"+micro+".nc"
-    f = os.path.join(fileDir, filename)
-    ds = xr.open_dataset(f)
-    ds=ds.rename({'zh':'Zh','zdr':'Zdr','kdp':'Kdp','rhohv':'Rhohv'})
-        
-    # loop time
-    day_dt = datetime.datetime.strptime(day, "%Y%m%d")
-    for time in timeList:
-        time_dt = datetime.datetime.strptime(time, "%H%M")
-        datetime_combined = datetime.datetime.combine(day_dt.date(), time_dt.time())
-        time_str = datetime_combined.strftime("%Y-%m-%dT%H:%M:%S")
-    
-        # loop variable
-        for var in listVarTot:                
-            vmin,vmax,step=varDict[var]['min'],varDict[var]['max'],varDict[var]['step']
-            bounds = np.arange(vmin, vmax + step, step)  
-            # loop alti
-            for alti in altiList :
-                data=ds[var].sel(z=alti).sel(time=time_str)
-                plot_map(var,data.lon, data.lat, data, bounds,cmap,alti,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
-                
-#            # Max over all levels
-            print("Plot ",var," max")    
-            datamax = ds[var].sel(time=time_str).max(dim='z')
-            plot_map(var,datamax.lon, datamax.lat, datamax, bounds,cmap,-1,fileDir,filename,imgDir,simu,day,time,lon_min,lon_max,lat_min,lat_max)
-            
-    ds.close() ; del ds
-        

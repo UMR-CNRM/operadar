@@ -21,7 +21,7 @@ def compute_stats(dataType:str,statDict,var,alti,valueList):
         statDict['Q95'] += [np.nan]
     return statDict
      
-def extract_values_cloe(fileDir,dataType:str,tmp_array,var,inside,threshold,alti):
+def extract_values_cloe(fileDir,simu:str,tmp_array,var,inside,threshold,alti):
     listVarHydro = ['rr','ii','ss','gg','wg','vv','cc']
     for filename in sorted(os.listdir(fileDir)):
         f = os.path.join(fileDir, filename)
@@ -37,7 +37,8 @@ def extract_values_cloe(fileDir,dataType:str,tmp_array,var,inside,threshold,alti
             ds.close() ; del ds    
     
         # For observation file: selection of times with minute=0 in obs file
-        if ('obs_hours.nc' in f):   
+        micro=simu.split("_")[-1]
+        if (micro+'.nc' in f):   
             print('  ',filename)
             ds = xr.open_dataset(f)
             ds_hours=ds.sel(time=ds.time.dt.minute == 0)

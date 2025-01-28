@@ -9,26 +9,39 @@ import numpy as np
 import epygram
 import bronx
 import pickle as pkl
-import read_arome_lib as arolib
 import time as tm
+
+import read_arome_lib as arolib
 
 
 #================= Read Arome variables =======================================
 """
 Read Arome 3D variables in ncfile: pressure, temperature, hydrometeor contents
 and concentrations 
-INPUT : micro,modelfile,lon_min,lon_max,lat_min,lat_max
-OUTPUT: M, Tc, CC, CCI, lon, lat, Z
+INPUT : 
+    - micro
+    - extract_once
+    - hydrometeors_list : list of hydrometeors to read in AROME file
+    - moments : dict with number of moments for each hydrometeor type
+    - modelfile
+    - lon_min,lon_max,lat_min,lat_max
+OUTPUT: 
+    - M (kg/m3): dict of hydrometeor contents 
+    - Nc dict (/): dict of concentrations
+    - Tc (°C), CC, CCI, lon, lat, Z
 """
 
 def read_arome(modelfile: str,
                micro: str,
                extract_once: bool,
                hydrometeors_list: list,
+               moments: dict,
+               CCIconst: float,
                lon_min: float = -5.2,
                lon_max: float = 8.3,
                lat_min: float = 41.3,
                lat_max: float = 51.15,
+               subDomain: bool = False,
                ):   
     
     epygram.init_env()
@@ -56,10 +69,13 @@ def read_arome(modelfile: str,
     #ficA.what()
     
     # === Extrat subdomain === #
-    imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
-    imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
-    ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
-                                                  subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
+    if (subDomain==True):
+        imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
+        imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
+        ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
+                                                      subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
+    else:
+        ficsubdo=ficA
     #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
     
     # ======== Horizontal, vertical coordinates, pressure
@@ -67,10 +83,10 @@ def read_arome(modelfile: str,
         [lon, lat] = arolib.get_lat_lon_epygram(ficsubdo)
     [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B)
     
-    # ======== Hydrometeor contents and temperature
+    # ======== Hydrometeor contents, concentrations and temperature
     [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
     Tc=T-273.15
-    [CC , CCI] = arolib.get_concentrations(ficsubdo, p,micro,hydrometeors_list)
+    Nc = arolib.get_concentrations(ficsubdo, p, hydrometeors_list,moments,CCIconst)
     
     # ========= Horizontal grid
     Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
@@ -84,8 +100,8 @@ def read_arome(modelfile: str,
     ficA.close()
     ficsubdo.close()
     
-    if extract_once : return M, Tc, CC, CCI, Z, X, Y, lon, lat
-    else : return M, Tc, CC, CCI, Z, X, Y
+    if extract_once : return M, Nc, Tc, Z, X, Y, lon, lat
+    else : return M, Nc, Tc, Z, X, Y
 
 # =============================================================================
 

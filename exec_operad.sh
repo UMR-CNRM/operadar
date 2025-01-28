@@ -16,6 +16,9 @@
    >>> ./exec_operad.sh MesoNH 20220818 LIMA conf_MesoNH_LIMA_CORSEbe.py
    >>> ./exec_operad.sh Arome 20220818 ICE3 conf_Arome_ICE3_CORSEbe.py
    >>> ./exec_operad.sh MesoNH 20220818 LIMAAG conf_MesoNH_LIMAAG_CORSEbe.py
+   >>> ./exec_operad.sh Arome 20250122 LIMA conf_Arome_LIMAC_VISULIMA.py
+   >>> ./exec_operad.sh Arome 20250122 LIMA conf_Arome_LIMA_VISULIMA.py
+   >>> ./exec_operad.sh Arome 20250122 ICE3 conf_Arome_ICE3_VISULIMA.py
   _________________________________________  
   STEPS :
      a) Creates or check the existance of the directory where all nohupFiles.txt will be saved (nohupOUT)
@@ -27,6 +30,9 @@
          You may want to manually erase some old lines or delete the file to clear process_id_historic.txt
 " && exit
 
+module use ~mary/public/modulefiles
+module load epygram
+
 if [ ! -d ./nohupOUT ]; then
   mkdir nohupOUT
 fi
@@ -36,10 +42,10 @@ cp ./configFiles/$4 operad_conf.py
 currentTime=`date +"%F %R"`
 
 # --- For tests -----
-#python3 -i operad.py $1 $2 $3
+python3 -i operad.py $1 $2 $3
 
 # --- For multiple times running ---
-nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
+#nohup python3 -u operad.py $1 $2 $3 >nohupOUT/out_$1_$2_$3.txt 2> nohupOUT/err_$1_$2_$3.txt &
 
 echo ${currentTime} $! $1 $2 $3 >> process_id_historic.txt
 

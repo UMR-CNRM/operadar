@@ -16,9 +16,8 @@ import level2alt as lev2alt
 ##simuCloe = ["Arome_ICE3","Arome_LIMA"]
 #simuCloe =[]
 
-simu=sys.argv[1]
-
-computeObs=False
+#simu=sys.argv[1]
+simu="Arome_ICE3"
 
 dataDir = '/home/cnrm_other/ge/mrmp/augros/WKD/CORSE/'
 #dataDir = '/home/augros/DONNEES/MESONH/CORSE/'
@@ -53,14 +52,13 @@ resolV,alti_min,alti_max=500,0,15e3
 lvl_intervals=2
 altiList = [int(x) for x in np.arange(alti_min,alti_max,resolV)]
 
-#==== Observations statistics ==========     
-if (simu=="obs"):
-    
+#==== Observations or simu Cloe statistics ==========     
+if (simu=="obs" or simu=="Arome_LIMA" or simu=="Arome_ICE3"):
     listVarTot = listVarPol
-    print('Extract and compute stats for: observations')
+    print('Extract and compute stats for: ',simu)
     
     
-    pickle_name = f'{statDir}df_for_stats_{inside}sup{str(int(threshold[inside]))}_obs.pkl'
+    pickle_name = f'{statDir}df_for_stats_{inside}sup{str(int(threshold[inside]))}_{simu}.pkl'
     statDict = {'altitude' : [],
                 'varname' : [],
                 'dataType' : [],
@@ -70,8 +68,8 @@ if (simu=="obs"):
         for var in listVarPol:
             print(alti,var)
             tmp_arr = []
-            tmp_arr = cfad.extract_values_cloe(fileDirDict['obs'],'obs',tmp_arr,var,inside,threshold[inside],alti)
-            statDict = cfad.compute_stats('obs',statDict,var,alti,tmp_arr)
+            tmp_arr = cfad.extract_values_cloe(fileDirDict[simu],simu,tmp_arr,var,inside,threshold[inside],alti)
+            statDict = cfad.compute_stats(simu,statDict,var,alti,tmp_arr)
             del tmp_arr 
     
     df = pd.DataFrame(data=statDict)

@@ -97,6 +97,8 @@ micro = sys.argv[3]
 # For tests only with spyder (to comment if running with exec_operad.sh)
 #model,dateconf,micro="MesoNH","20220818","ICE3"
 #model,dateconf,micro="Arome","20220818","ICE3"
+#model,dateconf,micro="Arome","20241006","LIMA"
+
 
 if (model=="MesoNH"):
     import read_mesonh as meso
@@ -157,7 +159,7 @@ for _,row in studyCases.iterrows():
     for datetime in datetimelist: 
         day=datetime.strftime('%Y%m%d')
         time = datetime.strftime('%H%M%S')
-        outFile = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
+        outFile = cf.outPath + f"dpolvar_{model}_{micro}_{radar_band}_{day}{time}"
 
 #        # ----- Testing existence of the output file ----- #
 #        if Path(outFile + ".nc").exists():
@@ -177,7 +179,7 @@ for _,row in studyCases.iterrows():
             ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t] = read_tmat.Read_TmatrixClotilde(cf.pathTmat,
                                                                                                           radar_band,
                                                                                                           micro,
-                                                                                                          cf.list_types_tot)
+                                                                                                          cf.htypes_table)
             LAM = LAMmin["rr"]/1000.
             read_tmatrix = False
             print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
@@ -210,24 +212,28 @@ for _,row in studyCases.iterrows():
             # Paths
             #pathmodel = cf.commonPath + f"{expeOLIVE}/{deb.strftime('%Y%m%dT')}{run}00P/forecast/"
             pathmodel = cf.commonPath
-            pathfick = f"{cf.outPath}/{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
+            pathfick = f"{cf.outPath}{deb.strftime('%Y%m%d')}/{run}Z_{micro}_k{cf.MixedPhase}/{radar_ids}"
             modelfile=pathmodel+cf.commonFilename+model_hour+".fa"
             if extract_once :
-                [M, Tc, CC, CCI, Z, X, Y, lon, lat] = aro.read_arome(modelfile = modelfile,
+                [M, Nc, Tc, Z, X, Y, lon, lat] = aro.read_arome(modelfile = modelfile,
                                                             micro = micro,
                                                             extract_once = extract_once,
+                                                            hydrometeors_list = cf.htypes_model,
+                                                            moments=cf.moments,                                                            
+                                                            CCIconst=cf.CCIconst,
                                                             lon_min = lon_min, lon_max = lon_max,
                                                             lat_min = lat_min, lat_max = lat_max,
-                                                            hydrometeors_list = cf.htypes_model,
-                                                            )
+                                                            subDomain=cf.subDomain)
             else :
-                [M, Tc, CC, CCI, Z, X, Y] = aro.read_arome(modelfile = modelfile,
+                [M, Nc, Tc, Z, X, Y] = aro.read_arome(modelfile = modelfile,
                                                     micro = micro,
                                                     extract_once = extract_once,
+                                                    hydrometeors_list = cf.htypes_model,
+                                                    moments=cf.moments,                                                            
+                                                    CCIconst=cf.CCIconst,
                                                     lon_min = lon_min, lon_max = lon_max,
                                                     lat_min = lat_min, lat_max = lat_max,
-                                                    hydrometeors_list = cf.htypes_model,
-                                                    )
+                                                    subDomain=cf.subDomain)
         else:
             print("model = "+model+" => needs to be either Arome or MesoNH")
         extract_once = False    
@@ -254,20 +260,20 @@ for _,row in studyCases.iterrows():
         mask_precip_dist = ope_lib.mask_precip(mask_distmax, M, expMmin, micro) # precip mask
         
         # ------ Mixed phase parametrization -------- #
-        [M, Fw] = ope_lib.compute_mixedphase(M, cf.MixedPhase, expMmin, micro) 
+        [M, Nc,Fw] = ope_lib.compute_mixedphase(M, Nc, cf.MixedPhase, expMmin, micro) 
         print("  --> Done in",round(tm.time()- deb_timer,2),"seconds")
         
         # Initialization of dict(Vm_k) --> contains all 3D dpol variables (all hydrometeor included)
         Vm_k = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
         # ----- Loop over hydromet types ----- #
-        print("Loop over hydrometeor types in Tmatrix tables:",cf.list_types_tot) ; deb_timer = tm.time()
-        for hydromet in cf.list_types_tot:
+        print("Loop over hydrometeor types in Tmatrix tables:",cf.htypes_table) ; deb_timer = tm.time()
+        for hydromet in cf.htypes_table:
             if (cf.singletype):
                 Vm_t = {var:np.zeros(Tc.shape) for var in liste_var_calc}
             
-            # Compute NMOMENTS
-            NMOMENTS = ope_lib.compute_nmoments(micro,hydromet)
+#            # Compute NMOMENTS
+#            NMOMENTS = ope_lib.compute_nmoments(micro,hydromet)
             
             # Compute single type mask
             [mask_tot, M_temp,
@@ -276,12 +282,11 @@ for _,row in studyCases.iterrows():
                                                                 expMmin, micro, hydromet
                                                                 )
             
-            # Define P3 : CC (2 moments) or Fw (1 moment)
-            [P3, P3min, P3max, P3step] = ope_lib.defineP3(hydromet, NMOMENTS, CC, CCI,
-                                                        mask_tot, Fw_temp,
-                                                        expCCmin,expCCmax, expCCstep,
-                                                        Fwmin[hydromet], Fwmax[hydromet], Fwstep[hydromet]
-                                                        )
+            # Define P3 : Nc (2 moments) or Fw (1 moment)
+            [P3, P3min, P3max, P3step, P3name] = ope_lib.defineP3(hydromet,cf.moments[hydromet],mask_tot,
+                                                         Nc[hydromet],expCCmin, expCCmax, expCCstep,
+                                                         Fw_temp, Fwmin[hydromet], Fwmax[hydromet], Fwstep[hydromet]
+                                                         )
             
             # Extract scattering coefficients for singletype
             [S11carre,
@@ -294,7 +299,7 @@ for _,row in studyCases.iterrows():
                                                 ELEVmin[hydromet], ELEVmax[hydromet], ELEVstep[hydromet],
                                                 Tcmin[hydromet], Tcmax[hydromet], Tcstep[hydromet],
                                                 P3min, P3max, P3step, expMmin,expMstep,expMmax,
-                                                NMOMENTS, el_temp,Tc_temp,P3, M_temp,cf.n_interpol,shutdown_warnings=True,
+                                                P3name, el_temp,Tc_temp,P3, M_temp,cf.n_interpol,shutdown_warnings=True,
                                                 )
                 
             # Single type dpol var computation       
@@ -326,9 +331,9 @@ for _,row in studyCases.iterrows():
                 Vm_t["Rhohv"] = np.sqrt(np.divide(Vm_t["S11S22"], Vm_t["S11S11"]*Vm_t["S22S22"]))
                 
                 # Writing dpol var for a single hydrometeor type hydromet
-                outFileType = cf.outPath + f"/dpolvar_{model}_{micro}_{radar_band}_{day}{time}_{hydromet}"
+                outFileType = cf.outPath + f"dpolvar_{model}_{micro}_{radar_band}_{day}{time}_{hydromet}"
                 
-                save.save_dpolvar(M[hydromet], CC, CCI,  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType)
+                save.save_dpolvar(M[hydromet], Nc[hydromet],  Vm_t, Tc, Z, X, Y, lat,lon,datetime,outFileType)
                 del Vm_t
     
         for var in liste_var_calc:
@@ -344,7 +349,7 @@ for _,row in studyCases.iterrows():
         print("  --> Done in",round(tm.time() - deb_timer,2),"seconds")
         
         # ----- Save dpol var for all hydromet in netcdf and/or npz file
-        save.save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
+        save.save_dpolvar(M, Nc, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outFile)
     
         del Vm_k
 

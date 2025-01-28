@@ -13,7 +13,7 @@ LIMToption="" #"" or "cstmu" the model variables are taken from LIMT simulation 
 CCIconst=800.
 htypes_model=['rr','ss','gg','ii'] # available hydrometeors (model fields)
 htypes_table = ['rr','ss','gg','ii','wg']
-moments={'rr':1,'ss':1,'gg':1,'ii':1,'wg':1}
+moments={'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
 
 # ==== Subdomain
 subDomain=False 
@@ -26,9 +26,9 @@ MixedPhase="Fwposg" # 'Tpos' or 'Fwpos' or 'Fwposg' #
 n_interpol = 32      # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
 
 # ==== Directories / files name options 
-commonPath  = "/scratch/work/straussc/OPE_RADAR/ICE3/"
+commonPath  = "/scratch/work/straussc/OPE_RADAR/LIMA/"
 commonFilename = "historic.arome.franmg-01km30+00" #08:00.fa"
-outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/VISULIMA/dpolvar/ICE3/"
+outPath = "/home/cnrm_other/ge/mrmp/augros/WKD/VISULIMA/dpolvar/LIMA/"
 csvPath = "./study_cases/VISULIMA.csv"
 pathTmat="/home/cnrm_other/ge/mrmp/augros/TmatCoefInt_SCXW/"
 

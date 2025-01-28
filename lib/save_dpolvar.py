@@ -17,11 +17,13 @@ Save dpol variables in npz or netcdf file
 input: M, CC, CCI,Vm_k, Tc, Z, X, Y, lat, lon (Arome), fick
 output: file saved
 """
-def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile):
+def save_dpolvar(M, Nc, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile):
     
     # M dict formatting for dataset
     hydromet_list = list(M.keys())
-    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg to g/kg
+    Nc_list = list(Nc.keys())
+    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg to g/m3
+    concentrations = np.array([Nc[hydromet] for hydromet in Nc_list]).astype('f4') # from kg to g/m3
     
     ds=xr.Dataset(
             data_vars=dict(
@@ -29,9 +31,8 @@ def save_dpolvar(M, CC, CCI, Vm_k, Tc, Z, X, Y,lat,lon,datetime,outfile):
                 Zdr    = (["level","y","x"],Vm_k["Zdr"].astype('f4'), {"units": "dB"}),
                 Kdp    = (["level","y","x"],Vm_k["Kdp"].astype('f4'), {"units": "°/km"}),
                 Rhohv  = (["level","y","x"],Vm_k["Rhohv"].astype('f4'), {"units": "1"}),
-                M      = (["hydrometeor","level","y","x"],contents, {"units": "g/kg of dry air"}),
-                CCrain = (["level","y","x"],CC.astype('f4'), {"units": "kg^-1"}),
-                CCice  = (["level","y","x"],CCI.astype('f4'), {"units": "kg^-1"}),
+                M      = (["hydrometeor","level","y","x"],contents, {"units": "g/m3"}),
+                Nc     = (["hydrometeor","level","y","x"],concentrations, {"units": "kg^-1"}),
                 T      = (["level","y","x"],Tc.astype('f4'), {"units": "°C"}),
                 Alt    = (["level","y","x"],Z.astype('i4'), {"units": "m"}),
                 ),

@@ -25,19 +25,26 @@ import math
 
 
 # ========== Define P3 : CC (2 moments) or Fw (1 moment) ===================
-def defineP3(t,NMOMENTS,CC,CCI,mask_tot,Fw_temp,expCCmin, expCCmax, expCCstep,Fwmin, Fwmax, Fwstep):
-    if(NMOMENTS==2):
-        if (t =='rr'):
-            CC_temp=CC[mask_tot]
-        else: # t='ii'
-            CC_temp=CCI[mask_tot]
-        P3=np.copy(CC_temp)
+def defineP3(t,moments,mask_tot,Nc,expCCmin, expCCmax, expCCstep,Fw_temp,Fwmin, Fwmax, Fwstep):
+    """ Compute 3d parameter in Tmatrix table 
+    @todo : change the reading of Tmatrix table so that the parameters are kept the same !
+
+    * pristine ice (treated as 2-moment => the concentration can vary in MesoNH and is registered)
+    * rainwater : 2-moment for all LIMA versions / 1-moment for ICE3
+    * all other species (graupel / snow / wet graupel / wet snow ? )=> treated as 1-moment but can have a variable wet fraction
+    => 3d parameter = Fw
+    """    
+    if((t =='rr' and moments==2) or (t=='ii')):
+        P3name="Nc"
+        Nc_temp=Nc[mask_tot]
+        P3=np.copy(Nc_temp)
         P3min,P3max,P3step=expCCmin, expCCmax, expCCstep                    
-    elif (NMOMENTS==1):
+    else:
+        P3name="Fw"
         P3=np.copy(Fw_temp)
         P3min,P3max,P3step=Fwmin, Fwmax, Fwstep
         
-    return P3, P3min, P3max, P3step
+    return P3, P3min, P3max, P3step, P3name
 
 # ========== Compute NMOMENTS ===================
 def compute_nmoments(micro,t):
@@ -140,7 +147,7 @@ and compute water fraction for wet species
 * input: M, mixed phase option (Fwpos, Tpos, Fwposg)
  *output: Fw 3D, M with addition of wet hydrometeor types wg, wh 
 """
-def compute_mixedphase(M,MixedPhase,expMmin,micro):
+def compute_mixedphase(M, Nc, MixedPhase,expMmin,micro):
     
     # Bright band (or mixed phase) mask 
    # Mtot=np.copy(M['rr'])
@@ -151,23 +158,25 @@ def compute_mixedphase(M,MixedPhase,expMmin,micro):
         #Mtot=M['rr']+M['gg']+M['ss']+M['ii']							
         maskBB=((M["rr"] > 10**expMmin) & (M["gg"]> 10**expMmin))
     
-    print("  Calculation of Fw for wet graupel")
+    print("Calculation of Fw for wet graupel")
     Fw = np.zeros(np.shape(M["rr"]))                          
  
     if(micro =="LIMAAG" or micro =="ICE4"):
          Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]+M["hh"]))[maskBB]
          M["wh"] = np.copy(M["hh"])
+         Nc["wh"] = np.copy(Nc["hh"])
     else :
          Fw[maskBB] = (M["rr"]/(M["rr"]+M["gg"]))[maskBB]
     
     M["wg"] = np.copy(M["gg"])
+    Nc["wg"] = np.copy(Nc["gg"])
     
-    # MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0   # => idem for hail           
-    if (MixedPhase=="Tpos"):  
-        M["wg"][Tc < 0] = 0
-        M["gg"][Tc >= 0] = 0
-        M["wh"][Tc < 0] = 0
-        M["hh"][Tc >= 0] = 0
+#    # MixedPhase=="Tpos" => Graupel is transferred to melting graupel if T>=0   # => idem for hail           
+#    if (MixedPhase=="Tpos"):  
+#        M["wg"][Tc < 0] = 0
+#        M["gg"][Tc >= 0] = 0
+#        M["wh"][Tc < 0] = 0
+#        M["hh"][Tc >= 0] = 0
 
     # MixedPhase=="Fwpos" => Graupel is transferred to melting graupel if Fw>=0     
     if (MixedPhase=="Fwpos"):
@@ -190,7 +199,7 @@ def compute_mixedphase(M,MixedPhase,expMmin,micro):
             M["wh"][maskBB] = M["hh"][maskBB]
             M["hh"][maskBB] = 0 # addition Clotilde (in the mixed phase, there is no dry hail)
             
-    return M, Fw
+    return M, Nc, Fw
 
 
 #============== Interpolation linéaire de y1, y2 en x1,x2 ==============

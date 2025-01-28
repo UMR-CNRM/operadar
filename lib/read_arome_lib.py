@@ -2,6 +2,7 @@ import numpy as np
 import epygram
 import multiprocessing as mp
 import time as tm
+
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
 Horizontal, vertical coordinates, pressure 
@@ -12,7 +13,7 @@ output: p, A, B, nkA
 def get_lat_lon_epygram(ficsubdo):
     ps = ficsubdo.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
-    (lon,lat) = ps.geometry.get_lonlat_grid(subzone='C')
+    (lon,lat) = ps.geometry.get_lonlat_grid() #subzone='C')
     return lon, lat
 
 
@@ -89,19 +90,28 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
 
 
 # ========== Hydrometeor concentrations =============================
-def get_concentrations(ficsubdo, p, microphysics: str, hydrometeor_type: list, iceCC_cst:float = 800.):
-
-    cc_rain = np.empty(p.shape)
-    cc_ice  = iceCC_cst*np.ones(p.shape)
+def get_concentrations(ficsubdo, p, hydrometeor_type: list, moments: dict, CCIconst:float):
     
-    if microphysics[0:4] == "LIMA":
+    Nc={}
+    for htype in hydrometeor_type:
+        Nc[htype]=np.empty(p.shape)
+    
+    cc_rain = np.empty(p.shape)
+    cc_ice  = CCIconst*np.ones(p.shape)
+    
+    if moments["rr"] == 2 :
         extract_rr_cc = ficsubdo.readfields('S0*N_RAIN')
-        extract_ii_cc = ficsubdo.readfields('S0*N_ICE')
         for k in range(len(extract_rr_cc)):
             cc_rain[k,:,:] = extract_rr_cc[k].getdata()
+    if moments["ii"] == 2 :
+        extract_ii_cc = ficsubdo.readfields('S0*N_ICE')
+        for k in range(len(extract_ii_cc)):
             cc_ice[k,:,:] = extract_ii_cc[k].getdata()
-         
-    return cc_rain, cc_ice
+    
+    Nc["rr"]=cc_rain
+    Nc["ii"]=cc_ice        
+       
+    return Nc
 
 # =============== Altitude ======================================================
 """
