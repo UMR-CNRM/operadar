@@ -9,6 +9,8 @@ Created on Tue Apr 11 09:55:15 2023
 import numpy as np
 "import operad_conf as cf" # NOT USED ANYMORE --> make call directly into functions
 from netCDF4 import Dataset
+from operad_utils import hydrometeorModel_from_hydrometeorDict
+
 
 #============== Read MesoNH variables ===============
 """
@@ -20,7 +22,7 @@ def read_mesonh(modelfile: str,
                 lon_max: float,
                 lat_min: float,
                 lat_max: float,
-                hydrometeors_list: list,
+                hydrometeors: dict,
                 real_case: bool(),
                ):
     
@@ -83,11 +85,14 @@ def read_mesonh(modelfile: str,
     # =====================
     
     # === Hydrometeors contents and concentrations
+    
+    hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
+    
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
     name_hydro={}
     M={}
-    for t in hydrometeors_list:
+    for t in hydromet_list:
         M[t] = np.empty(Tc.shape)    
     
     # Arrays initialisation
@@ -95,7 +100,7 @@ def read_mesonh(modelfile: str,
         name_hydro[t]=list_hydro[it]
     
     
-    for t in hydrometeors_list:
+    for t in hydromet_list:
         M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
         M[t][M[t]==999.]=float('nan')
     
@@ -125,7 +130,7 @@ def read_mesonh(modelfile: str,
     
     if (real_case):
         Mzoom={}
-        for t in hydrometeors_list:
+        for t in hydromet_list:
             Mzoom[t]=M[t][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
         
         Tczoom=Tc[:,i_lonmin:i_lonmax,j_latmin:j_latmax]

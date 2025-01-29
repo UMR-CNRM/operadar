@@ -21,6 +21,9 @@ import pandas as pd
 import math
 import sys
 
+from operad_utils import hydrometeorTmatrix_from_hydrometeorDict
+from operad_conf import micro_scheme, LIMToption
+
 #============== Read_Tmatrix2020
 """
 Reads Clotilde's 2020 Tmatrix tables:
@@ -32,15 +35,17 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
+def Read_TmatrixClotilde(pathTmat,bande,hydrometeors:dict):
 
     # Choice of the right table depending on the microphysics
-    if schema_micro == "ICE3" or schema_micro == "ICE4" :
-        schema_micro = "ICE3"
-    elif schema_micro == "LIMASG" or schema_micro == "LIMAAG" or schema_micro == "LIMA" :
-        schema_micro = "LIMA"
-    elif schema_micro=="LIMT": # and cf.LIMToption=="cstmu":
-        schema_micro="LIMA"
+    if micro_scheme[0:3] == "ICE" :
+        micro_for_Tmatrix = "ICE3"
+    elif micro_scheme[0:3] == "LIMA" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
+        micro_for_Tmatrix = "LIMA"
+    else :
+        print('_____________')
+        print('/!\ ERROR /!\ :',micro_scheme,'is not a valid name for Tmatrix computation')
+        sys.exit()
 
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
@@ -56,13 +61,15 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
 #        LAMstr='106.2'
 #    elif bande=='C':
 #        LAMstr="053.2"
+
+    hydromet_list = hydrometeorTmatrix_from_hydrometeorDict(hydrometeors)
     
-    for t in list_types_tot: 
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+LAMstr+'_'+t+table_ind
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+'_'+t
-        nomfileCoefInt = pathTmat+'TmatCoefInt_'+schema_micro+'_'+bande+t
+    for t in hydromet_list: 
+        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+LAMstr+'_'+t+table_ind
+        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+'_'+t
+        nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+t
         
-        print("  Reading min/step/max for",t)
+        print("\tReading min/step/max for",t)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
         LAMmin[t]= np.copy(df["LAMmin"])[0]
         LAMstep[t]= np.copy(df["LAMmin"])[0]
@@ -77,7 +84,7 @@ def Read_TmatrixClotilde(pathTmat,bande,schema_micro,list_types_tot):
         Fwstep[t]= np.copy(df["Fwstep"])[0]
         Fwmax[t]= np.copy(df["Fwmax"])[0]
 
-        print("  Reading scattering coef for",t)
+        print("\tReading scattering coef for",t)
         df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         Tc_t[t] = np.copy(df_scat['Tc'])
         ELEV_t[t] = np.copy(df_scat['ELEV'])

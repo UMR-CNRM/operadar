@@ -12,6 +12,7 @@ import pickle as pkl
 import time as tm
 
 import read_arome_lib as arolib
+from operad_utils import hydrometeorModel_from_hydrometeorDict
 
 
 #================= Read Arome variables =======================================
@@ -21,7 +22,7 @@ and concentrations
 INPUT : 
     - micro
     - extract_once
-    - hydrometeors_list : list of hydrometeors to read in AROME file
+    - hydrometeors : list of hydrometeors to read in AROME file
     - moments : dict with number of moments for each hydrometeor type
     - modelfile
     - lon_min,lon_max,lat_min,lat_max
@@ -34,7 +35,7 @@ OUTPUT:
 def read_arome(modelfile: str,
                micro: str,
                extract_once: bool,
-               hydrometeors_list: list,
+               hydrometeors: dict,
                moments: dict,
                CCIconst: float,
                lon_min: float = -5.2,
@@ -46,7 +47,9 @@ def read_arome(modelfile: str,
     
     epygram.init_env()
     
-    print("  AROME fa file: ",modelfile)
+    hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
+    
+    print("\tAROME fa file: ",modelfile)
     ficA = epygram.formats.resource(modelfile, openmode = 'r', fmt = 'FA')
     ps = ficA.readfield('SURFPRESSION')
     X_res=ficA.geometry.grid['X_resolution']
@@ -84,9 +87,9 @@ def read_arome(modelfile: str,
     [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B)
     
     # ======== Hydrometeor contents, concentrations and temperature
-    [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydrometeors_list)
+    [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydromet_list)
     Tc=T-273.15
-    Nc = arolib.get_concentrations(ficsubdo, p, hydrometeors_list,moments,CCIconst)
+    Nc = arolib.get_concentrations(ficsubdo, p, hydromet_list,moments,CCIconst)
     
     # ========= Horizontal grid
     Y = Y_res*np.arange(Tc.shape[1]).astype('i4')

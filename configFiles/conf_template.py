@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
- *   This is an example of a configuration file for operad.py depending on the model and microphysics
- *   ------------------------------------------------------------------------------------------------
+ *   This is a template of the configuration file expected by operad.py 
+ *   ------------------------------------------------------------------
  *
  *   You may want to adjust some parameters. 
- *   Please make a copy of this file before any changes and rename the file accordingly :
- *   --> conf_Arome_microphysicsSchemeName.py
+ *   Please make a copy of this file before any changes
  *
 """
 import datetime as dt
 
 # ==========  Characteristics of the data (AROME or MESONH files) ===============
-htypes_model=['vv','cc','rr','ii','ss','gg']    # available model variables
-n_moments_model = [1,1,1,1,1,1]                 # corresponding moments
+micro_scheme = 'ICE3' # can be ICE3, ICE4 or LIMA
+moments={'cc':2,'rr':2,'ss':1,'gg':1,'ii':1,'wg':1}
 step = dt.timedelta(minutes=5)
  
 
