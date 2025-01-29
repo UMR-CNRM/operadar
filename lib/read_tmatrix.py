@@ -21,7 +21,6 @@ import pandas as pd
 import math
 import sys
 
-from operad_utils import hydrometeorTmatrix_from_hydrometeorDict
 from operad_conf import micro_scheme, LIMToption
 
 #============== Read_Tmatrix2020
@@ -35,12 +34,12 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,hydrometeors:dict):
+def Read_TmatrixClotilde(pathTmat,bande,hydromet_list:list):
 
     # Choice of the right table depending on the microphysics
     if micro_scheme[0:3] == "ICE" :
         micro_for_Tmatrix = "ICE3"
-    elif micro_scheme[0:3] == "LIMA" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
+    elif micro_scheme[0:3] == "LIM" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
         micro_for_Tmatrix = "LIMA"
     else :
         print('_____________')
@@ -61,8 +60,6 @@ def Read_TmatrixClotilde(pathTmat,bande,hydrometeors:dict):
 #        LAMstr='106.2'
 #    elif bande=='C':
 #        LAMstr="053.2"
-
-    hydromet_list = hydrometeorTmatrix_from_hydrometeorDict(hydrometeors)
     
     for t in hydromet_list: 
         #nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+LAMstr+'_'+t+table_ind
@@ -85,21 +82,21 @@ def Read_TmatrixClotilde(pathTmat,bande,hydrometeors:dict):
         Fwmax[t]= np.copy(df["Fwmax"])[0]
 
         print("\tReading scattering coef for",t)
-        df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
-        Tc_t[t] = np.copy(df_scat['Tc'])
-        ELEV_t[t] = np.copy(df_scat['ELEV'])
-        Fw_t[t] = np.copy(df_scat['P3'])
-        M_t[t] = np.copy(df_scat['M'])
-        S11carre_t[t] = np.copy(df_scat['S11carre'])
-        S22carre_t[t] = np.copy(df_scat['S22carre'])
-        ReS22S11_t[t] = np.copy(df_scat['ReS22S11'])
-        ImS22S11_t[t] = np.copy(df_scat['ImS22S11'])
-        ReS22fmS11f_t[t] = np.copy(df_scat['ReS22fmS11f'])
-        ImS22ft_t[t] = np.copy(df_scat['ImS22ft'])
-        ImS11ft_t[t] = np.copy(df_scat['ImS11ft'])
-        RRint_t[t] = np.copy(df_scat['RRint'])
+        df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
+        Tc_t[t] = df_scat['Tc'].to_numpy()
+        ELEV_t[t] = df_scat['ELEV'].to_numpy()
+        Fw_t[t] = df_scat['P3'].to_numpy()
+        M_t[t] = df_scat['M'].to_numpy()
+        S11carre_t[t] = df_scat['S11carre'].to_numpy()
+        S22carre_t[t] = df_scat['S22carre'].to_numpy()
+        ReS22S11_t[t] = df_scat['ReS22S11'].to_numpy()
+        ImS22S11_t[t] = df_scat['ImS22S11'].to_numpy()
+        ReS22fmS11f_t[t] = df_scat['ReS22fmS11f'].to_numpy()
+        ImS22ft_t[t] = df_scat['ImS22ft'].to_numpy()
+        ImS11ft_t[t] = df_scat['ImS11ft'].to_numpy()
+        RRint_t[t] = df_scat['RRint'].to_numpy()
         del df_scat
-       
+        
     # For M and CC: same min/step/max for all types
     expMmin= np.copy(df["expMmin"])[0]
     expMstep= np.copy(df["expMstep"])[0]
