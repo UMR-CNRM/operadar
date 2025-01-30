@@ -13,6 +13,7 @@ import pandas as pd
 from pathlib import Path
 
 
+
 def save_dpolvar(M:dict[np.ndarray], Nc:dict[np.ndarray], Vm_k:dict[np.ndarray], Tc:np.ndarray,
                  Z:np.ndarray, X:np.ndarray, Y:np.ndarray,
                  lat:np.ndarray, lon:np.ndarray,
@@ -61,3 +62,15 @@ def save_dpolvar(M:dict[np.ndarray], Nc:dict[np.ndarray], Vm_k:dict[np.ndarray],
     ds.to_netcdf(outfile.with_suffix('.nc'))
     ds.close() ; del ds
     print("Model and dpol variables saved at :",outfile)
+
+
+
+def create_tree_structure_outFiles(output_dir:Path):
+    if not output_dir.exists():
+        try:
+            output_dir.mkdir(exist_ok=True, parents=True)
+            print ('Creating output directories :',output_dir)
+        except:    
+            print ('Error in creation of',output_dir) ; sys.exit()
+    else:
+        print ('Output directories exist :',output_dir)   
