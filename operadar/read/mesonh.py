@@ -7,9 +7,8 @@ Created on Tue Apr 11 09:55:15 2023
 """
 
 import numpy as np
-"import operad_conf as cf" # NOT USED ANYMORE --> make call directly into functions
 from netCDF4 import Dataset
-from operad_utils import hydrometeorModel_from_hydrometeorDict
+from operadar.operadar_utils import hydrometeorModel_from_hydrometeorDict
 
 
 #============== Read MesoNH variables ===============
@@ -23,7 +22,7 @@ def read_mesonh(modelfile: str,
                 lat_min: float,
                 lat_max: float,
                 hydrometeors: dict,
-                real_case: bool(),
+                real_case: bool,
                ):
     
     # === Model file

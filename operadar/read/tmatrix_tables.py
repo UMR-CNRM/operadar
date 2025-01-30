@@ -34,7 +34,7 @@ min/step/max parameters
   ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
 """
 
-def Read_TmatrixClotilde(pathTmat,bande,hydromet_list:list):
+def read_Tmatrix_Clotilde(pathTmat,bande,hydromet_list:list):
 
     # Choice of the right table depending on the microphysics
     if micro_scheme[0:3] == "ICE" :

@@ -69,8 +69,8 @@ def create_tree_structure_outFiles(output_dir:Path):
     if not output_dir.exists():
         try:
             output_dir.mkdir(exist_ok=True, parents=True)
-            print ('Creating output directories :',output_dir)
+            print ('Creating output tree structure :',output_dir)
         except:    
             print ('Error in creation of',output_dir) ; sys.exit()
     else:
-        print ('Output directories exist :',output_dir)   
+        print ('Tree structure exists :',output_dir)   

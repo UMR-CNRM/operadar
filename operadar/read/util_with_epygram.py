@@ -1,25 +1,26 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import epygram
-import multiprocessing as mp
-import time as tm
 
 # ======== Horizontal, vertical coordinates, pressure ===========================
 """
 Horizontal, vertical coordinates, pressure 
-input: ficsubdo
+input: epygram_file
 output: p, A, B, nkA
 """
 
-def get_lat_lon_epygram(ficsubdo):
-    ps = ficsubdo.readfield('SURFPRESSION')
+def get_lat_lon_epygram(epygram_file):
+    ps = epygram_file.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
     (lon,lat) = ps.geometry.get_lonlat_grid() #subzone='C')
     return lon, lat
 
 
-def get_geometry(ficsubdo, A, B):
+def get_geometry(epygram_file, A, B):
     # === Horizontal coordinates 
-    ps = ficsubdo.readfield('SURFPRESSION')
+    ps = epygram_file.readfield('SURFPRESSION')
     ps.sp2gp() # spectral to grid points
     psurf = np.exp(ps.getdata())
     
@@ -27,12 +28,12 @@ def get_geometry(ficsubdo, A, B):
     p = epygram.profiles.hybridP2masspressure(A, B, psurf, 'geometric')
 
     # 2D Geopotential at surface
-    phis=ficsubdo.readfield('SPECSURFGEOPOTEN')
+    phis=epygram_file.readfield('SPECSURFGEOPOTEN')
     phis.sp2gp()
     
     # Pressure depart: difference at z_level: pressure - hydrostatic state
     pdep = np.zeros(p.shape)   
-    field_all_levels = ficsubdo.readfields('S0*PRESS.DEPART')
+    field_all_levels = epygram_file.readfields('S0*PRESS.DEPART')
     for k,field in enumerate(field_all_levels):
         field.sp2gp()
         pdep[k,:,:] = field.getdata()
@@ -54,10 +55,10 @@ def link_varname_with_realname ():
 
 # ========== Get hydrometeor contents and temperature =============================
 """
-   input: ficsubdo, p, list of hydrometeors type
+   input: epygram_file, p, list of hydrometeors type
    output: M, T, R 
 """
-def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
+def get_contents_and_T(epygram_file, p, hydrometeor_type: list):
     
     name_hydro , list_t_full = link_varname_with_realname()
 
@@ -66,7 +67,7 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
     T = np.zeros(p.shape)
     
     # 3D temperature T
-    temperature_all_levels = ficsubdo.readfields('S0*TEMPERATURE')
+    temperature_all_levels = epygram_file.readfields('S0*TEMPERATURE')
     for k,field in enumerate(temperature_all_levels):
         field.sp2gp()
         T[k,:,:] = field.getdata()
@@ -74,7 +75,7 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
     
     # 3D specific content q 
     for htype in hydrometeor_type :
-        field_all_levels = ficsubdo.readfields('S0[0-9][0-9]'+name_hydro[htype])
+        field_all_levels = epygram_file.readfields('S0[0-9][0-9]'+name_hydro[htype])
         for k,field in enumerate(field_all_levels):
             q[htype][k,:,:] = field.getdata()
         del field_all_levels
@@ -90,7 +91,7 @@ def get_contents_and_T(ficsubdo, p, hydrometeor_type: list):
 
 
 # ========== Hydrometeor concentrations =============================
-def get_concentrations(ficsubdo, p, hydrometeor_type: list, moments: dict, CCIconst:float):
+def get_concentrations(epygram_file, p, hydrometeor_type: list, moments: dict, CCIconst:float):
     
     Nc={}
     for htype in hydrometeor_type:
@@ -100,11 +101,11 @@ def get_concentrations(ficsubdo, p, hydrometeor_type: list, moments: dict, CCIco
     cc_ice  = CCIconst*np.ones(p.shape)
     
     if moments["rr"] == 2 :
-        extract_rr_cc = ficsubdo.readfields('S0*N_RAIN')
+        extract_rr_cc = epygram_file.readfields('S0*N_RAIN')
         for k in range(len(extract_rr_cc)):
             cc_rain[k,:,:] = extract_rr_cc[k].getdata()
     if moments["ii"] == 2 :
-        extract_ii_cc = ficsubdo.readfields('S0*N_ICE')
+        extract_ii_cc = epygram_file.readfields('S0*N_ICE')
         for k in range(len(extract_ii_cc)):
             cc_ice[k,:,:] = extract_ii_cc[k].getdata()
     
