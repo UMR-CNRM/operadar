@@ -76,3 +76,11 @@ def format_date_time_argument(date_time:str|pd.Timestamp):
         return pd.Timestamp(date_time)
     else :
         return date_time
+
+
+
+def get_lat_lon_from_subdomain(domain:list[float]):
+    lon_min = domain[0] ; lon_max = domain[1]
+    lat_min = domain[2] ; lat_max = domain[3]
+    
+    return lon_min, lon_max, lat_min, lat_max

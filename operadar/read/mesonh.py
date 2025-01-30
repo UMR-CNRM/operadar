@@ -8,29 +8,29 @@ Created on Tue Apr 11 09:55:15 2023
 
 import numpy as np
 from netCDF4 import Dataset
-from operadar.operadar_utils import hydrometeorModel_from_hydrometeorDict
+from operadar.operadar_utils import (
+    hydrometeorModel_from_hydrometeorDict,
+    get_lat_lon_from_subdomain,
+)
 
 
 #============== Read MesoNH variables ===============
 """
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
-def read_mesonh(modelfile: str,
+def read_mesonh(filePath: str,
                 micro: str,
-                lon_min: float,
-                lon_max: float,
-                lat_min: float,
-                lat_max: float,
+                subDomain:list[float]|None,
                 hydrometeors: dict,
                 real_case: bool,
                ):
     
     # === Model file
-    print("Reading "+modelfile)
+    print("Reading "+filePath)
     
     # === Extract Dataset 
-    print("Reading ncfile: ",modelfile)
-    ncfile1 = Dataset(modelfile,'r')
+    print("Reading ncfile: ",filePath)
+    ncfile1 = Dataset(filePath,'r')
     #print(ncfile1.variables.keys())
     
     
@@ -47,6 +47,10 @@ def read_mesonh(modelfile: str,
     
     # === Get lat lon if real case
     if (real_case):
+        if subDomain != None :
+            lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
+        else :
+            lon_min, lon_max, lat_min, lat_max = -5.2, 8.3, 41.3, 51.15
         LAT = ncfile1.variables['latitude'][:]
         LON = ncfile1.variables['longitude'][:]
         mask_zoom=((LON>lon_min) & (LON<lon_max) & (LAT>lat_min) & (LAT<lat_max))
@@ -60,7 +64,7 @@ def read_mesonh(modelfile: str,
     
     #    #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
     #    if X.shape!=LON.shape : 
-    #        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(modelfile,LAT[0],LAT[-1],LON[0],LON[-1])
+    #        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(filePath,LAT[0],LAT[-1],LON[0],LON[-1])
     #        X=ncfile1.variables['XHAT'][ilonmin:ilonmax+1]
     #        Y=ncfile1.variables['YHAT'][ilatmin:ilatmax+1]
     

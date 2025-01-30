@@ -7,12 +7,11 @@ Created on Tue Apr 11 09:55:15 2023
 """
 import numpy as np
 import epygram
-import bronx
 import pickle as pkl
 import time as tm
 
-import read_arome_lib as arolib
-from operad_utils import hydrometeorModel_from_hydrometeorDict
+from read.util_with_epygram import *
+from operadar_utils import hydrometeorModel_from_hydrometeorDict, get_lat_lon_from_subdomain
 
 
 #================= Read Arome variables =======================================
@@ -24,7 +23,7 @@ INPUT :
     - extract_once
     - hydrometeors : list of hydrometeors to read in AROME file
     - moments : dict with number of moments for each hydrometeor type
-    - modelfile
+    - filePath
     - lon_min,lon_max,lat_min,lat_max
 OUTPUT: 
     - M (kg/m3): dict of hydrometeor contents 
@@ -32,33 +31,29 @@ OUTPUT:
     - Tc (°C), CC, CCI, lon, lat, Z
 """
 
-def read_arome(modelfile: str,
+def read_arome(filePath: str,
                micro: str,
                extract_once: bool,
                hydrometeors: dict,
                moments: dict,
                CCIconst: float,
-               lon_min: float = -5.2,
-               lon_max: float = 8.3,
-               lat_min: float = 41.3,
-               lat_max: float = 51.15,
-               subDomain: bool = False,
+               subDomain:list[float]|None,
                ):   
     
-    epygram.init_env()
+    epygram.init_env() # mandatory
     
     hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
     
-    print("\tAROME fa file: ",modelfile)
-    ficA = epygram.formats.resource(modelfile, openmode = 'r', fmt = 'FA')
-    ps = ficA.readfield('SURFPRESSION')
-    X_res=ficA.geometry.grid['X_resolution']
-    Y_res=ficA.geometry.grid['Y_resolution']
+    print("\tAROME .fa file: ",filePath)
+    loaded_epygram_file = epygram.formats.resource(filePath, openmode = 'r', fmt = 'FA')
+    ps = loaded_epygram_file.readfield('SURFPRESSION')
+    X_res=loaded_epygram_file.geometry.grid['X_resolution']
+    Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
     
     if extract_once :
         # Vertical levels values
-        A = [level[1]['Ai'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
-        B = [level[1]['Bi'] for level in ficA.geometry.vcoordinate.grid['gridlevels']][1:]
+        A = [level[1]['Ai'] for level in loaded_epygram_file.geometry.vcoordinate.grid['gridlevels']][1:]
+        B = [level[1]['Bi'] for level in loaded_epygram_file.geometry.vcoordinate.grid['gridlevels']][1:]
         # Save in temporary pickle files
         tmpA = open('tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
         tmpB = open('tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
@@ -67,29 +62,34 @@ def read_arome(modelfile: str,
         tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
         tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
     
-    # === Infos === #
-    #ficA.listfields()
-    #ficA.what()
+    
     
     # === Extrat subdomain === #
-    if (subDomain==True):
+    if subDomain != None :
+        lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
         imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
         imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
-        ficsubdo = epygram.resources.SubdomainResource(resource=ficA, openmode='r', name='Subdomain',
-                                                      subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax))
+        arome_file = epygram.resources.SubdomainResource(resource=loaded_epygram_file,
+                                                         openmode='r',
+                                                         name='Subdomain',
+                                                         subarray=dict(imin=imin,
+                                                                       imax=imax,
+                                                                       jmin=jmin,
+                                                                       jmax=jmax,
+                                                                       ),
+                                                         )
     else:
-        ficsubdo=ficA
-    #ficsubdo.readfield('S089RAIN').cartoplot()[0].savefig('subdo.png')
+        arome_file=loaded_epygram_file
     
     # ======== Horizontal, vertical coordinates, pressure
     if extract_once : 
-        [lon, lat] = arolib.get_lat_lon_epygram(ficsubdo)
-    [p, psurf, pdep, phis] = arolib.get_geometry(ficsubdo, A, B)
+        [lon, lat] = get_lat_lon_epygram(arome_file)
+    [p, psurf, pdep, phis] = get_geometry(arome_file, A, B)
     
     # ======== Hydrometeor contents, concentrations and temperature
-    [M, T, R]  = arolib.get_contents_and_T(ficsubdo, p, hydromet_list)
+    [M, T, R]  = get_contents_and_T(arome_file, p, hydromet_list)
     Tc=T-273.15
-    Nc = arolib.get_concentrations(ficsubdo, p, hydromet_list,moments,CCIconst)
+    Nc = get_concentrations(arome_file, p, hydromet_list,moments,CCIconst)
     
     # ========= Horizontal grid
     Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
@@ -97,14 +97,14 @@ def read_arome(modelfile: str,
 
         
     # ========= Altitude z of each level
-    Z = arolib.get_altitude(A, B, T, p, pdep, psurf, phis, R)
+    Z = get_altitude(A, B, T, p, pdep, psurf, phis, R)
 
     # ========= Close file
-    ficA.close()
-    ficsubdo.close()
+    loaded_epygram_file.close()
+    arome_file.close()
     
-    if extract_once : return M, Nc, Tc, Z, X, Y, lon, lat
-    else : return M, Nc, Tc, Z, X, Y
+    if extract_once : return  X, Y, Z, lon, lat, M, Nc, Tc
+    else : return X, Y, Z, None, None, M, Nc, Tc
 
 # =============================================================================
 
@@ -119,7 +119,11 @@ if __name__ == '__main__':
     #rep="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
     rep="/cnrm/precip/users/augros/DONNEES/AROME/"
     file="historic.arome.franmg-01km30+0008:00.fa"
-    modelfile=rep+file
+    filePath=rep+file
+    
+    # === Infos === #
+    #loaded_epygram_file.listfields()
+    #loaded_epygram_file.what()
      # -------------------------------------
 
  # =============================================================================
