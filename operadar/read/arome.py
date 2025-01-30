@@ -35,8 +35,8 @@ def read_arome(filePath: str,
                micro: str,
                extract_once: bool,
                hydrometeors: dict,
-               moments: dict,
-               CCIconst: float,
+               #moments: dict,
+               #CCIconst: float,
                subDomain:list[float]|None,
                ):   
     
@@ -50,6 +50,7 @@ def read_arome(filePath: str,
     X_res=loaded_epygram_file.geometry.grid['X_resolution']
     Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
     
+    
     if extract_once :
         # Vertical levels values
         A = [level[1]['Ai'] for level in loaded_epygram_file.geometry.vcoordinate.grid['gridlevels']][1:]
@@ -62,28 +63,21 @@ def read_arome(filePath: str,
         tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
         tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
     
-    
-    
-    # === Extrat subdomain === #
+
     if subDomain != None :
         lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
         imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
         imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
-        arome_file = epygram.resources.SubdomainResource(resource=loaded_epygram_file,
-                                                         openmode='r',
-                                                         name='Subdomain',
-                                                         subarray=dict(imin=imin,
-                                                                       imax=imax,
-                                                                       jmin=jmin,
-                                                                       jmax=jmax,
-                                                                       ),
-                                                         )
+        arome_file = epygram.resources.SubdomainResource(
+                     resource=loaded_epygram_file, openmode='r', name='Subdomain',
+                     subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax),
+                     )
     else:
         arome_file=loaded_epygram_file
     
-    # ======== Horizontal, vertical coordinates, pressure
+    
     if extract_once : 
-        [lon, lat] = get_lat_lon_epygram(arome_file)
+        [lon, lat] = get_2D_lat_lon_epygram(arome_file)
     [p, psurf, pdep, phis] = get_geometry(arome_file, A, B)
     
     # ======== Hydrometeor contents, concentrations and temperature
