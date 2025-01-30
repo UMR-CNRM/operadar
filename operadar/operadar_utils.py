@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pandas as pd
+
+
 
 def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
     listExpe = [str(x) for x in csvRow.expeNames.strip().split(',')]
@@ -14,6 +17,7 @@ def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
         return listExpe[3]
     elif microphysics_scheme == 'LIMA49t' :
         return listExpe[4]
+
 
 
 def hydrometeorModel_from_hydrometeorDict(hydrometeors:dict,quiet=False) -> list:
@@ -40,6 +44,7 @@ def hydrometeorModel_from_hydrometeorDict(hydrometeors:dict,quiet=False) -> list
     return(hydrometeors_to_extract)
 
 
+
 def hydrometeorTmatrix_from_hydrometeorDict(hydrometeors:dict,quiet=False) -> list:
     """
     Make the correspondance between available hydrometeor keys in the Tmatrix 
@@ -63,3 +68,11 @@ def hydrometeorTmatrix_from_hydrometeorDict(hydrometeors:dict,quiet=False) -> li
     if not quiet :
         print('\tTo extract in Tmatrix tables :',hydrometeors_to_extract)
     return(hydrometeors_to_extract)
+
+
+
+def format_date_time_argument(date_time:str|pd.Timestamp):
+    if type(date_time)==str :
+        return pd.Timestamp(date_time)
+    else :
+        return date_time
