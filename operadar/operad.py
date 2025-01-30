@@ -34,10 +34,14 @@ sys.path.insert(0, "./lib")
 
 # 0perad modules
 import operad_conf as cf
-import operad_lib as ope_lib
-import read_tmatrix as read_tmat
+
+from read.tmatrix_tables import read_Tmatrix_Clotilde
+
+from read.model import read_model_file
+
 import save_dpolvar as save
-from operadar.operadar_utils import (
+
+from operadar_utils import (
     hydrometeorTmatrix_from_hydrometeorDict,
     format_date_time_argument,
 )
@@ -45,29 +49,49 @@ from operadar.operadar_utils import (
 
 
 def operad(filename:Path, date_time:str|pd.Timestamp,
-           read_tmatrix:bool=True, extract_once:bool=True,
-           outPath:str=cf.outPath):
+           read_tmatrix:bool=False, extract_once:bool=True,
+           outPath:str=cf.outPath, radar_band:str=cf.radar_band,
+           Tmatrix_params:dict={}, exp_name:str=cf.experience_name,
+           subDomain:list[float]|None=cf.subDomain,
+           ):
     
     begin_program_timer = tm.time()
-    
-    # Imports
-    if (cf.model=="MesoNH"): import read_mesonh as meso
-    elif (cf.model=="Arome"): import read_arome as aro
 
     # Create or check tree structure of the output directory path
     save.create_tree_structure_outFiles(Path(outPath))
     
     # Format datetime argument for the output file name and check existence
     date_time = format_date_time_argument(date_time)
-    outFilePath = Path(outPath + f"dpolvar_{cf.model}_{cf.micro_scheme}_{cf.radar_band}band_{date_time.strftime('%Y%m%d_%H%M')}")
+    outFilePath = Path(outPath + f"dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{date_time.strftime('%Y%m%d_%H%M')}.nc")
+    
     if not outFilePath.exists():
-        # do something
+        
+        # Read Tmatrix tables (files from Clotilde)
+        Tmatrix_hydromet_list = hydrometeorTmatrix_from_hydrometeorDict(cf.moments,quiet=True)
+        if read_tmatrix :
+            Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
+            LAM = Tmatrix_params['LAMmin']['rr']/1000.
+        
+        # Read model variables
+        input_file_path = Path(cf.input_file_dir) / Path(exp_name) / filename
+        if extract_once:
+            [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
+                                                             domain=subDomain,
+                                                             )
+        else :
+            [X, Y, Z, _, _, M, Nc, Tc] = read_model_file(filePath=input_file_path,
+                                                         domain=subDomain,
+                                                         extract_once=False,
+                                                         )
+        
     else :
-        print("Exists :",outFilePath)
-
+        print("File exists at :",outFilePath)
 
     elapsed_time = tm.time() - begin_program_timer
     print("Elapsed time :",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
+
+
+
 
 
 if __name__ == '__main__':
