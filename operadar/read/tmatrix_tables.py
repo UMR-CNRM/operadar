@@ -16,12 +16,13 @@ Contains routines to :
         
 """
 
+import sys
+import math
+import time as tm
 import numpy as np
 import pandas as pd
-import math
-import sys
 
-from operad_conf import micro_scheme, LIMToption
+from operad_conf import micro_scheme, LIMToption, pathTmat
 
 #============== Read_Tmatrix2020
 """
@@ -29,114 +30,118 @@ Reads Clotilde's 2020 Tmatrix tables:
     direct reading of min/step: max in coefficient files)
 Output: 
 min/step/max parameters
-+ Tc_t, ELEV_t, Fw_t, M_t
-+ S11carre_t, S22carre_t, ReS22S11_t,
-  ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_tS11carre_t  
++ Tc_h, ELEV_h, Fw_h, M_h
++ S11carre_h, S22carre_h, ReS22S11_h,
+  ImS22S11_h, ReS22fmS11f_h, ImS22ft_h, ImS11ft_hS11carre_h  
 """
 
-def read_Tmatrix_Clotilde(pathTmat,bande,hydromet_list:list):
 
-    # Choice of the right table depending on the microphysics
+def initialize_Tmatrix_dictionnary() -> dict :
+    """Initialize the Tmatrix dictionnary to store all the variables and columns of the tables"""
+    Tmatrix_params = {}
+    list_of_parameters = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
+                          'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax', 'Tc_h',
+                          'ELEV_h', 'Fw_h', 'M_h', 'S11carre_h', 'S22carre_h', 'ReS22S11_h',
+                          'ImS22S11_h', 'ReS22fmS11f_h', 'ImS22ft_h', 'ImS11ft_h','RRint_h',
+                          'expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax',
+                          ]
+    
+    for param in list_of_parameters :
+        Tmatrix_params[param] = {}
+        
+    return Tmatrix_params
+
+
+
+def get_scheme_to_fetch_table() -> str :
+    """Choice of the right table depending on the microphysics (will be modified later ?)"""
+    # 
     if micro_scheme[0:3] == "ICE" :
-        micro_for_Tmatrix = "ICE3"
+        return "ICE3"
     elif micro_scheme[0:3] == "LIM" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
-        micro_for_Tmatrix = "LIMA"
+        return "LIMA"
     else :
         print('_____________')
         print('/!\ ERROR /!\ :',micro_scheme,'is not a valid name for Tmatrix computation')
         sys.exit()
 
-    # Dictionnaries initialization
-    LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
-    Tcmin, Tcstep, Tcmax = {}, {}, {}
-    Fwmin, Fwstep, Fwmax = {}, {}, {}
-    # LAM_t = {}
-    Tc_t, ELEV_t, Fw_t, M_t = {}, {}, {}, {}
-    S11carre_t, S22carre_t = {}, {}
-    ReS22S11_t, ImS22S11_t = {}, {}
-    ReS22fmS11f_t, ImS22ft_t, ImS11ft_t,RRint_t = {}, {}, {},{}
-        
-#    if bande =='S':
-#        LAMstr='106.2'
-#    elif bande=='C':
-#        LAMstr="053.2"
+
+
+def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat):
+    """_summary_
+
+    Args:
+        band (str): _description_
+        hydrometeors (list): _description_
+        pathTmat (str, optional): _description_. Defaults to pathTmat.
+
+    Returns:
+        _type_: _description_
+    """
+    print("Reading Tmatrix tables")
+    deb_timer = tm.time()
+    micro_for_Tmatrix = get_scheme_to_fetch_table()
+    Tmatrix_params = initialize_Tmatrix_dictionnary()
     
-    for t in hydromet_list: 
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+LAMstr+'_'+t+table_ind
-        #nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+'_'+t
-        nomfileCoefInt = pathTmat+'TmatCoefInt_'+micro_for_Tmatrix+'_'+bande+t
+    for h in hydrometeors: 
+        nomfileCoefInt = f'{pathTmat}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
         
-        print("\tReading min/step/max for",t)
-        df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
-        LAMmin[t]= np.copy(df["LAMmin"])[0]
-        LAMstep[t]= np.copy(df["LAMmin"])[0]
-        LAMmax[t]= np.copy(df["LAMmin"])[0]
-        ELEVmin[t]= np.copy(df["ELEVmin"])[0]
-        ELEVstep[t]= np.copy(df["ELEVstep"])[0]
-        ELEVmax[t]= np.copy(df["ELEVmax"])[0]
-        Tcmin[t]= np.copy(df["Tcmin"])[0]
-        Tcstep[t]= np.copy(df["Tcstep"])[0]
-        Tcmax[t]= np.copy(df["Tcmax"])[0]
-        Fwmin[t]= np.copy(df["Fwmin"])[0]
-        Fwstep[t]= np.copy(df["Fwstep"])[0]
-        Fwmax[t]= np.copy(df["Fwmax"])[0]
+        print("\tReading min/step/max for",h)
+        df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
+        df['LAMstep'],df['LAMmax'] = df['LAMmin'],df['LAMmin'] # currently no loop over LAM so no LAMstep and LAMmax column (maybe later)
+        values_to_get = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
+                         'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax']
+        for value in values_to_get :
+            Tmatrix_params[value][h] = np.copy(df[value])[0]
 
-        print("\tReading scattering coef for",t)
+        print("\tReading scattering coefficients for",h)
         df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
-        Tc_t[t] = df_scat['Tc'].to_numpy()
-        ELEV_t[t] = df_scat['ELEV'].to_numpy()
-        Fw_t[t] = df_scat['P3'].to_numpy()
-        M_t[t] = df_scat['M'].to_numpy()
-        S11carre_t[t] = df_scat['S11carre'].to_numpy()
-        S22carre_t[t] = df_scat['S22carre'].to_numpy()
-        ReS22S11_t[t] = df_scat['ReS22S11'].to_numpy()
-        ImS22S11_t[t] = df_scat['ImS22S11'].to_numpy()
-        ReS22fmS11f_t[t] = df_scat['ReS22fmS11f'].to_numpy()
-        ImS22ft_t[t] = df_scat['ImS22ft'].to_numpy()
-        ImS11ft_t[t] = df_scat['ImS11ft'].to_numpy()
-        RRint_t[t] = df_scat['RRint'].to_numpy()
+        table_columns_to_read = ['Tc_h', 'ELEV_h', 'Fw_h', 'M_h', 'S11carre_h', 'S22carre_h', 'ReS22S11_h',
+                                 'ImS22S11_h', 'ReS22fmS11f_h', 'ImS22ft_h', 'ImS11ft_h','RRint_h']
+        for column in table_columns_to_read :
+            if column == 'Fw_h':
+                Tmatrix_params[column][h] = df_scat['P3'].to_numpy()
+            else :
+                Tmatrix_params[column][h] = df_scat[column[:-2]].to_numpy()
         del df_scat
-        
-    # For M and CC: same min/step/max for all types
-    expMmin= np.copy(df["expMmin"])[0]
-    expMstep= np.copy(df["expMstep"])[0]
-    expMmax= np.copy(df["expMmax"])[0]
-    expCCmin= np.copy(df["expCCmin"])[0]
-    expCCstep= np.copy(df["expCCstep"])[0]
-    expCCmax= np.copy(df["expCCmax"])[0]
+    
+    # for contents and number concentration: same min/step/max for all class of hydrometeors
+    same_value_for_all_hydrometeors = ['expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
+    for value in same_value_for_all_hydrometeors :
+        Tmatrix_params[value][h] = np.copy(df[value])[0]
+    
     del df
-   
-    return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax,Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
-    Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, Tc_t, ELEV_t, Fw_t, M_t, S11carre_t, \
-    S22carre_t, ReS22S11_t, ImS22S11_t, ReS22fmS11f_t, ImS22ft_t, ImS11ft_t
+    print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
+    return Tmatrix_params
 
 
-def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
+
+def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
         
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
     Tcmin, Tcstep, Tcmax = {}, {}, {}
     Fwmin, Fwstep, Fwmax = {}, {}, {}
 
-    Tc_t, ELEV_t, Fw_t, M_t = {}, {}, {}, {}
+    Tc_h, ELEV_h, Fw_h, M_h = {}, {}, {}, {}
     Zhh, Zdr, Rhv, Kdp = {}, {}, {}, {}
     
-    nomfileVarInt = pathTmat+'TmatVarInt_'+schema_micro+'_'+bande+'_'+t+table_ind  
+    nomfileVarInt = pathTmat+'TmatVarInt_'+schema_micro+'_'+band+'_'+h+table_ind  
 
     print("reading min/step/max in : ", nomfileVarInt)
     df = pd.read_csv(nomfileVarInt, sep=";",nrows = 1)
-    LAMmin[t]= np.copy(df["LAMmin"])[0]
-    LAMstep[t]= np.copy(df["LAMmin"])[0]
-    LAMmax[t]= np.copy(df["LAMmin"])[0]
-    ELEVmin[t]= np.copy(df["ELEVmin"])[0]
-    ELEVstep[t]= np.copy(df["ELEVstep"])[0]
-    ELEVmax[t]= np.copy(df["ELEVmax"])[0]
-    Tcmin[t]= np.copy(df["Tcmin"])[0]
-    Tcstep[t]= np.copy(df["Tcstep"])[0]
-    Tcmax[t]= np.copy(df["Tcmax"])[0]
-    Fwmin[t]= np.copy(df["Fwmin"])[0]
-    Fwstep[t]= np.copy(df["Fwstep"])[0]
-    Fwmax[t]= np.copy(df["Fwmax"])[0]
+    LAMmin[h]= np.copy(df["LAMmin"])[0]
+    LAMstep[h]= np.copy(df["LAMmin"])[0]
+    LAMmax[h]= np.copy(df["LAMmin"])[0]
+    ELEVmin[h]= np.copy(df["ELEVmin"])[0]
+    ELEVstep[h]= np.copy(df["ELEVstep"])[0]
+    ELEVmax[h]= np.copy(df["ELEVmax"])[0]
+    Tcmin[h]= np.copy(df["Tcmin"])[0]
+    Tcstep[h]= np.copy(df["Tcstep"])[0]
+    Tcmax[h]= np.copy(df["Tcmax"])[0]
+    Fwmin[h]= np.copy(df["Fwmin"])[0]
+    Fwstep[h]= np.copy(df["Fwstep"])[0]
+    Fwmax[h]= np.copy(df["Fwmax"])[0]
 
     # For M and CC: same min/step/max for all types
     expMmin= np.copy(df["expMmin"])[0]
@@ -151,14 +156,14 @@ def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
     print("reading dpol variables in : ", nomfileVarInt)
     df = pd.read_csv(nomfileVarInt, sep=";",skiprows = [0, 1])
     #df = pandas.read_csv(nomfileCoefInt, sep=";",names=["Tc_t", "ELEV_t", "Fw_t", "M_t", "S11carre_t", "S22carre_t", "ReS22S11_t", "ImS22S11_t", "ReS22fmS11f_t", "ImS22ft_t", "ImS11ft_t", "RRint_t"])
-    Tc_t[t] = np.copy(df['Tc'])
-    ELEV_t[t] = np.copy(df['ELEV'])
-    Fw_t[t] = np.copy(df['P3'])
-    M_t[t] = np.copy(df['M'])
-    Zhh[t] = np.copy(df['Zhhlg'])
-    Zdr[t] = np.copy(df['Zdrlg'])
-    Rhv[t] = np.copy(df['Rhv'])
-    Kdp[t] = np.copy(df['KDP'])
+    Tc_h[h] = np.copy(df['Tc'])
+    ELEV_h[h] = np.copy(df['ELEV'])
+    Fw_h[h] = np.copy(df['P3'])
+    M_h[h] = np.copy(df['M'])
+    Zhh[h] = np.copy(df['Zhhlg'])
+    Zdr[h] = np.copy(df['Zdrlg'])
+    Rhv[h] = np.copy(df['Rhv'])
+    Kdp[h] = np.copy(df['KDP'])
 
     del df
     # End loop over hydromet types    
@@ -166,14 +171,14 @@ def Read_VarTmatrixClotilde(pathTmat,bande,schema_micro,table_ind,t):
     return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, \
     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
     Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, \
-    Tc_t, ELEV_t, Fw_t, M_t, Zhh, Zdr, Kdp, Rhv
+    Tc_h, ELEV_h, Fw_h, M_h, Zhh, Zdr, Kdp, Rhv
 # =============================================================================
     
 
 # ========= Extract scattering coefficients for singletype ====================
 """
  * input:
-     - full table of scattering coef for type t (S11carre_t[t] ...)
+     - full table of scattering coef for type t (S11carre_h[h] ...)
      - parameters of each column of the table (min, max, step): ELEVmin...
      - value of table columns in 3d arrays (el_temp, Tc_temp, P3, M_temp)
  * ouput :
