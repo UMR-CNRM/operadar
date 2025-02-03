@@ -31,77 +31,86 @@ OUTPUT:
     - Tc (°C), CC, CCI, lon, lat, Z
 """
 
-def read_arome(filePath: str,
-               micro: str,
-               extract_once: bool,
-               hydrometeors: dict,
-               #moments: dict,
-               #CCIconst: float,
-               subDomain:list[float]|None,
-               ):   
+def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict, subDomain:list[float]|None):   
+    """Read AROME .fa file and extract
+    - X, Y (1D grid coordinates)
+    - Z (1D model coordinate in pressure level)
+    - lon, lat (2D)
+    - M (contents), Nc, Tc
+
+    Args:
+        filePath (str): _description_
+        micro (str): _description_
+        extract_once (bool): _description_
+        hydrometeors (dict): _description_
+        subDomain (list[float] | None): _description_
+
+    Returns:
+        _type_: _description_
+    """
     
     epygram.init_env() # mandatory
     
     hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
     
     print("\tAROME .fa file: ",filePath)
-    loaded_epygram_file = epygram.formats.resource(filePath, openmode = 'r', fmt = 'FA')
+    loaded_epygram_file = epygram.formats.resource(filename=filePath,
+                                                   openmode = 'r',
+                                                   fmt = 'FA',
+                                                   )
     ps = loaded_epygram_file.readfield('SURFPRESSION')
     X_res=loaded_epygram_file.geometry.grid['X_resolution']
     Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
     
-    
     if extract_once :
-        # Vertical levels values
+        # Hybrid pressure coefficients
         A = [level[1]['Ai'] for level in loaded_epygram_file.geometry.vcoordinate.grid['gridlevels']][1:]
         B = [level[1]['Bi'] for level in loaded_epygram_file.geometry.vcoordinate.grid['gridlevels']][1:]
         # Save in temporary pickle files
-        tmpA = open('tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
-        tmpB = open('tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
+        tmpA = open('tmp/tmpA.obj', 'wb') ; pkl.dump(A,tmpA) ; tmpA.close()
+        tmpB = open('tmp/tmpB.obj', 'wb') ; pkl.dump(B,tmpB) ; tmpB.close()
     else :
         # Read previously saved pickle files
-        tmpA = open('tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
-        tmpB = open('tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
+        tmpA = open('tmp/tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
+        tmpB = open('tmp/tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
     
-
     if subDomain != None :
         lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
         imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
         imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
-        arome_file = epygram.resources.SubdomainResource(
-                     resource=loaded_epygram_file, openmode='r', name='Subdomain',
-                     subarray=dict(imin=imin, imax=imax, jmin=jmin, jmax=jmax),
-                     )
+        arome_file = epygram.resources.SubdomainResource(resource=loaded_epygram_file,
+                                                         openmode='r',
+                                                         name='Subdomain',
+                                                         subarray=dict(imin=imin,
+                                                                       imax=imax,
+                                                                       jmin=jmin,
+                                                                       jmax=jmax) )
     else:
         arome_file=loaded_epygram_file
-    
-    
-    if extract_once : 
-        [lon, lat] = get_2D_lat_lon_epygram(arome_file)
-    [p, psurf, pdep, phis] = get_geometry(arome_file, A, B)
-    
-    # ======== Hydrometeor contents, concentrations and temperature
-    [M, T, R]  = get_contents_and_T(arome_file, p, hydromet_list)
-    Tc=T-273.15
-    Nc = get_concentrations(arome_file, p, hydromet_list,moments,CCIconst)
-    
-    # ========= Horizontal grid
-    Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
-    X = X_res*np.arange(Tc.shape[2]).astype('i4')
-
-        
-    # ========= Altitude z of each level
-    Z = get_altitude(A, B, T, p, pdep, psurf, phis, R)
-
-    # ========= Close file
     loaded_epygram_file.close()
-    arome_file.close()
     
+    # Extract 2D lon and lat fields only once if multiple iterations over the same (sub)domain
+    if extract_once : 
+        [lon, lat] = get_2D_lat_lon_epygram(epygram_file=arome_file)
+    [p, psurf, pdep, geosurf] = get_geometry(epygram_file=arome_file,
+                                             A=A, B=B )
+    
+    [M, T, R]  = get_contents_T_and_R(epygram_file=arome_file,
+                                      pressure=p,
+                                      hydrometeors=hydromet_list )
+    Nc = get_concentrations(epygram_file=arome_file,
+                            hydrometeorsConfig=hydrometeors,
+                            content=M,
+                            temperature=T )
+    Tc=T-273.15
+    
+    X = X_res*np.arange(Tc.shape[2]).astype('i4')
+    Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
+    Z = get_altitude(A, B, T, p, pdep, psurf, geosurf, R)
+
+    arome_file.close()
     if extract_once : return  X, Y, Z, lon, lat, M, Nc, Tc
     else : return X, Y, Z, None, None, M, Nc, Tc
-
-# =============================================================================
-
 
 
 

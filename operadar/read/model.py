@@ -24,9 +24,7 @@ def read_model_file(filePath:Path, domain:list[float]|None, extract_once:bool=Tr
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath, micro=cf.micro_scheme,
                                                     extract_once=extract_once, hydrometeors=cf.moments,
                                                     subDomain=domain,
-                                                    )
-               #moments: dict,
-               #CCIconst: float,    
+                                                    )   
     
     else :
         print('_____________')
