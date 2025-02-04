@@ -33,23 +33,16 @@ sys.path.insert(0, "./lib")
 
 
 # 0perad modules
-import operad_conf as cf
+import operadar.operad_conf as cf
 
-from read.tmatrix_tables import read_Tmatrix_Clotilde
-
-from read.model import read_model_file
-
-import save_dpolvar as save
-
-from operadar_utils import (
-    hydrometeorTmatrix_from_hydrometeorDict,
-    format_date_time_argument,
-)
-
-
+import operadar.save.save_dpolvar as save
+from operadar.read.model import read_model_file
+from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
+from operadar.utils.formats_data import format_date_time_argument
+from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 def operad(filename:Path, date_time:str|pd.Timestamp,
-           read_tmatrix:bool=False, extract_once:bool=True,
+           read_tmatrix:bool=True, extract_once:bool=True,
            outPath:str=cf.outPath, radar_band:str=cf.radar_band,
            Tmatrix_params:dict={}, exp_name:str=cf.experience_name,
            subDomain:list[float]|None=cf.subDomain,
@@ -67,7 +60,7 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
     if not outFilePath.exists():
         
         # Read Tmatrix tables (files from Clotilde)
-        Tmatrix_hydromet_list = hydrometeorTmatrix_from_hydrometeorDict(cf.moments,quiet=True)
+        Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix',quiet=True)
         if read_tmatrix :
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
             LAM = Tmatrix_params['LAMmin']['rr']/1000.
@@ -83,13 +76,15 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
                                                          domain=subDomain,
                                                          extract_once=False,
                                                          )
-        
+        # Compute radar geometry
+        # Compute mixed phase parametrization
+        # Compute dual-pol radar variables
+        # Saving file
     else :
         print("File exists at :",outFilePath)
 
     elapsed_time = tm.time() - begin_program_timer
     print("Elapsed time :",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
-
 
 
 

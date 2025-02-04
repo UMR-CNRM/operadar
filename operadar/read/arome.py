@@ -10,15 +10,12 @@ import epygram
 import pickle as pkl
 import time as tm
 
-from read.util_with_epygram import *
-from operadar_utils import (
-    hydrometeorModel_from_hydrometeorDict,
-    get_lat_lon_from_subdomain
-)
+from operadar.read.with_epygram import *
+from operadar.utils.formats_data import get_lat_lon_from_subdomain
+from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
-
-def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict, subDomain:list[float]|None):   
+def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict, subDomain:list[float]|None,testing=False):   
     """Read and extract data from an AROME.fa file
     
     Args:
@@ -42,16 +39,22 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
     
     epygram.init_env() # mandatory
     
-    hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=hydrometeors,datype='model',quiet=True)
     
     print("\tAROME .fa file: ",filePath)
+    if testing : deb=tm.time()
     loaded_epygram_file = epygram.formats.resource(filename=filePath,
                                                    openmode = 'r',
                                                    fmt = 'FA',
                                                    )
+    
+    if testing : print('load',tm.time()-deb); deb=tm.time()
+    
     ps = loaded_epygram_file.readfield('SURFPRESSION')
     X_res=loaded_epygram_file.geometry.grid['X_resolution']
     Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
+    
+    if testing : print('read ps, x, y',tm.time()-deb); deb=tm.time()
     
     if extract_once :
         # Hybrid pressure coefficients
@@ -64,6 +67,8 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
         # Read previously saved pickle files
         tmpA = open('tmp/tmpA.obj', 'rb') ; A = pkl.load(tmpA) ; tmpA.close()
         tmpB = open('tmp/tmpB.obj', 'rb') ; B = pkl.load(tmpB) ; tmpB.close()
+        
+    if testing : print('extract A B and save it',tm.time()-deb); deb=tm.time()
     
     if subDomain != None :
         lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
@@ -76,8 +81,10 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
                                                                        imax=imax,
                                                                        jmin=jmin,
                                                                        jmax=jmax) )
+        if testing : print('extract subdomain',tm.time()-deb); deb=tm.time()
     else:
         arome_file=loaded_epygram_file
+        if testing : print('no subdomain',tm.time()-deb); deb=tm.time()
     loaded_epygram_file.close()
     
     # Extract 2D lon and lat fields only once if multiple iterations over the same (sub)domain
@@ -86,38 +93,44 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
     [p, psurf, pdep, geosurf] = get_geometry(epygram_file=arome_file,
                                              A=A, B=B )
     
+    if testing : print('get lat lon and geometry pressure',tm.time()-deb); deb=tm.time()
+    
     [M, T, R]  = get_contents_T_and_R(epygram_file=arome_file,
                                       pressure=p,
                                       hydrometeors=hydromet_list )
+    
+    if testing : print('get contents T and R',tm.time()-deb); deb=tm.time()
+    
     Nc = get_concentrations(epygram_file=arome_file,
                             hydrometeorsConfig=hydrometeors,
                             content=M,
                             temperature=T )
+    
+    if testing : print('get concentrations',tm.time()-deb); deb=tm.time()
+    
     Tc=T-273.15
     
     X = X_res*np.arange(Tc.shape[2]).astype('i4')
     Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
     Z = get_altitude(A, B, T, p, pdep, psurf, geosurf, R)
-
+    
+    if testing : print('get altitude',tm.time()-deb); deb=tm.time()
+    
     arome_file.close()
     if extract_once : return  X, Y, Z, lon, lat, M, Nc, Tc
     else : return X, Y, Z, None, None, M, Nc, Tc
 
 
 
- #================ Appel module directement ====================================    
+  
 if __name__ == '__main__':
-
-    # ---- to be included in conf file
-    micro="ICE3"
-    #rep="/home/augros/DONNEES/AROME/20220816/PEAROME/R09/"
-    rep="/cnrm/precip/users/augros/DONNEES/AROME/"
-    file="historic.arome.franmg-01km30+0008:00.fa"
-    filePath=rep+file
     
-    # === Infos === #
-    #loaded_epygram_file.listfields()
-    #loaded_epygram_file.what()
-     # -------------------------------------
-
- # =============================================================================
+    import configFiles.conf_template as cf
+    from pathlib import Path
+    micro="ICE3"
+    read_arome(filePath=Path(f"{cf.input_file_dir}test_ICE3.fa"),
+               micro="ICE3",
+               extract_once=True,
+               hydrometeors=cf.moments,
+               subDomain=cf.subDomain,
+               testing=True)
