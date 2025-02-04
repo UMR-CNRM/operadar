@@ -3,7 +3,7 @@
 
 import numpy as np
 import epygram
-
+from operadar.utils.make_links import link_varname_with_arome_name
 
 
 def get_2D_lat_lon_epygram(epygram_file):
@@ -45,15 +45,6 @@ def get_geometry(epygram_file, A, B):
     #oro = surface_geopotential.getdata(subzone='C')/epygram.profiles.g0
 
     return pressure, surface_pressure, pressure_departure, surface_geopotential
-
-
-
-def link_varname_with_arome_name ():
-    """Make the correspondance between the hydrometeor keys and the variable names commonly used in AROME."""
-    model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
-    model_name=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
-    name_hydro_linked={t:model_name[it] for it,t in enumerate(model_hydrometeors)}
-    return name_hydro_linked
 
 
 

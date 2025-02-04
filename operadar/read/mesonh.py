@@ -8,10 +8,8 @@ Created on Tue Apr 11 09:55:15 2023
 
 import numpy as np
 from netCDF4 import Dataset
-from operadar.operadar_utils import (
-    hydrometeorModel_from_hydrometeorDict,
-    get_lat_lon_from_subdomain,
-)
+from operadar.utils.make_links import link_keys_with_available_hydrometeors
+from operadar.utils.formats_data import get_lat_lon_from_subdomain
 
 
 #============== Read MesoNH variables ===============
@@ -79,7 +77,7 @@ def read_mesonh(filePath: str,
     Tc=Th*((p/100000)**(0.4/1.4))-273.15 
     del Th, p
     
-    rhodref = ncfile1.variables['RHOREFZ'][:]
+    rhodref = ncfile1.variables['RHOREFZ'][:] # MODIF ? voir epygram (quelle fonction ?)
     rho3D=np.ones(Tc.shape)
     
     IKE=Tc.shape[0]
@@ -89,7 +87,7 @@ def read_mesonh(filePath: str,
     
     # === Hydrometeors contents and concentrations
     
-    hydromet_list = hydrometeorModel_from_hydrometeorDict(hydrometeors)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=hydrometeors, datatype='model', quiet=True)
     
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
@@ -104,7 +102,7 @@ def read_mesonh(filePath: str,
     
     
     for t in hydromet_list:
-        M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:]
+        M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
         M[t][M[t]==999.]=float('nan')
     
     if(micro =="ICE3" or micro =="ICE4"):
