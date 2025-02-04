@@ -31,13 +31,18 @@ def link_keys_with_available_hydrometeors(hydrometeors:dict,datatype:str,quiet=F
     - 'hh' : hail
     - 'wh' : wet hail
     """
-    model_hydrometeors=['vv','cc','rr','ss','gg','ii','hh']
-    Tmatrix_hydrometeors = ['rr','ss','ws','ii','gg','wg','hh','wh']
+    if datatype == 'model' :
+        list_to_compare = ['vv','cc','rr','ss','gg','ii','hh']
+    elif datatype == 'tmatrix':
+        list_to_compare = ['rr','ss','ws','ii','gg','wg','hh','wh']
+    else :
+        print(datatype,'is not a valid datatype. Can be "model" or "tmatrix".')
+    
     hydrometeors_to_extract = []
     for key in hydrometeors.keys() :
-        if key in model_hydrometeors:
+        if key in list_to_compare:
             hydrometeors_to_extract += [key]
     if not quiet :
-        print('\tTo extract in model hydrometeor fields :',hydrometeors_to_extract)
+        print('\tTo extract in',datatype,'hydrometeor fields :',hydrometeors_to_extract)
     return(hydrometeors_to_extract)
 
