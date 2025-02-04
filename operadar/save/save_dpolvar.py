@@ -35,7 +35,7 @@ def save_dpolvar(M:dict[np.ndarray], Nc:dict[np.ndarray], Vm_k:dict[np.ndarray],
     """
     # M and Nc dict formatting for dataset backup
     hydromet_list = list(M.keys())
-    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg to g/m3
+    contents = np.array([M[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg/m3 to g/m3
     concentrations = np.array([Nc[hydromet] for hydromet in hydromet_list]).astype('f4')
     
     ds=xr.Dataset(
