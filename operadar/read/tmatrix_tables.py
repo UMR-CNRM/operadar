@@ -22,22 +22,16 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operad_conf import micro_scheme, LIMToption, pathTmat
+from operad_conf import (
+    micro_scheme,
+    LIMToption, 
+    pathTmat
+)
 
-#============== Read_Tmatrix2020
-"""
-Reads Clotilde's 2020 Tmatrix tables:
-    direct reading of min/step: max in coefficient files)
-Output: 
-min/step/max parameters
-+ Tc_h, ELEV_h, Fw_h, M_h
-+ S11carre_h, S22carre_h, ReS22S11_h,
-  ImS22S11_h, ReS22fmS11f_h, ImS22ft_h, ImS11ft_hS11carre_h  
-"""
 
 
 def initialize_Tmatrix_dictionnary() -> dict :
-    """Initialize the Tmatrix dictionnary to store all the variables and columns of the tables"""
+    """Initializes the Tmatrix dictionnary to store all the variables and columns of the tables"""
     Tmatrix_params = {}
     list_of_parameters = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
                           'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax', 'Tc_h',
@@ -55,7 +49,7 @@ def initialize_Tmatrix_dictionnary() -> dict :
 
 def get_scheme_to_fetch_table() -> str :
     """Choice of the right table depending on the microphysics (will be modified later ?)"""
-    # 
+
     if micro_scheme[0:3] == "ICE" :
         return "ICE3"
     elif micro_scheme[0:3] == "LIM" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
@@ -67,16 +61,16 @@ def get_scheme_to_fetch_table() -> str :
 
 
 
-def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat):
-    """_summary_
-
+def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->dict:
+    """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
+    
     Args:
-        band (str): _description_
-        hydrometeors (list): _description_
-        pathTmat (str, optional): _description_. Defaults to pathTmat.
+        band (str): radar band
+        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read
+        pathTmat (str, optional): Tmatrix directory path. Defaults to pathTmat in configuration file.
 
     Returns:
-        _type_: _description_
+        Tmatrix_params (dict) : dictionnary containing min/step/max values for multiple parameters
     """
     print("Reading Tmatrix tables")
     deb_timer = tm.time()
@@ -172,24 +166,25 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
     Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
     Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, \
     Tc_h, ELEV_h, Fw_h, M_h, Zhh, Zdr, Kdp, Rhv
-# =============================================================================
+
     
 
-# ========= Extract scattering coefficients for singletype ====================
-"""
- * input:
-     - full table of scattering coef for type t (S11carre_h[h] ...)
-     - parameters of each column of the table (min, max, step): ELEVmin...
-     - value of table columns in 3d arrays (el_temp, Tc_temp, P3, M_temp)
- * ouput :
-     - scattering coef for type t within mask
-"""
 def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,\
                  LAMmint, LAMmaxt, LAMstept,\
                  ELEVmint, ELEVmaxt, ELEVstept,\
                  Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
                  expMmin,expMstep,expMmax,\
                  P3name, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
+    """Extract scattering coefficients for each class of hydrometeor
+    
+    Input:
+    - full table of scattering coef for type t (S11carre_h[h] ...)
+    - parameters of each column of the table (min, max, step): ELEVmin...
+    - value of table columns in 3d arrays (el_temp, Tc_temp, P3, M_temp)
+    
+    Ouput :
+    - scattering coef for type t within mask
+    """
                                                                
     # Find position in the T-matrix table
     [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
@@ -211,34 +206,30 @@ def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,
     [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
 
     return S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
-# =============================================================================    
 
 
 
-#============== Fonction CALC_KTMAT
+def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMmax:float, LAMstep:float,
+    ELEVmin:float, ELEVmax:float, ELEVstep:float, Tcmin:float, Tcmax:float, Tcstep:float,
+    P3min, P3max, P3step, expMmin:float, expMstep:float, expMmax:float, P3name, shutdown_warnings) :
+    """Return the indexes of the scattering coef (S11..) corresponding to the upper and lower bounds of
+    LAM, ELEV, Tc, P3, M for => used for the interpolation of these coefficients.
+       
+    Args:
+        ELEV (float) : elevation in radians
+        Tc (np.ndarray) : temeprature in Celsius degree
+        P3r : liquid water fraction (1-moment) or concentration (2-moment)
+        M (np.ndarray) : contents in kg/m3
+        LAMmin,max,step (float) : wavelength in mm
+        ELEVmin,max,step (float) : degrees
+        Tcmin,max,step (float) : Celsius degree
+        P3min,max,step (float) : values between 0 and 1
+        expMmin,step,max (float) : exponential of the concentration
+        P3name : "Fw" liquid water fraction or "Nc" number concentration
 
-#def  CALC_KTMAT(LAMm,ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
-#    ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-#    P3min,P3max,P3step,expMmin,expMstep,expMmax,NMOMENTS):
-def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
-    ELEVmin,ELEVmax,ELEVstep,Tcmin,Tcmax,Tcstep,
-    P3min,P3max,P3step,expMmin,expMstep,expMmax,P3name,shutdown_warnings):
+    Returns:
+        kTmat (dict) : dict with 32 tables with the M shape/size
     
-    """
-       ELEV = Elevation en radians (tab)
-       Tc = température en °C (tab)
-       P3r = liquid water fraction (1-moment) or concentration (2-moment)
-       M = contenu kg/m3 (tab)
-       LAMmin,max,step en mm (val)
-       ELEVmin,max,step en degrees (val)
-       Tcmin,max,step en °C (val)
-       P3min,max,step entre 0 et 1 (val)
-       expMmin,expMstep,expMmax
-       P3name ("Fw" liquid water fraction or "Nc" number concentration)
-
-       return: kTmat, dict with 32 tables with the M shape/size : indexes of the scattering coef (S11..)
-       corresponding to the upper and lower bounds of LAM, ELEV, Tc, P3, M for 
-       => used for the interpolation of these coefficients    
     """
 
      
@@ -494,18 +485,26 @@ def  CALC_KTMAT(ELEV,Tc,P3r,M,LAMmin,LAMmax,LAMstep,
     del ELEV,Tc,expM,kLAM,LAMinf,kLAMs,LAMsup,nLAM,kELEV,ELEVinf,kELEVs,ELEVsup,nELEV
     del kTc,Tcinf,kTcs,Tcsup,nTc,kP3,P3inf,kP3s,P3sup,nP3,kexpM,expMinf,kexpMs,expMsup,nM,Minf,Msup
 
-#===== Fin fonction CALC_KTMAT
 
 
-#========= Fonction INTERPOL ========================
-"""
-LAMred,ELEVred,Tcred,Fwred,Mred en sortie de CALC_KTMAT
-MatCoef !matrice 5*32 contenant les coef à interpoler sur les 32 bornes: S11carre, S22carre,
-ReS22fmS11f, ReS22S11 et ImS22S11
-return: S11carre,S22carre,ReS22fmS11f, ReS22S11 et ImS22S11 
-"""
 def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
+    """Multidimensional interpolation with outputs from CALC_KTMAT function
+
+    Args:
+        LAMred (_type_): wavelength
+        ELEVred (_type_): elevation
+        Tcred (_type_): temperature
+        Fwred (_type_): liquid water fraction
+        Mred (_type_): content
+        MatCoef (_type_): 5*32 matrix with S11carre, S22carre, ReS22fmS11f, ReS22S11, and ImS22S11 coefficients to interpolate over the 32 bounds. 
     
+    Returns:
+        S11carre : description ?
+        S22carre : description ?
+        ReS22fmS11f : description ?
+        ReS22S11 : description ?
+        ImS22S11 : description ?
+    """
     ncoef=5
     nval=Mred.shape[0]
     print("  INTERPOL: nval=",nval)
@@ -559,5 +558,3 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
     return S11carre,S22carre,ReS22fmS11f, ReS22S11, ImS22S11
 
     del VectCoef
-# ======= Fin fonction INTERPOL
-    

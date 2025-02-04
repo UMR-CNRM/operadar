@@ -67,7 +67,7 @@ def get_contents_T_and_R(epygram_file, pressure:np.ndarray, hydrometeors: list):
         T[level,:,:] = field.getdata()
     del temperature_all_levels 
 
-    # 3D specific content (q)
+    # 3D specific content (q in kg/total kg of air)
     name_hydro = link_varname_with_arome_name()
     q = {}
     for key in hydrometeors+['vv'] :
@@ -82,7 +82,7 @@ def get_contents_T_and_R(epygram_file, pressure:np.ndarray, hydrometeors: list):
     Rv = epygram.profiles.Rv # water vapour
     R = Rd + q["vv"]*(Rv-Rd) - Rd*np.sum(q[x] for x in hydrometeors)
     
-    # Transformation of specific content to contents (M) in kg/kg of dry air
+    # Transformation of specific content to contents (M in kg/m3)
     M  = {h:q[h]*pressure/(R*T) for h in hydrometeors}
 
     return M,T,R

@@ -9,6 +9,7 @@ import operad_conf as cf
 
 
 def read_model_file(filePath:Path, domain:list[float]|None, extract_once:bool=True):
+    """Read model file (either Arome or MesoNH)"""
     
     print("Reading model variables")
     deb_timer = tm.time()

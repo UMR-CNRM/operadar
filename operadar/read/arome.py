@@ -11,33 +11,16 @@ import pickle as pkl
 import time as tm
 
 from read.util_with_epygram import *
-from operadar_utils import hydrometeorModel_from_hydrometeorDict, get_lat_lon_from_subdomain
+from operadar_utils import (
+    hydrometeorModel_from_hydrometeorDict,
+    get_lat_lon_from_subdomain
+)
 
 
-#================= Read Arome variables =======================================
-"""
-Read Arome 3D variables in ncfile: pressure, temperature, hydrometeor contents
-and concentrations 
-INPUT : 
-    - micro
-    - extract_once
-    - hydrometeors : list of hydrometeors to read in AROME file
-    - moments : dict with number of moments for each hydrometeor type
-    - filePath
-    - lon_min,lon_max,lat_min,lat_max
-OUTPUT: 
-    - M (kg/m3): dict of hydrometeor contents 
-    - Nc dict (/): dict of concentrations
-    - Tc (°C), CC, CCI, lon, lat, Z
-"""
 
 def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict, subDomain:list[float]|None):   
-    """Read AROME .fa file and extract
-    - X, Y (1D grid coordinates)
-    - Z (1D model coordinate in pressure level)
-    - lon, lat (2D)
-    - M (contents), Nc, Tc
-
+    """Read and extract data from an AROME.fa file
+    
     Args:
         filePath (str): _description_
         micro (str): _description_
@@ -46,7 +29,15 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
         subDomain (list[float] | None): _description_
 
     Returns:
-        _type_: _description_
+        X (np.ndarray): 1D horizontal coordinates in m
+        Y (np.ndarray): 1D horizontal coordinates in m
+        Z (np.ndarray): 1D array of vertical coordinates in model pressure levels
+        lon (np.ndarray | None): 2D array of longitude coordinates or None if extract_once = False
+        lat (np.ndarray | None): 2D array of latitude coordinates or None if extract_once = False
+        M (dict[np.ndarray]): dictionnary of 3D contents for each hydrometeor 
+        Nc (dict[np.ndarray]): dictionnary of 3D number concentrations for each hydrometeor
+        Tc (np.ndarray) : 3D temperature in Celsius
+        
     """
     
     epygram.init_env() # mandatory
