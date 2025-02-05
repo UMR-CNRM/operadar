@@ -39,7 +39,7 @@ from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
 from operadar.utils.formats_data import format_date_time_argument
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.radar.geometry import compute_radar_geometry
-
+from utils.masking import mask_precipitations
 
 
 
@@ -63,7 +63,7 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
-            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix')
+            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.moments,datatype='tmatrix')
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
             LAM = Tmatrix_params['LAMmin']['rr']/1000.
         
@@ -83,6 +83,13 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
                                                            elev_max=Tmatrix_params['ELEVmax']["rr"])
         
         # Mask precipitations
+        mask_precip = mask_precipitations(contents=M,
+                                          expMmin=Tmatrix_params['expMmin'],
+                                          hydrometeorMoments=cf.moments)
+        
+        # Combine masks
+        partial_mask = (mask_precip & mask_dist_max)
+        
         # Compute mixed phase parametrization
         # Compute dual-pol radar variables
         # Saving file
