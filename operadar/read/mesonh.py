@@ -84,7 +84,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     
     # === Hydrometeors contents and concentrations
     
-    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model', quiet=True)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
     
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']

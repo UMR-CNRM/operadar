@@ -39,7 +39,7 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeorMoments
     
     epygram.init_env() # mandatory
     
-    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,datatype='model',quiet=True)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,datatype='model')
     
     print("\tAROME .fa file: ",filePath)
     if testing : deb=tm.time()

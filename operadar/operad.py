@@ -29,7 +29,6 @@ import pandas as pd
 import datetime as dt
 
 from pathlib import Path
-sys.path.insert(0, "./lib")
 
 
 # 0perad modules
@@ -64,7 +63,7 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
-            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix',quiet=True)
+            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix')
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
             LAM = Tmatrix_params['LAMmin']['rr']/1000.
         
@@ -83,6 +82,7 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Z, Tc=Tc,
                                                            elev_max=Tmatrix_params['ELEVmax']["rr"])
         
+        # Mask precipitations
         # Compute mixed phase parametrization
         # Compute dual-pol radar variables
         # Saving file
