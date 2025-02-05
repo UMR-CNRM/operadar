@@ -34,12 +34,15 @@ sys.path.insert(0, "./lib")
 
 # 0perad modules
 import operadar.operad_conf as cf
-
 import operadar.save.save_dpolvar as save
 from operadar.read.model import read_model_file
 from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
 from operadar.utils.formats_data import format_date_time_argument
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
+from operadar.radar.geometry import compute_radar_geometry
+
+
+
 
 def operad(filename:Path, date_time:str|pd.Timestamp,
            read_tmatrix:bool=True, extract_once:bool=True,
@@ -60,8 +63,8 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
     if not outFilePath.exists():
         
         # Read Tmatrix tables (files from Clotilde)
-        Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix',quiet=True)
         if read_tmatrix :
+            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=cf.moments,datatype='tmatrix',quiet=True)
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
             LAM = Tmatrix_params['LAMmin']['rr']/1000.
         
@@ -77,6 +80,9 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
                                                          extract_once=False,
                                                          )
         # Compute radar geometry
+        mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Z, Tc=Tc,
+                                                           elev_max=Tmatrix_params['ELEVmax']["rr"])
+        
         # Compute mixed phase parametrization
         # Compute dual-pol radar variables
         # Saving file
