@@ -16,14 +16,17 @@ def read_model_file(filePath:Path, domain:list[float]|None, extract_once:bool=Tr
     
     if (cf.model=="MesoNH"):
         from operadar.read.mesonh import read_mesonh
-        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = read_mesonh(filePath=filePath, micro=cf.micro_scheme,
+        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = read_mesonh(filePath=filePath,
+                                                         micro=cf.micro_scheme,
                                                          subDomain=domain,
-                                                         hydrometeors = cf.moments,
+                                                         hydrometeorMoments=cf.moments,
                                                          real_case = cf.real_case)
     elif (cf.model=="Arome"):
         from operadar.read.arome import read_arome
-        [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath, micro=cf.micro_scheme,
-                                                    extract_once=extract_once, hydrometeors=cf.moments,
+        [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
+                                                    micro=cf.micro_scheme,
+                                                    extract_once=extract_once,
+                                                    hydrometeorMoments=cf.moments,
                                                     subDomain=domain,
                                                     )   
     
