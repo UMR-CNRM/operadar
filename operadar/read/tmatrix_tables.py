@@ -22,7 +22,7 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operad_conf import (
+from operadar.operad_conf import (
     micro_scheme,
     LIMToption, 
     pathTmat
@@ -102,7 +102,7 @@ def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->d
     # for contents and number concentration: same min/step/max for all class of hydrometeors
     same_value_for_all_hydrometeors = ['expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
     for value in same_value_for_all_hydrometeors :
-        Tmatrix_params[value][h] = np.copy(df[value])[0]
+        Tmatrix_params[value] = np.copy(df[value])[0]
     
     del df
     print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
