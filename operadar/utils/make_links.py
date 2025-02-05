@@ -12,7 +12,7 @@ def link_varname_with_arome_name ():
 
 
 
-def link_keys_with_available_hydrometeors(hydrometeors:dict,datatype:str,quiet=False) -> list:
+def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],datatype:str,quiet=False) -> list:
     """Make the correspondance between available hydrometeor keys in the model or Tmatrix tables
     and the desired keys given in the configuration file.
     
@@ -39,7 +39,7 @@ def link_keys_with_available_hydrometeors(hydrometeors:dict,datatype:str,quiet=F
         print(datatype,'is not a valid datatype. Can be "model" or "tmatrix".')
     
     hydrometeors_to_extract = []
-    for key in hydrometeors.keys() :
+    for key in hydrometeorMoments.keys() :
         if key in list_to_compare:
             hydrometeors_to_extract += [key]
     if not quiet :

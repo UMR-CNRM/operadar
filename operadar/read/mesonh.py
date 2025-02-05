@@ -16,11 +16,8 @@ from operadar.utils.formats_data import get_lat_lon_from_subdomain
 """
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
-def read_mesonh(filePath: str,
-                micro: str,
-                subDomain:list[float]|None,
-                hydrometeors: dict,
-                real_case: bool,
+def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
+                hydrometeorMoments: dict[int],real_case: bool,
                ):
     
     # === Model file
@@ -87,7 +84,7 @@ def read_mesonh(filePath: str,
     
     # === Hydrometeors contents and concentrations
     
-    hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=hydrometeors, datatype='model', quiet=True)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model', quiet=True)
     
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']

@@ -15,14 +15,14 @@ from operadar.utils.formats_data import get_lat_lon_from_subdomain
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
-def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict, subDomain:list[float]|None,testing=False):   
+def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeorMoments:dict[int], subDomain:list[float]|None,testing=False):   
     """Read and extract data from an AROME.fa file
     
     Args:
         filePath (str): _description_
         micro (str): _description_
         extract_once (bool): _description_
-        hydrometeors (dict): _description_
+        hydrometeorMoments (dict): _description_
         subDomain (list[float] | None): _description_
 
     Returns:
@@ -39,7 +39,7 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
     
     epygram.init_env() # mandatory
     
-    hydromet_list = link_keys_with_available_hydrometeors(hydrometeors=hydrometeors,datatype='model',quiet=True)
+    hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,datatype='model',quiet=True)
     
     print("\tAROME .fa file: ",filePath)
     if testing : deb=tm.time()
@@ -102,7 +102,7 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeors: dict
     if testing : print('get contents T and R',tm.time()-deb); deb=tm.time()
     
     Nc = get_concentrations(epygram_file=arome_file,
-                            hydrometeorsConfig=hydrometeors,
+                            hydrometeorsConfig=hydrometeorMoments,
                             content=M,
                             temperature=T )
     
@@ -131,6 +131,6 @@ if __name__ == '__main__':
     read_arome(filePath=Path(f"{cf.input_file_dir}test_ICE3.fa"),
                micro="ICE3",
                extract_once=True,
-               hydrometeors=cf.moments,
+               hydrometeorMoments=cf.moments,
                subDomain=cf.subDomain,
                testing=True)
