@@ -38,8 +38,9 @@ from operadar.read.model import read_model_file
 from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
 from operadar.utils.formats_data import format_date_time_argument
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
+from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
-from utils.masking import mask_precipitations
+from operadar.microphysics.mixed_phase import compute_mixed_phase
 
 
 
@@ -91,6 +92,11 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         partial_mask = (mask_precip & mask_dist_max)
         
         # Compute mixed phase parametrization
+        [M, Nc,Fw] = compute_mixed_phase(contents=M,
+                                         concentrations=Nc,
+                                         expMmin=Tmatrix_params['expMmin']) 
+        
+        
         # Compute dual-pol radar variables
         # Saving file
     else :
