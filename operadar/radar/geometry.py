@@ -46,6 +46,7 @@ def compute_radar_geometry(X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
         distance_mask, radar_dist_3D = compute_distance_mask(X, Y, Z, X0, Y0, Z0)
         elev = compute_radar_elevation(radar_dist_3D, Z, elev_max)
         
+    print("--> Done in",round(tm.time()- deb_timer,2),"seconds")   
     return distance_mask, elev
     
     
