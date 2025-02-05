@@ -5,7 +5,6 @@ setup(
     version='0.0',
     author='C. Augros, C. David, T. LeBastard',
     description='Radar forward operator developped at the National Centre for Meteorological Research, France',
-    url='https://github.com/UMR-CNRM/operadar.git'
-    packages=find_packages("operadar"),
-    install_requires=[],
+    url='https://github.com/UMR-CNRM/operadar.git',
+    packages=["operadar"],
 )

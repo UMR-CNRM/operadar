@@ -1,17 +1,19 @@
 # Radar forward operator (operad)
 This radar forward operator is developped by the researchers of the GMME/PRECIP team at the National Centre for Meteorological Research (CNRM).
 
-This software is designed to compute synthetic dual-polarization variables (Z<sub>H</sub>, Z<sub>DR</sub>, K<sub>DP</sub>, Rho<sub>HV</sub>) in a 3D grid.
+The software is designed to compute synthetic dual-polarization variables (Z<sub>H</sub>, Z<sub>DR</sub>, K<sub>DP</sub>, Rho<sub>HV</sub>) in a 3D grid.
 It is adapted to read and manipulate AROME and MesoNH model files and requires a repository of T-matrix lookup tables.
 
-* INPUT
-  * T-matrix lookup tables (created beforehand with the T-matrix generation code). For colleagues at the CNRM, the tables can be found on belenos at `/home/augros/TmatCoefInt_SCXW/`
-  * Model file (`.fa` for AROME files or `.nc` for MesoNH)
-* OUTPUT : netcdf file with
-  * latitude/longitude fields (2D), and X/Y 1D coordinates
-  * model level coordinates (1D)
-  * dual-pol variables ($Z_{H}$ , $Z_{DR}$ , $K_{DP}$ , $\rho_{HV}$)
-  * temperature, altitude, contents and concentrations fields
+### INPUT
+* Model file (`.fa` for AROME files or `.nc` for MesoNH)
+* Configuration file
+
+### OUTPUT : netcdf file with
+* X/Y grid horizontal coordinates (1D)
+* model pressure levels vertical coordinates (1D)
+* latitude/longitude fields (2D)
+* dual-pol variables : $Z_{H}$ , $Z_{DR}$ , $K_{DP}$ , $\rho_{HV}$ (3D)
+* temperature, altitude, contents and concentrations fields (3D)
 
 # Installation
 ## On Belenos: 
@@ -22,10 +24,14 @@ create a .gitconfig file (on your home directory) with:
        sslVerify = false
 ```
 
-## As a package (à MAJ)
+## As a package (not sure yet of the procedure)
+In a virtual environment (recommended) or in your base environment
 ```
-git clone https://github.com/UMR-CNRM/operadar.git
+pip install git+https://github.com/UMR-CNRM/operadar.git
 ```
+
+# WIKI
+* T-matrix lookup tables (created beforehand with the T-matrix generation code). For colleagues at the CNRM, the tables can be found on belenos at `/home/augros/TmatCoefInt_SCXW/`
 
 * If you want to suggest slight modifications
   1. fork the code (select: Fork, create a new fork)
@@ -124,7 +130,7 @@ Examples :
 
    `>>> ./exec_operad.sh MesoNH 20220818 LIMAAG conf_MesoNH_LIMH_CORSEbe.py`
 
-## To Do
+# To Do
 - [ ] find a way to read the ice concentration in AROME file ?
 - [ ] add the radar geometry option (with elevations and beam filtering with gaussian)
 - [ ] link this project with tmatrix DPOLSIMUL git (which produces the required tables !)
@@ -132,8 +138,37 @@ Examples :
 - [ ] put one MesoNh and one AROME example test files
 
 
-# TODO CLOE
-- [] mettre au propre README
-- [] configurer fichier gitignore : operad_conf, tmp obj, etc
-- [] read_mesonh : changer les sorties (enlever CC et CCI pour Nc)
-- [] calcul explicite de la concentration pour les espèces 1 moment
+## TODO CLOE
+- [ ] mettre au propre README
+- [ ] configurer fichier gitignore : operad_conf, tmp obj, etc
+- [ ] read_mesonh : changer les sorties (enlever CC et CCI pour Nc)
+- [ ] calcul explicite de la concentration pour les espèces 1 moment
+
+
+# Contributing
+If you wish to contribute to the project, first, fork the code to create your own copy of the project (see https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#creating-your-own-copy-of-a-project).
+<br>NOTE : If you want to be part of the main developpers (ask clotilde.augros@meteo.fr)
+
+
+Then, clone the repository in a dedicated folder.
+```
+mkdir my_folder
+cd my_folder
+git clone https://github.com/UMR-CNRM/operadar.git
+```
+
+Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch.
+```
+git branch my_branch
+git checkout my_branch
+```
+
+In the installation folder, install operadar as a package with
+```
+pip install -e .
+```
+
+To ask for integration of your modifications, please open a pull request following https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#making-a-pull-request.
+
+# License
+??
