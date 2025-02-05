@@ -22,6 +22,7 @@ def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
 
 
 def format_date_time_argument(date_time:str|pd.Timestamp):
+    """Transform a str datetime to a pandas Timestamp (if not a Timestamp yet)"""
     if type(date_time)==str :
         return pd.Timestamp(date_time)
     else :
