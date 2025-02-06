@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import pandas as pd
+from pandas import Timestamp
+from numpy import ndarray
 
 
 
@@ -21,10 +22,10 @@ def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
 
 
 
-def format_date_time_argument(date_time:str|pd.Timestamp):
+def format_date_time_argument(date_time:str|Timestamp):
     """Transform a str datetime to a pandas Timestamp (if not a Timestamp yet)"""
     if type(date_time)==str :
-        return pd.Timestamp(date_time)
+        return Timestamp(date_time)
     else :
         return date_time
 
@@ -37,3 +38,28 @@ def get_lat_lon_from_subdomain(domain:list[float])-> float:
     lat_min = domain[2] ; lat_max = domain[3]
     
     return lon_min, lon_max, lat_min, lat_max
+
+
+
+def select_Tmatrix_column(momentsDict:dict[int],hydrometeor:str,mask:ndarray,concentration:ndarray,Fw:ndarray,tmatrix_param:dict):
+    """ Compute 3d parameter in Tmatrix table 
+    TODO : change the reading of Tmatrix table so that the parameters are kept the same !
+
+    * pristine ice (treated as 2-moment => the concentration can vary in MesoNH and is registered)
+    * rainwater : 2-moment for all LIMA versions / 1-moment for ICE3
+    * all other species (graupel / snow / wet graupel / wet snow ? )=> treated as 1-moment but can have a variable wet fraction
+    => 3d parameter = Fw
+    """
+    
+    if momentsDict[hydrometeor] == 2 :
+        col_name = 'Nc'
+        field_temp = concentration[mask]
+        col = 'expCC'
+    else:
+        col_name = "Fw"
+        field_temp = Fw
+        col = 'Fw'
+    col_min = tmatrix_param[f'{col}min'][hydrometeor]
+    col_step = tmatrix_param[f'{col}step'][hydrometeor]
+    col_max = tmatrix_param[f'{col}max'][hydrometeor]
+    return field_temp, col_min, col_max, col_step, col_name
