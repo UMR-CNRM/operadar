@@ -9,18 +9,18 @@ import numpy as np
 import epygram
 import pickle as pkl
 import time as tm
+from pandas import Timestamp
 
 from operadar.read.with_epygram import *
-from operadar.utils.formats_data import get_lat_lon_from_subdomain
+from operadar.utils.formats_data import get_lat_lon_from_subdomain, check_correspondance_datetime_and_file
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
-def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeorMoments:dict[int], subDomain:list[float]|None,testing=False):   
+def read_arome(filePath: str, date_time:Timestamp, extract_once: bool, hydrometeorMoments:dict[int], subDomain:list[float]|None,testing=False):   
     """Read and extract data from an AROME.fa file
     
     Args:
         filePath (str): _description_
-        micro (str): _description_
         extract_once (bool): _description_
         hydrometeorMoments (dict): _description_
         subDomain (list[float] | None): _description_
@@ -47,6 +47,8 @@ def read_arome(filePath: str, micro: str, extract_once: bool, hydrometeorMoments
                                                    openmode = 'r',
                                                    fmt = 'FA',
                                                    )
+    
+    check_correspondance_datetime_and_file(loaded_epygram_file,date_time)
     
     if testing : print('load',tm.time()-deb); deb=tm.time()
     
@@ -127,9 +129,8 @@ if __name__ == '__main__':
     
     import configFiles.conf_template as cf
     from pathlib import Path
-    micro="ICE3"
+    
     read_arome(filePath=Path(f"{cf.input_file_dir}test_ICE3.fa"),
-               micro="ICE3",
                extract_once=True,
                hydrometeorMoments=cf.moments,
                subDomain=cf.subDomain,

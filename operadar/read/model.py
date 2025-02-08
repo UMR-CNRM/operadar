@@ -4,11 +4,12 @@
 import sys
 import time as tm
 from pathlib import Path
+from pandas import Timestamp
 import operadar.operad_conf as cf
 
 
 
-def read_model_file(filePath:Path, domain:list[float]|None, extract_once:bool=True):
+def read_model_file(filePath:Path, domain:list[float]|None, date_time:Timestamp, extract_once:bool=True):
     """Read model file (either Arome or MesoNH)"""
     
     print("Reading model variables")
@@ -24,7 +25,7 @@ def read_model_file(filePath:Path, domain:list[float]|None, extract_once:bool=Tr
     elif (cf.model=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
-                                                    micro=cf.micro_scheme,
+                                                    date_time=date_time,
                                                     extract_once=extract_once,
                                                     hydrometeorMoments=cf.moments,
                                                     subDomain=domain,
