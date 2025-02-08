@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 from pandas import Timestamp
 from numpy import ndarray
 
-
+import operadar.operad_conf as cf
 
 # A SUPPRIMER PROCHAINEMENT
 def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
@@ -63,3 +64,15 @@ def select_Tmatrix_column(momentsDict:dict[int],hydrometeor:str,concentration:nd
     col_step = tmatrix_param[f'{col}step'][hydrometeor]
     col_max = tmatrix_param[f'{col}max'][hydrometeor]
     return field_temp, col_min, col_max, col_step, col_name
+
+
+
+def check_correspondance_datetime_and_file(loaded_file,date_time_user:Timestamp,file_type:str=cf.model):
+    if file_type == 'Arome' :
+        date_time_file = loaded_file.validity.get()
+    elif file_type == 'MesoNH' : #  !!!!!!!!!! A COMPLETER !!!!!!!
+        date_time_file = 'quelle commande pour lire la date dans fichier MesoNH ?'
+    
+    if not date_time_user==date_time_file :
+        print(f'Date time argument ({sys.argv[2]}) do not correspond with the file date and/or time ({date_time_file}).')
+        sys.exit()
