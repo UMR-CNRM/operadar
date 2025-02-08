@@ -41,7 +41,7 @@ def get_lat_lon_from_subdomain(domain:list[float])-> float:
 
 
 
-def select_Tmatrix_column(momentsDict:dict[int],hydrometeor:str,mask:ndarray,concentration:ndarray,Fw:ndarray,tmatrix_param:dict):
+def select_Tmatrix_column(momentsDict:dict[int],hydrometeor:str,concentration:ndarray,Fw:ndarray,tmatrix_param:dict):
     """ Compute 3d parameter in Tmatrix table 
     TODO : change the reading of Tmatrix table so that the parameters are kept the same !
 
@@ -53,7 +53,7 @@ def select_Tmatrix_column(momentsDict:dict[int],hydrometeor:str,mask:ndarray,con
     
     if momentsDict[hydrometeor] == 2 :
         col_name = 'Nc'
-        field_temp = concentration[mask]
+        field_temp = concentration
         col = 'expCC'
     else:
         col_name = "Fw"

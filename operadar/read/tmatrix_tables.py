@@ -84,7 +84,8 @@ def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->d
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
         df['LAMstep'],df['LAMmax'] = df['LAMmin'],df['LAMmin'] # currently no loop over LAM so no LAMstep and LAMmax column (maybe later)
         values_to_get = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
-                         'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax']
+                         'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax',
+                         'expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
         for value in values_to_get :
             Tmatrix_params[value][h] = np.copy(df[value])[0]
 
@@ -99,10 +100,11 @@ def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->d
                 Tmatrix_params[column][h] = df_scat[column[:-2]].to_numpy()
         del df_scat
     
+    # WILL BE REMOVED LATER FOR COMPUTATION PURPOSE
     # for contents and number concentration: same min/step/max for all class of hydrometeors
-    same_value_for_all_hydrometeors = ['expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
-    for value in same_value_for_all_hydrometeors :
-        Tmatrix_params[value] = np.copy(df[value])[0]
+    #same_value_for_all_hydrometeors = ['expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
+    #for value in same_value_for_all_hydrometeors :
+    #    Tmatrix_params[value] = np.copy(df[value])[0]
     
     del df
     print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
@@ -169,38 +171,55 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
 
     
 
-def get_scatcoef(S11carre_tt,S22carre_tt,ReS22fmS11f_tt,ReS22S11_tt,ImS22S11_tt,\
-                 LAMmint, LAMmaxt, LAMstept,\
-                 ELEVmint, ELEVmaxt, ELEVstept,\
-                 Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-                 expMmin,expMstep,expMmax,\
-                 P3name, el_temp,Tc_temp,P3, M_temp,n_interpol,shutdown_warnings = False):    
+def get_scatcoef(tmatDict:dict, hydrometeor:str, colName_tmatrix:str,
+                 colMin:float, colStep:float, colMax:float,
+                 el_temp:np.ndarray, Tc_temp:np.ndarray, colTmat:np.ndarray,
+                 M_temp:np.ndarray, n_interpol:int, shutdown_warnings = True):    
     """Extract scattering coefficients for each class of hydrometeor
     
     Input:
     - full table of scattering coef for type t (S11carre_h[h] ...)
     - parameters of each column of the table (min, max, step): ELEVmin...
-    - value of table columns in 3d arrays (el_temp, Tc_temp, P3, M_temp)
+    - value of table columns in 3d arrays (el_temp, Tc_temp, colTmat, M_temp)
     
     Ouput :
     - scattering coef for type t within mask
     """
-                                                               
+    S11carre_h = tmatDict['S11carre_h'][hydrometeor]
+    S22carre_h = tmatDict['S22carre_h'][hydrometeor]
+    ReS22fmS11f_h = tmatDict['ReS22fmS11f_h'][hydrometeor]
+    ReS22S11_h = tmatDict['ReS22S11_h'][hydrometeor]
+    ImS22S11_h = tmatDict['ImS22S11_h'][hydrometeor]
+    LAMmin_h= tmatDict['LAMmin'][hydrometeor]
+    LAMmax_h= tmatDict['LAMmax'][hydrometeor]
+    LAMstep_h= tmatDict['LAMstep'][hydrometeor]
+    ELEVmin_h= tmatDict['ELEVmin'][hydrometeor]
+    ELEVmax_h= tmatDict['ELEVmax'][hydrometeor]
+    ELEVstep_h= tmatDict['ELEVstep'][hydrometeor]
+    Tcmin_h= tmatDict['Tcmin'][hydrometeor]
+    Tcmax_h= tmatDict['Tcmax'][hydrometeor]
+    Tcstep_h= tmatDict['Tcstep'][hydrometeor]
+    expMmin = tmatDict['expMmin'][hydrometeor]
+    expMstep = tmatDict['expMstep'][hydrometeor]
+    expMmax = tmatDict['expMmax'][hydrometeor]
+    
+    
+                                                            
     # Find position in the T-matrix table
-    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp,\
-        Tc_temp,P3, M_temp, LAMmint, LAMmaxt,\
-        LAMstept, ELEVmint, ELEVmaxt, ELEVstept, Tcmint, Tcmaxt, Tcstept, P3min, P3max, P3step,\
-        expMmin,expMstep,expMmax,P3name,shutdown_warnings)
+    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp, Tc_temp,colTmat, M_temp, LAMmin_h, LAMmax_h,
+                                                              LAMstep_h, ELEVmin_h, ELEVmax_h, ELEVstep_h,
+                                                              Tcmin_h, Tcmax_h, Tcstep_h, colMin, colMax, colStep,
+                                                              expMmin, expMstep, expMmax, colName_tmatrix, shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
     
     for ind in list(range((n_interpol))):
-        MatCoef[0, ind] = S11carre_tt[kTmat[ind]]
-        MatCoef[1, ind] = S22carre_tt[kTmat[ind]]
-        MatCoef[2, ind] = ReS22fmS11f_tt[kTmat[ind]]
-        MatCoef[3, ind] = ReS22S11_tt[kTmat[ind]]
-        MatCoef[4, ind] = ImS22S11_tt[kTmat[ind]]
+        MatCoef[0, ind] = S11carre_h[kTmat[ind]]
+        MatCoef[1, ind] = S22carre_h[kTmat[ind]]
+        MatCoef[2, ind] = ReS22fmS11f_h[kTmat[ind]]
+        MatCoef[3, ind] = ReS22S11_h[kTmat[ind]]
+        MatCoef[4, ind] = ImS22S11_h[kTmat[ind]]
     
     # Interpol scat coef values
     [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
@@ -507,7 +526,7 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
     """
     ncoef=5
     nval=Mred.shape[0]
-    print("  INTERPOL: nval=",nval)
+    print("\t  INTERPOL func over nval=",nval)
     VectCoef={}
 
     #--- Interpolation linéaire ---

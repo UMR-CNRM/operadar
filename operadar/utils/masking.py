@@ -11,7 +11,7 @@ def mask_precipitations(contents:dict[np.ndarray], expMmin:float, hydrometeorMom
     print("Masking precipitations where total <",10**expMmin,"kg/m3.")
     hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.moments,datatype='model')
     total_content=np.sum(contents[h] for h in hydrometeors_model)
-    mask_precip=(total_content>10**expMmin)  
+    mask_precip= total_content>10**expMmin  
     return mask_precip   
 
 
@@ -29,4 +29,5 @@ def mask_bright_band(contents:dict[np.ndarray], expMmin:float)-> np.ndarray:
 
 def mask_hydrometeor(content:np.ndarray, expMmin:float):
     """Mask grid points where hydrometeor contents are below 10^expMmin."""
-    return (content > 10**expMmin)
+    mask_hydro = content > 10**expMmin
+    return mask_hydro

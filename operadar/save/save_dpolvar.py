@@ -61,7 +61,7 @@ def save_dpolvar(M:dict[np.ndarray], Nc:dict[np.ndarray], Vm_k:dict[np.ndarray],
      
     ds.to_netcdf(outfile.with_suffix('.nc'))
     ds.close() ; del ds
-    print("Model and dpol variables saved at :",outfile)
+    print("Model and dpol variables saved at :",outfile.with_suffix('.nc'))
 
 
 
