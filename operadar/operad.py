@@ -27,20 +27,19 @@ import time as tm
 import numpy as np
 import pandas as pd
 import datetime as dt
-
 from pathlib import Path
 
 
 # 0perad modules
 import operadar.operad_conf as cf
 from operadar.read.model import read_model_file
-from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
-from operadar.utils.formats_data import format_date_time_argument
-from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
-from operadar.radar.dualpol_variables import compute_dualpol_variables
+from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
+from operadar.utils.formats_data import format_date_time_argument
 from operadar.microphysics.mixed_phase import compute_mixed_phase
+from operadar.radar.dualpol_variables import compute_dualpol_variables
+from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.save.save_dpolvar import create_tree_structure_outFiles, save_dpolvar
 
 
@@ -100,8 +99,6 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
                                          expMmin=Tmatrix_params['expMmin']["rr"]) 
         
         # Compute dual-pol radar variables
-        #liste_var_calc=["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
-        #dpol_var = {var:np.zeros(Tc.shape) for var in liste_var_calc} 
         dpolDict = compute_dualpol_variables(temperature=Tc,
                                              mask_precip_dist=partial_mask,
                                              elev=elevations, Fw=Fw,
