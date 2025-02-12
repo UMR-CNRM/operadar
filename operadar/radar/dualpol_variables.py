@@ -23,7 +23,7 @@ def compute_dualpol_variables(temperature:np.ndarray, mask_precip_dist:np.ndarra
                               lon:np.ndarray, lat:np.ndarray, date_time:Timestamp)-> dict[np.ndarray] :
     
     dpol_var = ["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.moments,datatype='tmatrix')
+    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,datatype='tmatrix')
     
     print("Computation of",dpol_var,"for :") ; deb_timer = tm.time()
     dpol_var_dict = {var:np.zeros(temperature.shape) for var in dpol_var}
@@ -82,8 +82,8 @@ def compute_dualpol_single_hydrometeor(hydrometeor:str, dpol_var:list, Tc:np.nda
     content_temp=content_h[mask_tot]
     concentration_temp=concentration_h[mask_tot]
     
-    # Define P3 : Nc (2 moments) or Fw (1 moment) hydrometeor_moment = cf.moments[hydrometeor]
-    field_temp, colMin, colMax, colStep, colName = select_Tmatrix_column(momentsDict=cf.moments,
+    # Define P3 : Nc (2 moments) or Fw (1 moment) hydrometeor_moment = cf.hydrometeors_moments[hydrometeor]
+    field_temp, colMin, colMax, colStep, colName = select_Tmatrix_column(momentsDict=cf.hydrometeors_moments,
                                                                          hydrometeor=hydrometeor,
                                                                          concentration=concentration_temp,
                                                                          Fw=Fw_temp,

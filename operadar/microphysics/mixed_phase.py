@@ -28,7 +28,7 @@ def compute_mixed_phase(contents:dict[np.ndarray], concentrations:dict[np.ndarra
     
     mask_BB = mask_bright_band(contents, expMmin)
     
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.moments,datatype='tmatrix')
+    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,datatype='tmatrix')
     wet_species = [key for key in hydrometeors if (key[0:1]=="w") and (key[1:2]*2 in hydrometeors)]
     
     Fw = compute_liquid_water_fraction(contents,mask_BB,wet_species)

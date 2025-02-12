@@ -65,11 +65,11 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
-            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.moments,datatype='tmatrix')
+            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,datatype='tmatrix')
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,hydrometeors=Tmatrix_hydromet_list)
         
         # Read model variables
-        input_file_path = Path(cf.input_file_dir) / Path(exp_name) / filename
+        input_file_path = Path(cf.input_directory) / Path(exp_name) / filename
         if extract_once:
             [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                              date_time=date_time,
@@ -88,7 +88,7 @@ def operad(filename:Path, date_time:str|pd.Timestamp,
         # Mask precipitations
         mask_precip = mask_precipitations(contents=M,
                                           expMmin=Tmatrix_params['expMmin']["rr"],
-                                          hydrometeorMoments=cf.moments)
+                                          hydrometeorMoments=cf.hydrometeors_moments)
         
         # Combine masks
         partial_mask = (mask_precip & mask_dist_max)

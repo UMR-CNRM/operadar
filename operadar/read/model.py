@@ -20,14 +20,14 @@ def read_model_file(filePath:Path, domain:list[float]|None, date_time:Timestamp,
         [M, Tc, CC, CCI, lat,lon, X, Y, Z] = read_mesonh(filePath=filePath,
                                                          micro=cf.micro_scheme,
                                                          subDomain=domain,
-                                                         hydrometeorMoments=cf.moments,
+                                                         hydrometeorMoments=cf.hydrometeors_moments,
                                                          real_case = cf.real_case)
     elif (cf.model=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
                                                     date_time=date_time,
                                                     extract_once=extract_once,
-                                                    hydrometeorMoments=cf.moments,
+                                                    hydrometeorMoments=cf.hydrometeors_moments,
                                                     subDomain=domain,
                                                     )   
     

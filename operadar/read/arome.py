@@ -130,8 +130,8 @@ if __name__ == '__main__':
     import configFiles.conf_template as cf
     from pathlib import Path
     
-    read_arome(filePath=Path(f"{cf.input_file_dir}test_ICE3.fa"),
+    read_arome(filePath=Path(f"{cf.input_directory}test_ICE3.fa"),
                extract_once=True,
-               hydrometeorMoments=cf.moments,
+               hydrometeorMoments=cf.hydrometeors_moments,
                subDomain=cf.subDomain,
                testing=True)

@@ -25,7 +25,7 @@ import pandas as pd
 from operadar.operad_conf import (
     micro_scheme,
     LIMToption, 
-    pathTmat
+    path_Tmatrix
 )
 
 
@@ -61,7 +61,7 @@ def get_scheme_to_fetch_table() -> str :
 
 
 
-def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->dict:
+def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=path_Tmatrix)->dict:
     """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
     
     Args:
@@ -78,7 +78,7 @@ def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=pathTmat)->d
     Tmatrix_params = initialize_Tmatrix_dictionnary()
     
     for h in hydrometeors: 
-        nomfileCoefInt = f'{pathTmat}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
+        nomfileCoefInt = f'{path_Tmatrix}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
         
         print("\tReading min/step/max for",h)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
