@@ -9,7 +9,9 @@ from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
 
-def compute_mixed_phase(contents:dict[np.ndarray], concentrations:dict[np.ndarray],expMmin:float,
+def compute_mixed_phase(contents:dict[np.ndarray],
+                        concentrations:dict[np.ndarray],
+                        expMmin:float,
                         ) -> tuple[dict[np.ndarray],dict[np.ndarray],np.ndarray]:
     """Compute the mixed phase following the parametrization set in the configuration file.
 
@@ -44,7 +46,10 @@ def compute_mixed_phase(contents:dict[np.ndarray], concentrations:dict[np.ndarra
 
 
 
-def compute_liquid_water_fraction(contents:dict[np.ndarray],mask_BB:np.ndarray,wet_species:list) -> np.ndarray:
+def compute_liquid_water_fraction(contents:dict[np.ndarray],
+                                  mask_BB:np.ndarray,
+                                  wet_species:list
+                                  ) -> np.ndarray:
     """Estimate the liquid water fraction depending on the wet species in the config file."""
     print("\tCalculation of the liquid water fraction for wet species :",wet_species)
     Fw = np.zeros(np.shape(contents["rr"]))
@@ -53,12 +58,16 @@ def compute_liquid_water_fraction(contents:dict[np.ndarray],mask_BB:np.ndarray,w
 
 
 
-def mixed_phase_parametrization(contents:dict[np.ndarray], Fw:np.ndarray, BB:np.ndarray, wet_species:list,
-                                parametrization:str=cf.MixedPhase) -> dict[np.ndarray]:
+def mixed_phase_parametrization(contents:dict[np.ndarray],
+                                Fw:np.ndarray,
+                                BB:np.ndarray,
+                                wet_species:list,
+                                parametrization:str=cf.MixedPhase,
+                                ) -> dict[np.ndarray]:
     """Available parametrizations :
-    * T_pos : the species content is transferrend to the melting species only at positive temperatures.
-    * Fw_pos : the species content is transferrend to the melting species only where the liquid water fraction is positive.
-    * Fw_posg :
+    * T_pos : the species content is transferred to the melting species only at positive temperatures.
+    * Fw_pos : the rain and graupel content are emptied and transferred into the wet graupel content within the melting layer.
+    * Fw_posg : only the graupel content is emptied and transferred to the wet graupel content within the melting layer.
     """
     
     #if parametrization == "T_pos" :  
