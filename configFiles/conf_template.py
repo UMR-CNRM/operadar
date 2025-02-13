@@ -12,7 +12,7 @@
 # Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
 
-# Microphysics scheme name : can be ICE3, ICE4 or LIMA + an accepted name extension (e.g. LIMA_noHail or ICE3_CIBU_moins)
+# Microphysics scheme name : can be 'ICE3', 'ICE4' or 'LIMA' + an accepted name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins')
 micro_scheme = 'ICE3'
 
 # Number of moments for each hydrometeor of the microphysics scheme
@@ -27,17 +27,17 @@ MixedPhase = 'Fw_posg'
 # Additional output : if True, compute the dual-pol variables for each hydrometeor class and save the resultant netcdf (1 file/hydrometeor class)
 singletype = False
 
-# Tmatrix directory path
-path_Tmatrix = "/home/davidcl/Programmation/data/DPOLSIMUL/OUTPUT/"  #"/cnrm/precip/SAVE/davidcl/THESE/DPOLSIMUL/OUTPUT/"
+# Tmatrix directory (TmatCoefInt_SCXW) path
+path_Tmatrix = "/my_path/TmatCoefInt_SCXW/"
 
 # INPUT file(s) directory
-input_directory  = "/home/davidcl/Programmation/data/expeOLIVE/arome/3dvarfr/"  #"/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/" 
+input_directory  = "/home/my_input_folder/" 
 
 # If applicable, to use if experiences are separated in different sub-directories. Else set to ''.
-experience_name = 'GOV2'
+experience_name = 'whatever_name'
 
 # OUPUT file(s) directory
-outPath = "/home/davidcl/Programmation/output_test/operadar_test/" #"/cnrm/precip/users/davidcl/operadar_test/testing/"
+outPath = "/home/my_output_folder/"
 
 
 # ----- Radar simulation options ----- #
