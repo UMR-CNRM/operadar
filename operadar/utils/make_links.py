@@ -3,7 +3,7 @@
 
 
 
-def link_varname_with_arome_name ():
+def link_varname_with_arome_name ()-> dict[str]:
     """Make the correspondance between the hydrometeor keys and the variable names commonly used in AROME."""
     model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
     model_name=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
@@ -12,7 +12,9 @@ def link_varname_with_arome_name ():
 
 
 
-def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],datatype:str,quiet=True) -> list:
+def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
+                                          datatype:str,
+                                          quiet=True) -> list[str]:
     """Make the correspondance between available hydrometeor keys in the model or Tmatrix tables
     and the desired keys given in the configuration file.
     
