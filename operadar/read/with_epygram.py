@@ -6,16 +6,19 @@ import epygram
 from operadar.utils.make_links import link_varname_with_arome_name
 
 
-def get_2D_lat_lon_epygram(epygram_file):
+def get_2D_lat_lon_epygram(epygram_file) -> tuple[np.ndarray,np.ndarray]:
     """Extract the 2D latitude and longitude field of an epygram file."""
     surface_pressure = epygram_file.readfield('SURFPRESSION')
     surface_pressure.sp2gp() # spectral to grid points
-    (lon,lat) = surface_pressure.geometry.get_lonlat_grid() #subzone='C')
+    (lon,lat) = surface_pressure.geometry.get_lonlat_grid()
     return lon, lat
 
 
 
-def get_geometry(epygram_file, A, B):
+def get_geometry(epygram_file,
+                 hybrid_pressure_coefA:np.ndarray,
+                 hybrid_pressure_coefB:np.ndarray,
+                 )-> tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
     """Retrieve the 3D pressure field (p), the surface pressure (psurf), the 2D geopotential at
     the surface (geosurf) and the pressure departure (pdep).
     
@@ -27,7 +30,10 @@ def get_geometry(epygram_file, A, B):
     surface_pressure = np.exp(surface_pressure.getdata())
     
     # 3D Pressure (Pa)
-    pressure = epygram.profiles.hybridP2masspressure(A, B, surface_pressure, 'geometric')
+    pressure = epygram.profiles.hybridP2masspressure(A=hybrid_pressure_coefA,
+                                                     B=hybrid_pressure_coefB,
+                                                     Psurf=surface_pressure,
+                                                     vertical_mean='geometric')
 
     # 2D Geopotential at surface
     surface_geopotential=epygram_file.readfield('SPECSURFGEOPOTEN')
@@ -48,7 +54,10 @@ def get_geometry(epygram_file, A, B):
 
 
 
-def get_contents_T_and_R(epygram_file, pressure:np.ndarray, hydrometeors: list):
+def get_contents_T_and_R(epygram_file,
+                         pressure:np.ndarray,
+                         hydrometeors: list,
+                         )-> tuple[dict[np.ndarray],np.ndarray,np.ndarray]:
     """Retrieve the 3D temperature field, the 3D content fields and compute the gas constant."""
     # 3D kelvin temperature T
     T = np.zeros(pressure.shape)
@@ -80,7 +89,11 @@ def get_contents_T_and_R(epygram_file, pressure:np.ndarray, hydrometeors: list):
 
 
 
-def get_concentrations(epygram_file, hydrometeorsConfig: dict, content:dict, temperature:np.ndarray)->dict[np.ndarray]:
+def get_concentrations(epygram_file,
+                       hydrometeorsConfig: dict,
+                       content:dict,
+                       temperature:np.ndarray,
+                       )-> dict[np.ndarray]:
     """Retrieve concentration fields for all hydrometeor classes, depending on their moments."""
     Nc={}
     for hydrometeor,moment in hydrometeorsConfig.items():
@@ -104,7 +117,23 @@ def get_concentrations(epygram_file, hydrometeorsConfig: dict, content:dict, tem
 
 
 
-def get_altitude(A, B, T, p, pdep, Psurf, phis, R):
+def get_altitude(hybrid_pressure_coefA,
+                 hybrid_pressure_coefB,
+                 temperature,
+                 pressure_departure,
+                 surface_pressure,
+                 surface_geopotential,
+                 specific_gas_constant,
+                 )-> np.ndarray:
     """Computes the altitude of mass levels defined by hybrid-pressure coefficients."""
-    z = epygram.profiles.hybridP2altitude(A, B, R, T, Psurf, 'geometric', Pdep=pdep, Phi_surf=phis.getdata(), Ptop=np.zeros(Psurf.shape))
-    return z
+    altitude3D = epygram.profiles.hybridP2altitude(A=hybrid_pressure_coefA,
+                                                   B=hybrid_pressure_coefB,
+                                                   R=specific_gas_constant,
+                                                   T=temperature,
+                                                   Psurf=surface_pressure,
+                                                   vertical_mean='geometric',
+                                                   Pdep=pressure_departure,
+                                                   Phi_surf=surface_geopotential.getdata(),
+                                                   Ptop=np.zeros(surface_pressure.shape)
+                                                   )
+    return altitude3D

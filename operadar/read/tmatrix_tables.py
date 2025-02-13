@@ -61,13 +61,16 @@ def get_scheme_to_fetch_table() -> str :
 
 
 
-def read_Tmatrix_Clotilde(band:str, hydrometeors:list, pathTmat:str=path_Tmatrix)->dict:
+def read_Tmatrix_Clotilde(band:str,
+                          hydrometeors:list,
+                          pathTmat:str=path_Tmatrix,
+                          )-> dict:
     """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
     
     Args:
         band (str): radar band
         hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read
-        pathTmat (str, optional): Tmatrix directory path. Defaults to pathTmat in configuration file.
+        pathTmat (str, optional): Tmatrix directory path. Defaults to path_Tmatrix in configuration file.
 
     Returns:
         Tmatrix_params (dict) : dictionnary containing min/step/max values for multiple parameters

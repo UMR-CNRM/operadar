@@ -4,12 +4,17 @@
 import sys
 import time as tm
 from pathlib import Path
+from numpy import ndarray
 from pandas import Timestamp
 import operadar.operad_conf as cf
 
 
 
-def read_model_file(filePath:Path, domain:list[float]|None, date_time:Timestamp, extract_once:bool=True):
+def read_model_file(filePath:Path,
+                    domain:list[float]|None,
+                    date_time:Timestamp,
+                    extract_once:bool=True,
+                    )-> tuple[ndarray,ndarray,ndarray,ndarray,ndarray,dict[ndarray],dict[ndarray],ndarray]:
     """Read model file (either Arome or MesoNH)"""
     
     print("Reading model variables")

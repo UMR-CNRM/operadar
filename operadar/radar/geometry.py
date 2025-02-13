@@ -2,15 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import math
-import numpy as np
 import time as tm
+import numpy as np
 import operadar.operad_conf as cf
 
 
 
-def compute_radar_geometry(X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
-                           Tc:np.ndarray, elev_max:float,
-                           distmax_rad:float=cf.distmax_rad)-> tuple[np.ndarray,np.ndarray]:
+def compute_radar_geometry(X:np.ndarray,
+                           Y:np.ndarray,
+                           Z:np.ndarray,
+                           Tc:np.ndarray,
+                           elev_max:float,
+                           distmax_rad:float=cf.distmax_rad,
+                           )-> tuple[np.ndarray,np.ndarray]:
     """Mimic radar geometry in the model grid.
 
     Args:
@@ -51,9 +55,10 @@ def compute_radar_geometry(X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
     
     
     
-def compute_distance_mask(X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
+def compute_distance_mask(X:np.ndarray,Y:np.ndarray, Z:np.ndarray,
                           X0:float, Y0:float, Z0:float,
-                          distmax_rad:float=cf.distmax_rad)-> tuple[np.ndarray,np.ndarray] :
+                          distmax_rad:float=cf.distmax_rad,
+                          )-> tuple[np.ndarray,np.ndarray] :
     """Mask grid points that are beyond `distmax_rad` in config file."""
     XX,YY=np.meshgrid(X-X0,Y-Y0)
     radar_dist=(XX**2+YY**2)**0.5 # 2D array with distance from radar for each grid point
@@ -63,7 +68,10 @@ def compute_distance_mask(X:np.ndarray, Y:np.ndarray, Z:np.ndarray,
 
 
 
-def compute_radar_elevation(radardist3D:np.ndarray, Z:np.ndarray, elev_max:float)-> np.ndarray:
+def compute_radar_elevation(radardist3D:np.ndarray,
+                            Z:np.ndarray,
+                            elev_max:float,
+                            )-> np.ndarray:
     """Compute the radar elevation angle value at each grid point"""
     earth_radius = 6371.229e3
     tanel = Z/radardist3D - 3.*radardist3D/(8.*earth_radius)
