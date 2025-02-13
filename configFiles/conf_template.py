@@ -25,7 +25,7 @@ subDomain = [-2.61,2.1,42.68,46.5]
 MixedPhase = 'Fw_posg'
 
 # Additional output : if True, compute the dual-pol variables for each hydrometeor class and save the resultant netcdf (1 file/hydrometeor class)
-singletype = False
+save_netcdf_single_hydrometeor = False
 
 # Tmatrix directory (TmatCoefInt_SCXW) path
 path_Tmatrix = "/my_path/TmatCoefInt_SCXW/"

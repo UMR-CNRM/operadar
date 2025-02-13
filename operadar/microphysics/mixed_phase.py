@@ -23,7 +23,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
     Returns:
         contents (dict[np.ndarray]): dictionnary of 3D arrays
         concentrations (dict[np.ndarray]): dictionnary of 3D arrays
-        Fw (np.ndarray): liquid water fraction 3D array 
+        Fw (np.ndarray): liquid water fraction (3D) 
     """
     
     print('Compute mixed phase where rain water coexists with iced species (even at negative temperatures).') ; deb_timer = tm.time()
