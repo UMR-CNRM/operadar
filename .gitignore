@@ -1,0 +1,8 @@
+*/__pycache__/
+__pycache__/
+*.egg
+.eggs/
+.vscode
+*.egg-info/
+configFiles/conf_*
+operadar/operadar_conf.py
