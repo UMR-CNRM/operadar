@@ -3,7 +3,7 @@
 
 import time as tm
 import numpy as np
-import operadar.operad_conf as cf
+import operadar.operadar_conf as cf
 from operadar.utils.masking import mask_bright_band
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
@@ -26,11 +26,13 @@ def compute_mixed_phase(contents:dict[np.ndarray],
         Fw (np.ndarray): liquid water fraction (3D) 
     """
     
-    print('Compute mixed phase where rain water coexists with iced species (even at negative temperatures).') ; deb_timer = tm.time()
+    print('Estimating mixed phase where rain water coexists with iced species (even at negative temperatures).') ; deb_timer = tm.time()
     
     mask_BB = mask_bright_band(contents, expMmin)
     
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,datatype='tmatrix')
+    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,
+                                                         datatype='tmatrix',
+                                                         )
     wet_species = [key for key in hydrometeors if (key[0:1]=="w") and (key[1:2]*2 in hydrometeors)]
     
     Fw = compute_liquid_water_fraction(contents,mask_BB,wet_species)
@@ -41,7 +43,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
     
     contents = mixed_phase_parametrization(contents, Fw, mask_BB, wet_species) 
     
-    print("--> Done in",round(tm.time()- deb_timer,2),"seconds")       
+    print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")       
     return contents, concentrations, Fw
 
 
@@ -50,8 +52,8 @@ def compute_liquid_water_fraction(contents:dict[np.ndarray],
                                   mask_BB:np.ndarray,
                                   wet_species:list
                                   ) -> np.ndarray:
-    """Estimate the liquid water fraction depending on the wet species in the config file."""
-    print("\tCalculation of the liquid water fraction for wet species :",wet_species)
+    """Computing the liquid water fraction depending on the wet species in the config file."""
+    print("\tComputing the liquid water fraction for wet species :",wet_species)
     Fw = np.zeros(np.shape(contents["rr"]))
     Fw[mask_BB] = (contents["rr"]/ (contents["rr"]+np.sum(contents[key[1:2]*2] for key in wet_species) ))[mask_BB]
     return Fw

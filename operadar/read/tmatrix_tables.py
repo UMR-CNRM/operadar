@@ -22,7 +22,7 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operad_conf import (
+from operadar.operadar_conf import (
     micro_scheme,
     LIMToption, 
     path_Tmatrix
@@ -63,6 +63,7 @@ def get_scheme_to_fetch_table() -> str :
 
 def read_Tmatrix_Clotilde(band:str,
                           hydrometeors:list,
+                          verbose:bool,
                           pathTmat:str=path_Tmatrix,
                           )-> dict:
     """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
@@ -83,7 +84,7 @@ def read_Tmatrix_Clotilde(band:str,
     for h in hydrometeors: 
         nomfileCoefInt = f'{path_Tmatrix}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
         
-        print("\tReading min/step/max for",h)
+        if verbose : print("\tReading min/step/max for",h)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
         df['LAMstep'],df['LAMmax'] = df['LAMmin'],df['LAMmin'] # currently no loop over LAM so no LAMstep and LAMmax column (maybe later)
         values_to_get = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
@@ -92,7 +93,7 @@ def read_Tmatrix_Clotilde(band:str,
         for value in values_to_get :
             Tmatrix_params[value][h] = np.copy(df[value])[0]
 
-        print("\tReading scattering coefficients for",h)
+        if verbose : print("\tReading scattering coefficients for",h)
         df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
         table_columns_to_read = ['Tc_h', 'ELEV_h', 'Fw_h', 'M_h', 'S11carre_h', 'S22carre_h', 'ReS22S11_h',
                                  'ImS22S11_h', 'ReS22fmS11f_h', 'ImS22ft_h', 'ImS11ft_h','RRint_h']
@@ -110,7 +111,7 @@ def read_Tmatrix_Clotilde(band:str,
     #    Tmatrix_params[value] = np.copy(df[value])[0]
     
     del df
-    print("End reading Tmatrix tables in",round(tm.time()- deb_timer,2),"seconds")
+    print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     return Tmatrix_params
 
 

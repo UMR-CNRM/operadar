@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import epygram
+import numpy as np
 from operadar.utils.make_links import link_varname_with_arome_name
 
 

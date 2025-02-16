@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 from pathlib import Path
-import operadar.operad_conf as cf
+import operadar.operadar_conf as cf
 
 
 

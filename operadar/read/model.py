@@ -6,14 +6,13 @@ import time as tm
 from pathlib import Path
 from numpy import ndarray
 from pandas import Timestamp
-import operadar.operad_conf as cf
+import operadar.operadar_conf as cf
 
 
 
 def read_model_file(filePath:Path,
                     domain:list[float]|None,
-                    date_time:Timestamp,
-                    extract_once:bool=True,
+                    verbose:bool,
                     )-> tuple[ndarray,ndarray,ndarray,ndarray,ndarray,dict[ndarray],dict[ndarray],ndarray]:
     """Read model file (either Arome or MesoNH)"""
     
@@ -30,10 +29,9 @@ def read_model_file(filePath:Path,
     elif (cf.model=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
-                                                    date_time=date_time,
-                                                    extract_once=extract_once,
                                                     hydrometeorMoments=cf.hydrometeors_moments,
                                                     subDomain=domain,
+                                                    verbose=verbose,
                                                     )   
     
     else :
@@ -41,6 +39,6 @@ def read_model_file(filePath:Path,
         print('/!\ ERROR /!\ :',cf.model,'is not a valid name. Must be either "Arome" or "MesoNH".')
         sys.exit()
     
-    print("--> Done in",round(tm.time()- deb_timer,2),"seconds")
+    print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
     return [X, Y, Z, lon, lat, M, Nc, Tc]
