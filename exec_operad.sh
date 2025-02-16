@@ -1,30 +1,55 @@
 #!/bin/bash
 
-[ "$1" = "-h" -o "$1" = "--help" ] && echo "
-Before running exec_operad.sh code, you need to create a configuration file in ./configFiles/ based on the template provided.
+function show_help {
+    echo "----------------------------------------------------------------"
+    echo " This radar forward operator is developped at the CNRM, France. "
+    echo "----------------------------------------------------------------"
+    echo ""
+    echo "Usage: $0 -f FILENAME -c CONFIG [--verbose]"
+    echo ""
+    echo "  -f FILENAME : Only the filename. Please use the config file to provide the path to access the file."
+    echo "  -c CONFIG   : Before running the code, you need to create a configuration file in ./configFiles/ based on the template provided."
+    echo "  --verbose   : Optional, show more details if activated (default value: False)"
+}
 
-This script takes 3 arguments in this order :
-  1 - the filename to read (+ additional tree structure if not provided in the configuration file)
-  2 - date in the yyyymmdd format
-  3 - name of the configuration file
+if [ $# -lt 4 ]; then
+    show_help
+    exit 1
+fi
 
-----------
- Examples
-----------
- * With input_directory  = "/cnrm/precip/users/davidcl/expeOLIVE/arome/3dvarfr/GO2V/20220818T1200P/forecast/" in config file :
-   >>> ./exec_operad.sh historic.arome.franmg-01km30+0007:00.fa 20220818 conf_Arome_with_ICE3.py
+FILENAME=""
+CONFIG=""
+VERBOSE=""
 
- * With input_directory  = "/home/davidcl/Programmation/expeOLIVE/" in config file :
-   >>> ./exec_operad.sh LIMA_simus_Arome/00Z/20220620/historic.arome.franmg-01km30+0003:00.fa 20220620 conf_Arome_with_LIMA_chaud.py
-  
- * With input_directory  = "/home/cnrm_other/ge/mrmp/davidcl/MNH-V5-7-0/MY_RUN/" in config file :
-   >>> ./exec_operad.sh LIMAH.1.SEG01.003.nc 20220818 conf_MesoNH_LIMA_CORSEbe.py
-_____________________________________________________________________________________________________________________________________
-" && exit
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f|--filename)
+            FILENAME="$2"
+            shift 2
+            ;;
+        -c|--config)
+            CONFIG="$2"
+            shift 2
+            ;;
+        --verbose)
+            VERBOSE="--verbose"
+            shift
+            ;;
+        *)
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Checking if FILENAME and CONFIG are provided
+if [ -z "$FILENAME" ] || [ -z "$CONFIG" ]; then
+    echo "/!\ Missing arguments /!\ "
+    show_help
+    exit 1
+fi
 
 
-cp ./configFiles/$3 operadar/operad_conf.py
+cp ./configFiles/$CONFIG operadar/operadar_conf.py
 
-currentTime=`date +"%F_%R"`
-
-python3 -u operadar/operad.py $1 $2
+python3 -u operadar/operadar.py $FILENAME $VERBOSE
