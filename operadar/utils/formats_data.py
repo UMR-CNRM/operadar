@@ -10,20 +10,6 @@ from pandas import Timestamp
 
 import operadar.operadar_conf as cf
 
-# A SUPPRIMER PROCHAINEMENT
-def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
-    listExpe = [str(x) for x in csvRow.expeNames.strip().split(',')]
-    if microphysics_scheme == 'ICE3' :
-        return listExpe[0]
-    elif microphysics_scheme == 'ICE4' :
-        return listExpe[1]
-    elif microphysics_scheme == 'LIMASG' :
-        return listExpe[2]
-    elif microphysics_scheme == 'LIMAAG' :
-        return listExpe[3]
-    elif microphysics_scheme == 'LIMA49t' :
-        return listExpe[4]
-
 
 
 def format_temporal_variable(filePath:Path,model_type:str=cf.model)-> Timestamp:
@@ -80,20 +66,6 @@ def select_Tmatrix_column(momentsDict:dict[int],
     col_max = tmatrix_param[f'{col}max'][hydrometeor]
     return field_temp, col_min, col_max, col_step, col_name
 
-
-
-def check_correspondance_datetime_and_file(loaded_file,
-                                           date_time_user:Timestamp,
-                                           file_type:str=cf.model):
-    if file_type == 'Arome' :
-        date_time_file = loaded_file.validity.get()
-    elif file_type == 'MesoNH' : #  !!!!!!!!!! A COMPLETER !!!!!!!
-        date_time_file = 'quelle vérification ??'
-        sys.exit()
-    
-    if not date_time_user==date_time_file :
-        print(f'Date time argument ({sys.argv[2]}) do not correspond with the file date and/or time ({date_time_file}).')
-        sys.exit()
         
         
 
