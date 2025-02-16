@@ -52,4 +52,4 @@ fi
 
 cp ./configFiles/$CONFIG operadar/operadar_conf.py
 
-python3 -u operadar/operadar.py $FILENAME $VERBOSE
+python3 -u operadar/forward_operator.py $FILENAME $VERBOSE
