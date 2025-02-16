@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import epygram
+import pandas as pd
+from pathlib import Path
 from numpy import ndarray
 from pandas import Timestamp
 
-import operadar.operad_conf as cf
+import operadar.operadar_conf as cf
 
 # A SUPPRIMER PROCHAINEMENT
 def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
@@ -23,16 +26,24 @@ def get_vortex_experiments(csvRow: str, microphysics_scheme: str) :
 
 
 
-def format_date_time_argument(date_time:str|Timestamp)-> Timestamp:
-    """Transform a str datetime to a pandas Timestamp (if not a Timestamp yet)"""
-    if type(date_time)==str :
-        return Timestamp(date_time)
-    else :
-        return date_time
+def format_temporal_variable(filePath:Path,model_type:str=cf.model)-> Timestamp:
+    """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
+    
+    if model_type=='Arome':
+        #epygram.init_env()
+        epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r', fmt = 'FA')
+        date_time_file = epygram_file.validity.get()
+        epygram_file.close()
+        return Timestamp(date_time_file)
+    
+    elif model_type=='MesoNH':
+        date_time_file = 'how to get MNH date/time argument ??'
+        sys.exit()
+        #return date_time_file
 
 
 
-def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float]:
+def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float,float,float,float]:
     """Get latitude/longitude minimum and maximun from a list of
     float [lonmin, lonmax, latmin, latmax]"""
     lon_min = domain[0] ; lon_max = domain[1]
@@ -77,9 +88,19 @@ def check_correspondance_datetime_and_file(loaded_file,
     if file_type == 'Arome' :
         date_time_file = loaded_file.validity.get()
     elif file_type == 'MesoNH' : #  !!!!!!!!!! A COMPLETER !!!!!!!
-        date_time_file = 'quelle commande pour lire la date dans fichier MesoNH ?'
+        date_time_file = 'quelle vérification ??'
         sys.exit()
     
     if not date_time_user==date_time_file :
         print(f'Date time argument ({sys.argv[2]}) do not correspond with the file date and/or time ({date_time_file}).')
         sys.exit()
+        
+        
+
+def define_output_path(out_dir_path,radar_band,temporal_variable):
+    
+    if type(temporal_variable) is pd.Timestamp :
+        outPath = f"{out_dir_path}dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
+    elif type(temporal_variable)==int:
+        outPath = f"{out_dir_path}dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{temporal_variable}"
+    return outPath
