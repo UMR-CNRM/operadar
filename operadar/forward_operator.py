@@ -6,48 +6,56 @@ Created on Thu Apr 26 13:17:47 2018
 """
 
 # External modules
-import sys
-import math
+import argparse
 import time as tm
-import numpy as np
-import pandas as pd
-import datetime as dt
 from pathlib import Path
 
-
 # 0perad modules
-import operadar.operad_conf as cf
+import operadar.operadar_conf as cf
 from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
 from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
-from operadar.utils.formats_data import format_date_time_argument
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.save.save_dpolvar import create_tree_structure_outFiles, save_netcdf
+from operadar.utils.formats_data import format_temporal_variable,define_output_path
 
 
 
-def operad(filename:Path,
-           date_time:str|pd.Timestamp,
-           read_tmatrix:bool=True,
-           extract_once:bool=True,
-           outPath:str=cf.outPath,
-           radar_band:str=cf.radar_band,
-           Tmatrix_params:dict={},
-           exp_name:str=cf.experience_name,
-           subDomain:list[float]|None=cf.subDomain,
-           ):
+def operadar(filename:str,
+             read_tmatrix:bool=True,
+             out_dir_path:str=cf.outPath,
+             radar_band:str=cf.radar_band,
+             Tmatrix_params:dict={},
+             subDomain:list[float]|None=cf.subDomain,
+             get_more_details=False,
+             ) -> tuple[bool,bool,dict]:
+    """Radar forward operator main function. 
+
+    Args:
+        filename (str): Only the name of the file
+        read_tmatrix (bool, optional): Option to save computing time within a loop. Need to be set to True at least for the first iteration. Defaults to True.
+        out_dir_path (str, optional): Path to store the output files. Defaults to cf.outPath.
+        radar_band (str, optional): Defaults to cf.radar_band.
+        Tmatrix_params (dict, optional): Dictionnary containing the Tmatrix tables parameters. Defaults to {}.
+        subDomain (list[float] | None, optional): Defaults to cf.subDomain.
+        get_more_details (bool): Defaults to False
+
+    Returns:
+        tuple[bool,bool,dict]: _description_
+    """
     
     begin_program_timer = tm.time()
-
-    # Create or check tree structure of the output directory path
-    create_tree_structure_outFiles(output_dir=Path(outPath))
     
-    # Format datetime argument for the output file name and check existence
-    date_time = format_date_time_argument(date_time)
-    outFilePath = outPath + f"dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{date_time.strftime('%Y%m%d_%H%M')}"
+    # Create or check tree structure of the output directory path
+    create_tree_structure_outFiles(output_dir=Path(out_dir_path))
+    
+    # Format temporal variable and output file name
+    input_file_path = Path(cf.input_filePath+filename)
+    temporal_variable = format_temporal_variable(filePath=input_file_path)
+    outFilePath = define_output_path(out_dir_path,radar_band,temporal_variable) 
     
     if not Path(outFilePath).with_suffix('.nc').exists():
         
@@ -58,19 +66,12 @@ def operad(filename:Path,
                                                                           )
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,
                                                    hydrometeors=Tmatrix_hydromet_list,
+                                                   verbose=get_more_details,
                                                    )
         # Read model variables
-        input_file_path = Path(cf.input_directory) / Path(exp_name) / filename
-        if extract_once:
-            [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
-                                                             date_time=date_time,
-                                                             domain=subDomain,
-                                                             )
-        else :
-            [X, Y, Z, _, _, M, Nc, Tc] = read_model_file(filePath=input_file_path,
-                                                         date_time=date_time,
+        [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                          domain=subDomain,
-                                                         extract_once=False,
+                                                         verbose=get_more_details,
                                                          )
         # Compute radar geometry
         mask_dist_max, elevations = compute_radar_geometry(X=X,
@@ -99,23 +100,33 @@ def operad(filename:Path,
                                              output_file_path=outFilePath,
                                              X=X, Y=Y, Z=Z,
                                              lat=lat, lon=lon,
-                                             date_time=date_time)
+                                             date_time=temporal_variable)
         # Saving file
         save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon,
-                    datetime=date_time, dpolDict=dpolDict,
+                    datetime=temporal_variable, dpolDict=dpolDict,
                     contentsDict=M, concentrationsDict=Nc,
                     temperature=Tc, outfile=Path(outFilePath),
                     )
+        # For multiple iterations over different time but with the same settings, save time by not reading
+        # again Tmatrix tables and lat/lon fields (if available)
+        read_tmatrix = False
+        elapsed_time = tm.time() - begin_program_timer
+        print("Elapsed time :",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
+        print("-----------------------------------------------------------------------------")
+        return read_tmatrix, Tmatrix_params
+    
     else :
         print("File exists at :",outFilePath+'.nc')
-
-    elapsed_time = tm.time() - begin_program_timer
-    print("Elapsed time :",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
+        print("-----------------------------------------------------------------------------")
+        read_tmatrix = True
+        return read_tmatrix, dict()
 
 
 
 
 if __name__ == '__main__':
-    filepath = Path(sys.argv[1])
-    date_time = sys.argv[2]
-    operad(filename=filepath,date_time=date_time)
+    parser = argparse.ArgumentParser(description="OPERADAR")
+    parser.add_argument("filename", type=str)
+    parser.add_argument("--verbose", action="store_true",default=False)
+    operad_args = parser.parse_args()
+    operadar(filename=operad_args.filename, get_more_details=operad_args.verbose)
