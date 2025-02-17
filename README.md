@@ -94,7 +94,7 @@ The user can work with multiple files, if desired. The paths, output directories
                                               )
       ```
 
-### To go further
+## To go further
 This code has been designed so the user can loop on multiple files and eventually with varying configurations over files that share common config parameters. Thus, some of the parameters can be overwritten when calling `operadar()` :
 - `radar_band` and `read_tmatrix` : the Tmatrix lookup tables are red once, for the radar band set in the config file, at the beginning of the code. To save computation time, it is not necessary to read the tables as long as the radar band remains the same, and thus, `read_tmatrix` is automatically set to `False` after the first iteration that produces an output file. If you want to change the radar band over the iterations, you must also set `read_tmatrix=True`. Based on the tutorial :
    ```python
