@@ -40,7 +40,7 @@ The user must set up, beforehand, a configuration file based on the template pro
 
 ## Quick execution in a terminal (suitable for 1 file at a time)
 The script `exec_operadar.sh` wraps the execution of the Python code. To show the help :
-```
+```bash
 >>> $ ./exec_operadar.sh -h
 
 ----------------------------------------------------------------
@@ -167,20 +167,20 @@ If you wish to contribute to the project, first, fork the code to create your ow
 <br>NOTE : If you want to be part of the main developpers (ask clotilde.augros@meteo.fr)
 
 Then, clone the repository in a dedicated folder.
-```
+```bash
 mkdir my_folder
 cd my_folder
 git clone https://github.com/UMR-CNRM/operadar.git
 ```
 
 Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch.
-```
+```bash
 git branch my_branch
 git checkout my_branch
 ```
 
 In the installation folder, install operadar as a package with
-```
+```bash
 pip install -e .
 ```
 
