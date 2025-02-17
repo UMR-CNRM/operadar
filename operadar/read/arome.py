@@ -25,9 +25,9 @@ def read_arome(filePath:Path,
     """Read and extract data from an AROME.fa file
     
     Args:
-        filePath (str): _description_
-        hydrometeorMoments (dict): _description_
-        subDomain (list[float] | None): _description_
+        filePath (str): input file path
+        hydrometeorMoments (dict): dictionnary of form {'hydrometeor key':number of moments}
+        subDomain (list[float] | None): either a list of 4 float or None
         verbose (bool) : show more messages to the user
 
     Returns:

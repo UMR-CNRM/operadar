@@ -44,7 +44,9 @@ def operadar(filename:str,
         get_more_details (bool): Defaults to False
 
     Returns:
-        tuple[bool,bool,dict]: _description_
+        read_tmatrix (bool): to update the boolean during a loop
+        Tmatrix_params (dict) : to keep in memory the Tmatrix parameters and values throughout multiple iterations over the same radar band
+        
     """
     
     begin_program_timer = tm.time()

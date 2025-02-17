@@ -32,6 +32,25 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               )-> dict[np.ndarray] :
     """Compute synthetic radar dual-polarimetrization variables for a given wavelength,
     microphysics, and mixed phase parametrization.
+
+    Args:
+        temperature (np.ndarray): 3D array
+        mask_precip_dist (np.ndarray): 3D array of bool
+        elev (np.ndarray): 3D array
+        Fw (np.ndarray): 3D array
+        contents (dict[np.ndarray]): dict of 3D array (one per hydrometeor)
+        concentrations (dict[np.ndarray]): dict of 3D array (one per hydrometeor)
+        tmatrix_param (dict): dict of Tmatrix parameters
+        X (np.ndarray): 1D array of horizontal grid coordinates
+        Y (np.ndarray): 1D array of horizontal grid coordinates
+        Z (np.ndarray): vertical coordinates
+        lon (np.ndarray): 2D array
+        lat (np.ndarray): 2D array
+        date_time (Timestamp): temporal variable
+        output_file_path (Path): out file path
+
+    Returns:
+        dict[np.ndarray]: dictionnary containing all the dual-polarimetrization fields.
     """
     
     dpol_var = ["Zhhlin","Zvvlin","S11S22","S11S11","S22S22","Kdp","Rhohv"]
@@ -105,8 +124,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                         tmatrix_param:dict,
                                         final_dpolDict
                                         ) -> dict[np.ndarray]:
-    """Compute radar scattering coefficients for a single hydrometeor class.
-    """
+    """Compute radar scattering coefficients for a single hydrometeor class."""
     dpolDict_h = {var:np.zeros(Tc.shape)[mask_tot] for var in dpol_var}
 
     elev_temp=el[mask_tot]

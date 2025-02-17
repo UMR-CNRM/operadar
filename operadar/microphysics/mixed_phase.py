@@ -16,13 +16,13 @@ def compute_mixed_phase(contents:dict[np.ndarray],
     """Compute the mixed phase following the parametrization set in the configuration file.
 
     Args:
-        contents (dict[np.ndarray]): dictionnary of 3D arrays
-        concentrations (dict[np.ndarray]): dictionnary of 3D arrays
+        contents (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor)
+        concentrations (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor)
         expMmin (float): Tmatrix table output value
 
     Returns:
-        contents (dict[np.ndarray]): dictionnary of 3D arrays
-        concentrations (dict[np.ndarray]): dictionnary of 3D arrays
+        contents (dict[np.ndarray]): dict of 3D arrays
+        concentrations (dict[np.ndarray]): dict of 3D arrays
         Fw (np.ndarray): liquid water fraction (3D) 
     """
     
