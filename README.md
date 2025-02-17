@@ -154,12 +154,13 @@ This code has been designed so the user can loop on multiple files and eventuall
 - [ ] put one MesoNh and one AROME example test files
 
 
-## TODO CLOE
+## To do Cloe
 - [x] mettre au propre README
-- [ ] maj toutes les docstrings
-- [ ] configurer fichier gitignore : operad_conf, tmp obj, etc
+- [x] maj toutes les docstrings
+- [x] configurer fichier gitignore : operad_conf, tmp obj, etc
 - [ ] read_mesonh : changer les sorties (enlever CC et CCI pour Nc)
 - [ ] calcul explicite de la concentration pour les espèces 1 moment
+- [ ] check radar band consistency if operdar used within a loop
 
 
 # Contributing
