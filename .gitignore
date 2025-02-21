@@ -6,3 +6,6 @@ __pycache__/
 *.egg-info/
 configFiles/conf_*
 operadar/operadar_conf.py
+tmatrix_generator/OUTPUT/**
+!tmatrix_generator/OUTPUT/.gitkeep
+tmatrix_generator/src/Tmat
