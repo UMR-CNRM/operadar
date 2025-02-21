@@ -25,23 +25,47 @@ from operadar.utils.formats_data import format_temporal_variable,define_output_p
 
 
 def operadar(filename:str,
+             modelname:str=cf.model,
              read_tmatrix:bool=True,
+             in_dir_path:str=cf.input_filePath,
              out_dir_path:str=cf.outPath,
+             tmatrix_path:str=cf.path_Tmatrix,
+             microphysics_scheme:str=cf.micro_scheme,
+             hydrometeorMoments:dict[int]=cf.hydrometeors_moments,
              radar_band:str=cf.radar_band,
+             radarloc:str|list=cf.radarloc,
+             distmax_rad:float=cf.distmax_rad,
              Tmatrix_params:dict={},
+             mixed_phase_parametrization:str=cf.MixedPhase,
              subDomain:list[float]|None=cf.subDomain,
              get_more_details=False,
              ) -> tuple[bool,bool,dict]:
     """Radar forward operator main function. 
 
     Args:
-        filename (str): Only the name of the file
-        read_tmatrix (bool, optional): Option to save computing time within a loop. Need to be set to True at least for the first iteration. Defaults to True.
-        out_dir_path (str, optional): Path to store the output files. Defaults to cf.outPath.
+        filename (str): Only the name of the file.
+        modelname (str): Defaults to cf.model.
+        read_tmatrix (bool, optional): Option to save computing time within a loop.
+                Need to be set to True at least for the first iteration.
+                Defaults to True.
+        in_dir_path (str, optional): Path where the input files are stored.
+                Defaults to cf.input_filePath.
+        out_dir_path (str, optional): Path to store the output files.
+                Defaults to cf.outPath.
+        microphysics_scheme (str, optional): name of the microphysics scheme.
+                Defaults to cf.micro_scheme.
+        hydrometeorMoments (dict of form {str : int}), optional): dict containing the number of moments
+                for each hydrometeor of the microphysics scheme.
+                Defaults to cf.hydrometeors_moments
         radar_band (str, optional): Defaults to cf.radar_band.
-        Tmatrix_params (dict, optional): Dictionnary containing the Tmatrix tables parameters. Defaults to {}.
+        radarloc (str | list): location of the radar for simulation.
+                Either 'center' (i.e. center of the grid) or a [lat_radar,lon_radar]
+                coordinate. Defaults to cf.radarloc.
+        Tmatrix_params (dict, optional): dictionary containing the Tmatrix tables parameters.
+                Defaults to {}.
+        mixed_phase_parametrization (str, optional): Defaults to cf.MixedPhase.
         subDomain (list[float] | None, optional): Defaults to cf.subDomain.
-        get_more_details (bool): Defaults to False
+        get_more_details (bool): Defaults to False.
 
     Returns:
         read_tmatrix (bool): to update the boolean during a loop
@@ -55,43 +79,53 @@ def operadar(filename:str,
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
     
     # Format temporal variable and output file name
-    input_file_path = Path(cf.input_filePath+filename)
+    input_file_path = Path(in_dir_path+filename)
     temporal_variable = format_temporal_variable(filePath=input_file_path)
-    outFilePath = define_output_path(out_dir_path,radar_band,temporal_variable) 
+    outFilePath = define_output_path(out_dir_path=out_dir_path,
+                                     model=modelname,
+                                     scheme=microphysics_scheme,
+                                     radar_band=radar_band,
+                                     temporal_variable=temporal_variable) 
     
     if not Path(outFilePath).with_suffix('.nc').exists():
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
-            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,
+            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
                                                                           datatype='tmatrix',
                                                                           )
             Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,
+                                                   scheme=microphysics_scheme,
+                                                   pathTmat=tmatrix_path,
                                                    hydrometeors=Tmatrix_hydromet_list,
                                                    verbose=get_more_details,
                                                    )
         # Read model variables
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
+                                                         modelname=modelname,
                                                          domain=subDomain,
                                                          verbose=get_more_details,
                                                          )
         # Compute radar geometry
-        mask_dist_max, elevations = compute_radar_geometry(X=X,
-                                                           Y=Y,
-                                                           Z=Z,
-                                                           Tc=Tc,
-                                                           elev_max=Tmatrix_params['ELEVmax']["rr"])
+        mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Z, Tc=Tc,
+                                                           elev_max=Tmatrix_params['ELEVmax']["rr"],
+                                                           model=modelname,
+                                                           distmax_rad=distmax_rad,
+                                                           radarloc=radarloc,
+                                                           )
         # Mask precipitations
         mask_precip = mask_precipitations(contents=M,
                                           expMmin=Tmatrix_params['expMmin']["rr"],
-                                          hydrometeorMoments=cf.hydrometeors_moments)
+                                          hydrometeorMoments=hydrometeorMoments)
         # Combine masks
         partial_mask = (mask_precip & mask_dist_max)
         
         # Compute mixed phase parametrization
         [M, Nc,Fw] = compute_mixed_phase(contents=M,
                                          concentrations=Nc,
-                                         expMmin=Tmatrix_params['expMmin']["rr"]) 
+                                         hydrometeorMoments=hydrometeorMoments,
+                                         expMmin=Tmatrix_params['expMmin']["rr"],
+                                         parametrization=mixed_phase_parametrization) 
         # Compute dual-pol radar variables
         dpolDict = compute_dualpol_variables(temperature=Tc,
                                              mask_precip_dist=partial_mask,

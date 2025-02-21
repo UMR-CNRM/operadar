@@ -8,9 +8,7 @@ Created on Tue Apr 11 09:55:15 2023
 import epygram
 import time as tm
 import numpy as np
-import pickle as pkl
 from pathlib import Path
-from pandas import Timestamp
 
 from operadar.read.with_epygram import *
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
@@ -25,10 +23,10 @@ def read_arome(filePath:Path,
     """Read and extract data from an AROME.fa file
     
     Args:
-        filePath (str): input file path
-        hydrometeorMoments (dict): dictionnary of form {'hydrometeor key':number of moments}
-        subDomain (list[float] | None): either a list of 4 float or None
-        verbose (bool) : show more messages to the user
+        filePath (str): input file path.
+        hydrometeorMoments (dict): dictionary of form {'hydrometeor key':number of moments}.
+        subDomain (list[float] | None): either a list of 4 float or None.
+        verbose (bool) : show more messages to the user.
 
     Returns:
         X (ndarray): 1D horizontal coordinates in m
@@ -36,8 +34,8 @@ def read_arome(filePath:Path,
         Z (ndarray): 1D array of vertical coordinates in model pressure levels
         lon (ndarray): 2D array of longitude coordinates
         lat (ndarray): 2D array of latitude coordinates
-        M (dict[ndarray]): dictionnary of 3D contents for each hydrometeor 
-        Nc (dict[ndarray]): dictionnary of 3D number concentrations for each hydrometeor
+        M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
+        Nc (dict[ndarray]): dictionary of 3D number concentrations for each hydrometeor
         Tc (ndarray) : 3D temperature in Celsius
     """
     

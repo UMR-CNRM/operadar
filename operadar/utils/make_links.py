@@ -3,7 +3,7 @@
 
 
 
-def link_varname_with_arome_name ()-> dict[str]:
+def link_varname_with_arome_name ()-> dict[int]:
     """Make the correspondance between the hydrometeor keys and the variable names commonly used in AROME."""
     model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
     model_name=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']

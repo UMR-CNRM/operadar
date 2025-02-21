@@ -52,3 +52,4 @@ n_interpol = 32 # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, 
 RT = 6371.229*10**3 # Earth radius constant
 CCIconst=800. # Ice concentration constant for one moment
 LIMToption=""
+real_case=False # for MesoNH only

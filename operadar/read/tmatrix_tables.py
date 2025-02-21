@@ -22,16 +22,12 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import (
-    micro_scheme,
-    LIMToption, 
-    path_Tmatrix
-)
+from operadar.operadar_conf import LIMToption
 
 
 
-def initialize_Tmatrix_dictionnary() -> dict :
-    """Initializes the Tmatrix dictionnary to store all the variables and columns of the tables"""
+def initialize_Tmatrix_dictionary() -> dict :
+    """Initializes the Tmatrix dictionary to store all the variables and columns of the tables"""
     Tmatrix_params = {}
     list_of_parameters = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
                           'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax', 'Tc_h',
@@ -47,42 +43,44 @@ def initialize_Tmatrix_dictionnary() -> dict :
 
 
 
-def get_scheme_to_fetch_table() -> str :
+def get_scheme_to_fetch_table(microphysics:str) -> str :
     """Choice of the right table depending on the microphysics (will be modified later ?)"""
 
-    if micro_scheme[0:3] == "ICE" :
+    if microphysics[0:3] == "ICE" :
         return "ICE3"
-    elif micro_scheme[0:3] == "LIM" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
+    elif microphysics[0:3] == "LIM" or (microphysics=="LIMT" and LIMToption=="cstmu") :
         return "LIMA"
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',micro_scheme,'is not a valid name for Tmatrix computation')
+        print('/!\ ERROR /!\ :',microphysics,'is not a valid name for Tmatrix computation')
         sys.exit()
 
 
 
 def read_Tmatrix_Clotilde(band:str,
                           hydrometeors:list,
+                          scheme:str,
+                          pathTmat:str,
                           verbose:bool,
-                          pathTmat:str=path_Tmatrix,
                           )-> dict:
     """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
     
     Args:
-        band (str): radar band
-        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read
-        pathTmat (str, optional): Tmatrix directory path. Defaults to path_Tmatrix in configuration file.
+        band (str): radar band.
+        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read.
+        scheme (str): microphysics scheme.
+        pathTmat (str): Tmatrix directory path.
 
     Returns:
-        Tmatrix_params (dict) : dictionnary containing min/step/max values for multiple parameters
+        Tmatrix_params (dict) : dictionary containing min/step/max values for multiple parameters
     """
     print("Reading Tmatrix tables")
     deb_timer = tm.time()
-    micro_for_Tmatrix = get_scheme_to_fetch_table()
-    Tmatrix_params = initialize_Tmatrix_dictionnary()
+    micro_for_Tmatrix = get_scheme_to_fetch_table(microphysics=scheme)
+    Tmatrix_params = initialize_Tmatrix_dictionary()
     
     for h in hydrometeors: 
-        nomfileCoefInt = f'{path_Tmatrix}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
+        nomfileCoefInt = f'{pathTmat}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
         
         if verbose : print("\tReading min/step/max for",h)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 

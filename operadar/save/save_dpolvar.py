@@ -36,9 +36,9 @@ def save_netcdf(X:np.ndarray,
         lat (np.ndarray): 2D latitude coordinates
         lon (np.ndarray): 2D longitude coordinates
         datetime (pd.Timestamp): date and time coordinate
-        dpolDict (dict[np.ndarray]): dictionnary containing the synthetic 3D radar fields
-        contentsDict (dict[np.ndarray]): dictionnary containing the 3D model's content fields
-        concentrationsDict (dict[np.ndarray]): dictionnary containing the 3D model's concentration fields
+        dpolDict (dict[np.ndarray]): dictionary containing the synthetic 3D radar fields
+        contentsDict (dict[np.ndarray]): dictionary containing the 3D model's content fields
+        concentrationsDict (dict[np.ndarray]): dictionary containing the 3D model's concentration fields
         temperature (np.ndarray): 3D model's temperature field
         outfile (Path): output path
     """
@@ -72,7 +72,7 @@ def save_netcdf(X:np.ndarray,
                    microphysics = cf.micro_scheme,
                    radar_band = cf.radar_band,
                    mixed_phase_type = cf.MixedPhase,
-                   )
+                   ).update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
         )
      
     ds.to_netcdf(outfile.with_suffix('.nc'))
