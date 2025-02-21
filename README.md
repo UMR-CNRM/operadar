@@ -57,7 +57,7 @@ Usage: ./exec_operadar.sh -f FILENAME -c CONFIG [--verbose]
 ## Inside another Python program (ideal for multiple file)
 The user can work with multiple files, if desired. The paths, output directories and other parameters must be specified in the configuration file. Here is a way of doing so.
 ### Simple tutorial
-1) In another python code (let say `operadar_multi.py`), call `operdar()` function :
+1) In another python code (let say `operadar_multi.py`), call `operadar()` function :
    ```python
    from operadar.forward_operator import operadar
    ```
