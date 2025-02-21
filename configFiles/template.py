@@ -23,6 +23,7 @@ model = 'Arome'
    
 # ----- Microphysics scheme name : can be 'ICE3', 'ICE4' or 'LIMA'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
+#       Note : only the three first characters are used to select the right scheme
 micro_scheme = 'LIMA_exp_GNZR'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
