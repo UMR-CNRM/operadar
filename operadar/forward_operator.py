@@ -52,6 +52,7 @@ def operadar(filename:str,
                 Defaults to cf.input_filePath.
         out_dir_path (str, optional): Path to store the output files.
                 Defaults to cf.outPath.
+        tmatrix_path (str, optional) : Path where the Tmatrix lookup tables are stored.
         microphysics_scheme (str, optional): name of the microphysics scheme.
                 Defaults to cf.micro_scheme.
         hydrometeorMoments (dict of form {str : int}), optional): dict containing the number of moments
@@ -61,6 +62,8 @@ def operadar(filename:str,
         radarloc (str | list): location of the radar for simulation.
                 Either 'center' (i.e. center of the grid) or a [lat_radar,lon_radar]
                 coordinate. Defaults to cf.radarloc.
+        distmax_rad (float): Maximum radius of the radar data to compute pseudo-observations.
+                DEfaults to cf.distmax_rad.
         Tmatrix_params (dict, optional): dictionary containing the Tmatrix tables parameters.
                 Defaults to {}.
         mixed_phase_parametrization (str, optional): Defaults to cf.MixedPhase.
@@ -80,13 +83,15 @@ def operadar(filename:str,
     
     # Format temporal variable and output file name
     input_file_path = Path(in_dir_path+filename)
-    temporal_variable = format_temporal_variable(filePath=input_file_path)
+    temporal_variable = format_temporal_variable(filePath=input_file_path,
+                                                 model_type=modelname,
+                                                 )
     outFilePath = define_output_path(out_dir_path=out_dir_path,
                                      model=modelname,
                                      scheme=microphysics_scheme,
                                      radar_band=radar_band,
-                                     temporal_variable=temporal_variable) 
-    
+                                     temporal_variable=temporal_variable,
+                                     ) 
     if not Path(outFilePath).with_suffix('.nc').exists():
         
         # Read Tmatrix tables (files from Clotilde)
@@ -104,6 +109,7 @@ def operadar(filename:str,
         [X, Y, Z, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                          modelname=modelname,
                                                          domain=subDomain,
+                                                         hydrometeorMoments=hydrometeorMoments,
                                                          verbose=get_more_details,
                                                          )
         # Compute radar geometry
@@ -116,7 +122,8 @@ def operadar(filename:str,
         # Mask precipitations
         mask_precip = mask_precipitations(contents=M,
                                           expMmin=Tmatrix_params['expMmin']["rr"],
-                                          hydrometeorMoments=hydrometeorMoments)
+                                          hydrometeors_moments=hydrometeorMoments,
+                                          )
         # Combine masks
         partial_mask = (mask_precip & mask_dist_max)
         
@@ -125,7 +132,8 @@ def operadar(filename:str,
                                          concentrations=Nc,
                                          hydrometeorMoments=hydrometeorMoments,
                                          expMmin=Tmatrix_params['expMmin']["rr"],
-                                         parametrization=mixed_phase_parametrization) 
+                                         parametrization=mixed_phase_parametrization,
+                                         ) 
         # Compute dual-pol radar variables
         dpolDict = compute_dualpol_variables(temperature=Tc,
                                              mask_precip_dist=partial_mask,
@@ -133,10 +141,12 @@ def operadar(filename:str,
                                              contents=M,
                                              concentrations=Nc,
                                              tmatrix_param=Tmatrix_params,
-                                             output_file_path=outFilePath,
+                                             hydrometeorMoments=hydrometeorMoments,
                                              X=X, Y=Y, Z=Z,
                                              lat=lat, lon=lon,
-                                             date_time=temporal_variable)
+                                             date_time=temporal_variable,
+                                             output_file_path=outFilePath,
+                                             )
         # Saving file
         save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon,
                     datetime=temporal_variable, dpolDict=dpolDict,
@@ -163,6 +173,7 @@ def operadar(filename:str,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="OPERADAR")
     parser.add_argument("filename", type=str)
+    #parser.add_argument("--append", action="store_true",default=False)
     parser.add_argument("--verbose", action="store_true",default=False)
     operad_args = parser.parse_args()
     operadar(filename=operad_args.filename, get_more_details=operad_args.verbose)

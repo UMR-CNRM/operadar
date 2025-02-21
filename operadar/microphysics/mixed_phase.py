@@ -31,7 +31,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
     
     print('Estimating mixed phase where rain water coexists with iced species (even at negative temperatures).') ; deb_timer = tm.time()
     
-    mask_BB = mask_bright_band(contents, expMmin)
+    mask_BB = mask_bright_band(contents, hydrometeorMoments, expMmin)
     
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
                                                          datatype='tmatrix',
