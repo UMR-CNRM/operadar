@@ -173,7 +173,7 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
 
     
 
-def get_scatcoef(tmatDict:dict, hydrometeor:str, colName_tmatrix:str,
+def get_scatcoef(tmatDict:dict, scat_coefs:list, hydrometeor:str, colName_tmatrix:str,
                  colMin:float, colStep:float, colMax:float,
                  el_temp:np.ndarray, Tc_temp:np.ndarray, colTmat:np.ndarray,
                  M_temp:np.ndarray, n_interpol:int, shutdown_warnings = True):    
@@ -224,9 +224,13 @@ def get_scatcoef(tmatDict:dict, hydrometeor:str, colName_tmatrix:str,
         MatCoef[4, ind] = ImS22S11_h[kTmat[ind]]
     
     # Interpol scat coef values
-    [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
+    scatCoefsDict = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
 
-    return S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
+    wanted_scatCoefs = {}
+    for coef in scat_coefs :
+        wanted_scatCoefs[coef] = scatCoefsDict[coef]
+    
+    return wanted_scatCoefs#S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
 
 
 
@@ -570,12 +574,12 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
         #--- fin interpolation lineaire -----------------------
         #print indcoef,np.count_nonzero(~np.isnan(VectCoef[indcoef]))
 
-    S11carre=np.copy(VectCoef[0])
-    S22carre=np.copy(VectCoef[1])
-    ReS22fmS11f=np.copy(VectCoef[2])
-    ReS22S11=np.copy(VectCoef[3])
-    ImS22S11=np.copy(VectCoef[4])
-                     
-    return S11carre,S22carre,ReS22fmS11f, ReS22S11, ImS22S11
-
+    scatCoefsDict = {}
+    scatCoefsDict['S11S11']=np.copy(VectCoef[0])
+    scatCoefsDict['S22S22']=np.copy(VectCoef[1])
+    scatCoefsDict['ReS22fmS11f']=np.copy(VectCoef[2])
+    scatCoefsDict['ReS22S11']=np.copy(VectCoef[3])
+    scatCoefsDict['ImS22S11']=np.copy(VectCoef[4])
+              
     del VectCoef
+    return scatCoefsDict

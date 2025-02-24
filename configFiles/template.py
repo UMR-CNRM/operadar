@@ -41,6 +41,10 @@ MixedPhase = 'Fw_posg'
 #                           and save the resultant netcdf (1 file/hydrometeor class)
 save_netcdf_single_hydrometeor = False
 
+# ----- Dual-pol variables to add in the output file : provide a list of at least one
+#                                                      element in ['Zh','Zdr','Kdp','Rhohv'] 
+dpol2add = ['Zh','Zdr','Kdp']
+
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)
 distmax_rad = 255.*1000             # maximum radius of the radar data to compute pseudo-observations

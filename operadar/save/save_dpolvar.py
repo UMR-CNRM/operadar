@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 18 17:00:34 2023
-
-@author: augros
-"""
 
 import sys
 import numpy as np
@@ -49,11 +44,7 @@ def save_netcdf(X:np.ndarray,
     concentrations = np.array([concentrationsDict[hydromet] for hydromet in hydromet_list]).astype('f4')
     
     ds=xr.Dataset(
-        data_vars=dict(Zh = (["level","y","x"],dpolDict["Zhh"].astype('f4'), {"units": "dBZ"}),
-                       Zdr = (["level","y","x"],dpolDict["Zdr"].astype('f4'), {"units": "dB"}),
-                       Kdp = (["level","y","x"],dpolDict["Kdp"].astype('f4'), {"units": "°/km"}),
-                       Rhohv = (["level","y","x"],dpolDict["Rhohv"].astype('f4'), {"units": "1"}),
-                       Contents = (["hydrometeor","level","y","x"],contents, {"units": "g/m3"}),
+        data_vars=dict(Contents = (["hydrometeor","level","y","x"],contents, {"units": "g/m3"}),
                        Concentrations = (["hydrometeor","level","y","x"],concentrations, {"units": "kg^-1"}),
                        T = (["level","y","x"],temperature.astype('f4'), {"units": "°C"}),
                        Alt = (["level","y","x"],Z.astype('i4'), {"units": "m"}),
@@ -74,7 +65,7 @@ def save_netcdf(X:np.ndarray,
                    mixed_phase_type = cf.MixedPhase,
                    ).update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
         )
-     
+    ds = add_dualPol_variables(ds,dpolDict,dpolvar2add=cf.dpol2add) 
     ds.to_netcdf(outfile.with_suffix('.nc'))
     ds.close() ; del ds
     print("Model and dpol variables saved at :",outfile.with_suffix('.nc'))
@@ -90,4 +81,18 @@ def create_tree_structure_outFiles(output_dir:Path):
         except:    
             print ('Error in creation of',output_dir) ; sys.exit()
     else:
-        print ('Tree structure exists :',output_dir)   
+        print ('Tree structure exists :',output_dir)
+
+
+
+def add_dualPol_variables(ds:xr.Dataset,dpolDict:dict,dpolvar2add:list):
+    if 'Zh' in dpolvar2add :
+        ds['Zh'] = (["level","y","x"],dpolDict["Zhh"].astype('f4'), {"units": "dBZ"})
+    if 'Zdr' in dpolvar2add :
+        ds['Zdr'] = (["level","y","x"],dpolDict["Zdr"].astype('f4'), {"units": "dB"})
+    if 'Kdp' in dpolvar2add :
+        ds['Kdp'] = (["level","y","x"],dpolDict["Kdp"].astype('f4'), {"units": "°/km"})
+    if 'Rhohv' in dpolvar2add :
+        ds['Rhohv'] = (["level","y","x"],dpolDict["Rhohv"].astype('f4'), {"units": "1"})
+    
+    return ds
