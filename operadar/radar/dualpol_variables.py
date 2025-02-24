@@ -196,8 +196,8 @@ def dpol_var_from_scatcoefs(wavelength:float,
 def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
     """Compute ZH, ZDR and RHOHV radar variables."""
     if 'Zh' in dpol2add :
-        dpolDict["Zhh"] = np.copy(dpolDict["Zhhlin"])
-        dpolDict["Zhh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(dpolDict["Zhhlin"][dpolDict["Zhhlin"]>0])
+        dpolDict["Zh"] = np.copy(dpolDict["Zhhlin"])
+        dpolDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(dpolDict["Zhhlin"][dpolDict["Zhhlin"]>0])
     if 'Zdr' in dpol2add :
         dpolDict["Zdr"] = np.copy(dpolDict["Zhhlin"])
         mask_Zdr = (dpolDict["Zhhlin"]>0) & (dpolDict["Zvvlin"]>0)
