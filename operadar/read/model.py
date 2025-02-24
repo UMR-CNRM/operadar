@@ -29,11 +29,11 @@ def read_model_file(filePath:Path,
                                                          real_case = real_case)
     elif (modelname=="Arome"):
         from operadar.read.arome import read_arome
-        [X, Y, Z, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
-                                                    hydrometeorMoments=hydrometeorMoments,
-                                                    subDomain=domain,
-                                                    verbose=verbose,
-                                                    )   
+        [X, Y, Alt, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
+                                                      hydrometeorMoments=hydrometeorMoments,
+                                                      subDomain=domain,
+                                                      verbose=verbose,
+                                                      )   
     
     else :
         print('_____________')
@@ -42,4 +42,4 @@ def read_model_file(filePath:Path,
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
-    return [X, Y, Z, lon, lat, M, Nc, Tc]
+    return [X, Y, Alt, lon, lat, M, Nc, Tc]

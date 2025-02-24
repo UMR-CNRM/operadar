@@ -52,7 +52,6 @@ def read_arome(filePath:Path,
                                                    )
     if verbose : print('\t\tLoaded file in ',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    ps = loaded_epygram_file.readfield('SURFPRESSION')
     X_res=loaded_epygram_file.geometry.grid['X_resolution']
     Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
     
@@ -65,6 +64,7 @@ def read_arome(filePath:Path,
     if verbose : print('\t\tExtracted A and B hybrid pressure coefficients in',round(tm.time()-deb,6),'seconds'); deb=tm.time()
     
     if subDomain != None :
+        ps = loaded_epygram_file.readfield('SURFPRESSION')
         (lon_min, lon_max, lat_min, lat_max) = get_lat_lon_from_subdomain(subDomain) 
         imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
         imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
@@ -91,6 +91,7 @@ def read_arome(filePath:Path,
                                       pressure=p,
                                       hydrometeors=hydromet_list,
                                       )
+    del p
     if verbose : print('\t\tGot 3D contents (kg/m3) and temperature in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
     Nc = get_concentrations(epygram_file=arome_file,
@@ -100,19 +101,19 @@ def read_arome(filePath:Path,
                             )
     if verbose : print('\t\tGot 3D concentrations in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    Tc=T-273.15
-    X = X_res*np.arange(Tc.shape[2]).astype('i4')
-    Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
-    Z = get_altitude(hybrid_pressure_coefA=A,
-                     hybrid_pressure_coefB=B,
-                     temperature=T,
-                     pressure_departure=pdep,
-                     surface_pressure=psurf,
-                     surface_geopotential=geosurf,
-                     specific_gas_constant=R,
-                     )
+    T=T-273.15
+    X = X_res*np.arange(T.shape[2]).astype('i4')
+    Y = Y_res*np.arange(T.shape[1]).astype('i4')
+    Alt = get_altitude(hybrid_pressure_coefA=A,
+                       hybrid_pressure_coefB=B,
+                       temperature=T,
+                       pressure_departure=pdep,
+                       surface_pressure=psurf,
+                       surface_geopotential=geosurf,
+                       specific_gas_constant=R,
+                       )
     if verbose : print('\t\tComputed altitude 3D field in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
     loaded_epygram_file.close()
     arome_file.close()
-    return  X, Y, Z, lon, lat, M, Nc, Tc
+    return  X, Y, Alt, lon, lat, M, Nc, T
