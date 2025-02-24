@@ -30,32 +30,33 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               lat:np.ndarray,
                               date_time:Timestamp,
                               output_file_path:Path,
+                              append_in_fa:bool,
                               )-> dict[np.ndarray] :
     """Compute synthetic radar dual-polarimetrization variables for a given wavelength,
     microphysics, and mixed phase parametrization.
 
     Args:
-        temperature (np.ndarray): 3D array
-        mask_precip_dist (np.ndarray): 3D array of bool
-        elev (np.ndarray): 3D array
-        Fw (np.ndarray): 3D array
-        contents (dict[np.ndarray]): dict of 3D array (one per hydrometeor)
-        concentrations (dict[np.ndarray]): dict of 3D array (one per hydrometeor)
-        tmatrix_param (dict): dict of Tmatrix parameters
-        hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme
-        X (np.ndarray): 1D array of horizontal grid coordinates
-        Y (np.ndarray): 1D array of horizontal grid coordinates
-        Z (np.ndarray): vertical coordinates
-        lon (np.ndarray): 2D array
-        lat (np.ndarray): 2D array
-        date_time (Timestamp): temporal variable
-        output_file_path (Path): out file path
+        temperature (np.ndarray): 3D array.
+        mask_precip_dist (np.ndarray): 3D array of bool.
+        elev (np.ndarray): 3D array.
+        Fw (np.ndarray): 3D array.
+        contents (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
+        concentrations (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
+        tmatrix_param (dict): dict of Tmatrix parameters.
+        hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme.
+        X (np.ndarray): 1D array of horizontal grid coordinates.
+        Y (np.ndarray): 1D array of horizontal grid coordinates.
+        Z (np.ndarray): vertical coordinates.
+        lon (np.ndarray): 2D array.
+        lat (np.ndarray): 2D array.
+        date_time (Timestamp): temporal variable.
+        output_file_path (Path): out file path.
+        append_in_fa (bool): if True, delete contents and concentrations field when used in the calculation of the dpol variables to save space.
 
     Returns:
         dict[np.ndarray]: dictionary containing all the dual-polarimetrization fields.
     """
 
-    #dpol_var = ["Zhhlin","Zvvlin","S11S22","S11S11xS22S22","Kdp","Rhohv"]
     dpol_var, scat_coefs = build_list_dpol_var_and_scatcoefs(dpol2add=dpol2add)
     
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
@@ -74,15 +75,15 @@ def compute_dualpol_variables(temperature:np.ndarray,
         mask_tot = (mask_precip_dist & mask_content) 
 
         dpolDict = compute_scatcoeffs_single_hydrometeor(hydrometeor=h,
-                                                       dpol_var=dpol_var,
-                                                       scat_coefs=scat_coefs,
-                                                       mask_tot=mask_tot,
-                                                       Tc=temperature,
-                                                       el=elev, Fw=Fw,
-                                                       content_h=contents[h],
-                                                       concentration_h=concentrations[h],
-                                                       tmatrix_param=tmatrix_param,
-                                                       hydrometeorMoments=hydrometeorMoments,
+                                                         dpol_var=dpol_var,
+                                                         scat_coefs=scat_coefs,
+                                                         mask_tot=mask_tot,
+                                                         Tc=temperature,
+                                                         el=elev, Fw=Fw,
+                                                         content_h=contents[h],
+                                                         concentration_h=concentrations[h],
+                                                         tmatrix_param=tmatrix_param,
+                                                         hydrometeorMoments=hydrometeorMoments,
                                                     )
 
         # Addition of scattering coef for all hydromet
@@ -106,6 +107,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                         outfile=outFilePath,
                         )
             del dpol_h   
+        if append_in_fa : del concentrations[h],contents[h]
         
     for var in dpol_var:
         dpol_var_dict[var][~mask_precip_dist] = np.nan 
@@ -131,8 +133,6 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                           hydrometeorMoments:dict[int],
                                         ) -> dict[np.ndarray]:
     """Compute radar scattering coefficients for a single hydrometeor class."""
-    
-    
     
     elev_temp=el[mask_tot]
     Tc_temp=Tc[mask_tot]
@@ -166,7 +166,6 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                          dpol_var=dpol_var,
                                          scatCoefDict=scat_coefs_dict,
                                          )
-    
     del scat_coefs_dict
     del elev_temp, Tc_temp, content_temp, Fw_temp, concentration_temp
     

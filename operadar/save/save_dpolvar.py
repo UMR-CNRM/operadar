@@ -27,7 +27,7 @@ def save_netcdf(X:np.ndarray,
     Args:
         X (np.ndarray): 1D grid horizontal coordinates
         Y (np.ndarray): 1D grid horizontal coordinates
-        Z (np.ndarray): 1D grid vertical coordinates
+        Z (np.ndarray): 3D altitude coordinates
         lat (np.ndarray): 2D latitude coordinates
         lon (np.ndarray): 2D longitude coordinates
         datetime (pd.Timestamp): date and time coordinate
@@ -49,8 +49,8 @@ def save_netcdf(X:np.ndarray,
                        T = (["level","y","x"],temperature.astype('f4'), {"units": "°C"}),
                        Alt = (["level","y","x"],Z.astype('i4'), {"units": "m"}),
                        ),
-        coords=dict(y = (["y"], Y.astype('f4')),
-                    x = (["x"], X.astype('f4')),
+        coords=dict(y = (["y"], Y.astype('i4')),
+                    x = (["x"], X.astype('i4')),
                     lon = (["y","x"], lon.astype('f4')),
                     lat = (["y","x"], lat.astype('f4')),
                     level =(["level"], np.arange(Z.shape[0]).astype('i4')),
