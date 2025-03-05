@@ -8,11 +8,9 @@ from pathlib import Path
 from numpy import ndarray
 from pandas import Timestamp
 
-import operadar.operadar_conf as cf
 
 
-
-def format_temporal_variable(filePath:Path,model_type:str=cf.model)-> Timestamp:
+def format_temporal_variable(filePath:Path,model_type:str)-> Timestamp:
     """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
     
     if model_type=='Arome':
@@ -69,10 +67,10 @@ def select_Tmatrix_column(momentsDict:dict[int],
         
         
 
-def define_output_path(out_dir_path,radar_band,temporal_variable):
+def define_output_path(out_dir_path,model,scheme,radar_band,temporal_variable):
     """Define output path depending on the temporal variable type."""
     if type(temporal_variable) is pd.Timestamp :
-        outPath = f"{out_dir_path}dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
+        outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
     elif type(temporal_variable)==int:
-        outPath = f"{out_dir_path}dpolvar_{cf.model}_{cf.micro_scheme}_{radar_band}band_{temporal_variable}"
+        outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable}"
     return outPath
