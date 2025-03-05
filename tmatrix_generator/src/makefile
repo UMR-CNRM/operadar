@@ -6,12 +6,12 @@
 # Objects to compile
 OBJECTS = ./Tmatrix.f
 
-# belenos :
+# Belenos :
 #LIBS = -L ../LIB/LAPACK  -llapack_LINUX -lblas_LINUX
 
-# tests pxprecip9 (ubuntu)
+# Local (ubuntu)
 #LIBS = -L ./LIB/lapack-3.10.0  -lliblapack.a -llibrefblas.a
-LIBS = -L ./lib/lapack-3.11  -llapack -lrefblas
+LIBS = -L ./lib/lapack -llapack -lrefblas
 #LIBS = -L /usr/lib/x86_64-linux-gnu/lapack -lliblapack
 
 CF = gfortran
