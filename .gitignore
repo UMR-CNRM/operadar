@@ -9,3 +9,5 @@ operadar/operadar_conf.py
 tmatrix_generator/OUTPUT/**
 !tmatrix_generator/OUTPUT/.gitkeep
 tmatrix_generator/src/Tmat
+tmatrix_generator/plotTables/IMG/**
+tmatrix_generator/plotTables/IMG/.gitkeep
