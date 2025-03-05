@@ -3,7 +3,6 @@
 
 import time as tm
 import numpy as np
-import operadar.operadar_conf as cf
 from operadar.utils.masking import mask_bright_band
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
@@ -11,26 +10,30 @@ from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 def compute_mixed_phase(contents:dict[np.ndarray],
                         concentrations:dict[np.ndarray],
+                        hydrometeorMoments:dict[int],
                         expMmin:float,
+                        parametrization:str,
                         ) -> tuple[dict[np.ndarray],dict[np.ndarray],np.ndarray]:
     """Compute the mixed phase following the parametrization set in the configuration file.
 
     Args:
-        contents (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor)
-        concentrations (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor)
-        expMmin (float): Tmatrix table output value
+        contents (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor).
+        concentrations (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor).
+        hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme.
+        expMmin (float): Tmatrix table output value.
+        parametrization (str): Mixed phase parametrization (either T_pos, Fw_pos or Fw_posg).
 
     Returns:
-        contents (dict[np.ndarray]): dict of 3D arrays
-        concentrations (dict[np.ndarray]): dict of 3D arrays
-        Fw (np.ndarray): liquid water fraction (3D) 
+        contents (dict[np.ndarray]): dict of 3D arrays.
+        concentrations (dict[np.ndarray]): dict of 3D arrays.
+        Fw (np.ndarray): liquid water fraction (3D) .
     """
     
     print('Estimating mixed phase where rain water coexists with iced species (even at negative temperatures).') ; deb_timer = tm.time()
     
-    mask_BB = mask_bright_band(contents, expMmin)
+    mask_BB = mask_bright_band(contents, hydrometeorMoments, expMmin)
     
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=cf.hydrometeors_moments,
+    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
                                                          datatype='tmatrix',
                                                          )
     wet_species = [key for key in hydrometeors if (key[0:1]=="w") and (key[1:2]*2 in hydrometeors)]
@@ -41,7 +44,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
         contents[spec] = np.copy(contents[spec[1:2]*2])
         concentrations[spec] = np.copy(concentrations[spec[1:2]*2])
     
-    contents = mixed_phase_parametrization(contents, Fw, mask_BB, wet_species) 
+    contents = apply_mixed_phase_parametrization(contents, Fw, mask_BB, wet_species,parametrization) 
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")       
     return contents, concentrations, Fw
@@ -60,12 +63,12 @@ def compute_liquid_water_fraction(contents:dict[np.ndarray],
 
 
 
-def mixed_phase_parametrization(contents:dict[np.ndarray],
-                                Fw:np.ndarray,
-                                BB:np.ndarray,
-                                wet_species:list,
-                                parametrization:str=cf.MixedPhase,
-                                ) -> dict[np.ndarray]:
+def apply_mixed_phase_parametrization(contents:dict[np.ndarray],
+                                      Fw:np.ndarray,
+                                      BB:np.ndarray,
+                                      wet_species:list,
+                                      parametrization:str,
+                                      ) -> dict[np.ndarray]:
     """Available parametrizations :
     * T_pos : the species content is transferred to the melting species only at positive temperatures.
     * Fw_pos : the rain and graupel content are emptied and transferred into the wet graupel content within the melting layer.
