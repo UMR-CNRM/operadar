@@ -8,9 +8,7 @@ Created on Tue Apr 11 09:55:15 2023
 import epygram
 import time as tm
 import numpy as np
-import pickle as pkl
 from pathlib import Path
-from pandas import Timestamp
 
 from operadar.read.with_epygram import *
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
@@ -25,10 +23,10 @@ def read_arome(filePath:Path,
     """Read and extract data from an AROME.fa file
     
     Args:
-        filePath (str): input file path
-        hydrometeorMoments (dict): dictionnary of form {'hydrometeor key':number of moments}
-        subDomain (list[float] | None): either a list of 4 float or None
-        verbose (bool) : show more messages to the user
+        filePath (str): input file path.
+        hydrometeorMoments (dict): dictionary of form {'hydrometeor key':number of moments}.
+        subDomain (list[float] | None): either a list of 4 float or None.
+        verbose (bool) : show more messages to the user.
 
     Returns:
         X (ndarray): 1D horizontal coordinates in m
@@ -36,8 +34,8 @@ def read_arome(filePath:Path,
         Z (ndarray): 1D array of vertical coordinates in model pressure levels
         lon (ndarray): 2D array of longitude coordinates
         lat (ndarray): 2D array of latitude coordinates
-        M (dict[ndarray]): dictionnary of 3D contents for each hydrometeor 
-        Nc (dict[ndarray]): dictionnary of 3D number concentrations for each hydrometeor
+        M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
+        Nc (dict[ndarray]): dictionary of 3D number concentrations for each hydrometeor
         Tc (ndarray) : 3D temperature in Celsius
     """
     
@@ -54,7 +52,6 @@ def read_arome(filePath:Path,
                                                    )
     if verbose : print('\t\tLoaded file in ',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    ps = loaded_epygram_file.readfield('SURFPRESSION')
     X_res=loaded_epygram_file.geometry.grid['X_resolution']
     Y_res=loaded_epygram_file.geometry.grid['Y_resolution']
     
@@ -67,6 +64,7 @@ def read_arome(filePath:Path,
     if verbose : print('\t\tExtracted A and B hybrid pressure coefficients in',round(tm.time()-deb,6),'seconds'); deb=tm.time()
     
     if subDomain != None :
+        ps = loaded_epygram_file.readfield('SURFPRESSION')
         (lon_min, lon_max, lat_min, lat_max) = get_lat_lon_from_subdomain(subDomain) 
         imin,jmin=(np.round(ps.geometry.ll2ij(lon_min,lat_min)).astype(int))
         imax,jmax=(np.round(ps.geometry.ll2ij(lon_max,lat_max)).astype(int))
@@ -93,6 +91,7 @@ def read_arome(filePath:Path,
                                       pressure=p,
                                       hydrometeors=hydromet_list,
                                       )
+    del p
     if verbose : print('\t\tGot 3D contents (kg/m3) and temperature in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
     Nc = get_concentrations(epygram_file=arome_file,
@@ -102,19 +101,19 @@ def read_arome(filePath:Path,
                             )
     if verbose : print('\t\tGot 3D concentrations in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    Tc=T-273.15
-    X = X_res*np.arange(Tc.shape[2]).astype('i4')
-    Y = Y_res*np.arange(Tc.shape[1]).astype('i4')
-    Z = get_altitude(hybrid_pressure_coefA=A,
-                     hybrid_pressure_coefB=B,
-                     temperature=T,
-                     pressure_departure=pdep,
-                     surface_pressure=psurf,
-                     surface_geopotential=geosurf,
-                     specific_gas_constant=R,
-                     )
+    T=T-273.15
+    X = X_res*np.arange(T.shape[2]).astype('i4')
+    Y = Y_res*np.arange(T.shape[1]).astype('i4')
+    Alt = get_altitude(hybrid_pressure_coefA=A,
+                       hybrid_pressure_coefB=B,
+                       temperature=T,
+                       pressure_departure=pdep,
+                       surface_pressure=psurf,
+                       surface_geopotential=geosurf,
+                       specific_gas_constant=R,
+                       )
     if verbose : print('\t\tComputed altitude 3D field in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
     loaded_epygram_file.close()
     arome_file.close()
-    return  X, Y, Z, lon, lat, M, Nc, Tc
+    return  X, Y, Alt, lon, lat, M, Nc, T

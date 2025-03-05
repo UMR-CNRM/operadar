@@ -10,6 +10,9 @@ function show_help {
     echo "  -f FILENAME : Only the filename. Please use the config file to provide the path to access the file."
     echo "  -c CONFIG   : Before running the code, you need to create a configuration file in ./configFiles/ based on the template provided."
     echo "  --verbose   : Optional, show more details if activated (default value: False)"
+    echo "  --append    : Optional, append the computed dual-polarimetric fields into the input file (default value: False)"
+    echo "                /!\ If this option is activated, no netcdf output file will be saved. Only working for AROME .fa files"
+    echo ""
 }
 
 if [ $# -lt 4 ]; then
@@ -20,6 +23,7 @@ fi
 FILENAME=""
 CONFIG=""
 VERBOSE=""
+APPEND=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -33,6 +37,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --verbose)
             VERBOSE="--verbose"
+            shift
+            ;;
+        --append)
+            APPEND="--append"
             shift
             ;;
         *)
@@ -52,4 +60,4 @@ fi
 
 cp ./configFiles/$CONFIG operadar/operadar_conf.py
 
-python3 -u operadar/forward_operator.py $FILENAME $VERBOSE
+python3 -u operadar/forward_operator.py $FILENAME $VERBOSE $APPEND

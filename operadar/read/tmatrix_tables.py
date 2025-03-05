@@ -22,16 +22,12 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import (
-    micro_scheme,
-    LIMToption, 
-    path_Tmatrix
-)
+from operadar.operadar_conf import LIMToption
 
 
 
-def initialize_Tmatrix_dictionnary() -> dict :
-    """Initializes the Tmatrix dictionnary to store all the variables and columns of the tables"""
+def initialize_Tmatrix_dictionary() -> dict :
+    """Initializes the Tmatrix dictionary to store all the variables and columns of the tables"""
     Tmatrix_params = {}
     list_of_parameters = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
                           'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax', 'Tc_h',
@@ -47,42 +43,44 @@ def initialize_Tmatrix_dictionnary() -> dict :
 
 
 
-def get_scheme_to_fetch_table() -> str :
+def get_scheme_to_fetch_table(microphysics:str) -> str :
     """Choice of the right table depending on the microphysics (will be modified later ?)"""
 
-    if micro_scheme[0:3] == "ICE" :
+    if microphysics[0:3] == "ICE" :
         return "ICE3"
-    elif micro_scheme[0:3] == "LIM" or (micro_scheme=="LIMT" and LIMToption=="cstmu") :
+    elif microphysics[0:3] == "LIM" or (microphysics=="LIMT" and LIMToption=="cstmu") :
         return "LIMA"
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',micro_scheme,'is not a valid name for Tmatrix computation')
+        print('/!\ ERROR /!\ :',microphysics,'is not a valid name for Tmatrix computation')
         sys.exit()
 
 
 
 def read_Tmatrix_Clotilde(band:str,
                           hydrometeors:list,
+                          scheme:str,
+                          pathTmat:str,
                           verbose:bool,
-                          pathTmat:str=path_Tmatrix,
                           )-> dict:
     """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
     
     Args:
-        band (str): radar band
-        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read
-        pathTmat (str, optional): Tmatrix directory path. Defaults to path_Tmatrix in configuration file.
+        band (str): radar band.
+        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read.
+        scheme (str): microphysics scheme.
+        pathTmat (str): Tmatrix directory path.
 
     Returns:
-        Tmatrix_params (dict) : dictionnary containing min/step/max values for multiple parameters
+        Tmatrix_params (dict) : dictionary containing min/step/max values for multiple parameters
     """
     print("Reading Tmatrix tables")
     deb_timer = tm.time()
-    micro_for_Tmatrix = get_scheme_to_fetch_table()
-    Tmatrix_params = initialize_Tmatrix_dictionnary()
+    micro_for_Tmatrix = get_scheme_to_fetch_table(microphysics=scheme)
+    Tmatrix_params = initialize_Tmatrix_dictionary()
     
     for h in hydrometeors: 
-        nomfileCoefInt = f'{path_Tmatrix}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
+        nomfileCoefInt = f'{pathTmat}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
         
         if verbose : print("\tReading min/step/max for",h)
         df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
@@ -175,7 +173,7 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
 
     
 
-def get_scatcoef(tmatDict:dict, hydrometeor:str, colName_tmatrix:str,
+def get_scatcoef(tmatDict:dict, scat_coefs:list, hydrometeor:str, colName_tmatrix:str,
                  colMin:float, colStep:float, colMax:float,
                  el_temp:np.ndarray, Tc_temp:np.ndarray, colTmat:np.ndarray,
                  M_temp:np.ndarray, n_interpol:int, shutdown_warnings = True):    
@@ -226,9 +224,13 @@ def get_scatcoef(tmatDict:dict, hydrometeor:str, colName_tmatrix:str,
         MatCoef[4, ind] = ImS22S11_h[kTmat[ind]]
     
     # Interpol scat coef values
-    [S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11] = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
+    scatCoefsDict = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
 
-    return S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
+    wanted_scatCoefs = {}
+    for coef in scat_coefs :
+        wanted_scatCoefs[coef] = scatCoefsDict[coef]
+    
+    return wanted_scatCoefs#S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
 
 
 
@@ -572,12 +574,12 @@ def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
         #--- fin interpolation lineaire -----------------------
         #print indcoef,np.count_nonzero(~np.isnan(VectCoef[indcoef]))
 
-    S11carre=np.copy(VectCoef[0])
-    S22carre=np.copy(VectCoef[1])
-    ReS22fmS11f=np.copy(VectCoef[2])
-    ReS22S11=np.copy(VectCoef[3])
-    ImS22S11=np.copy(VectCoef[4])
-                     
-    return S11carre,S22carre,ReS22fmS11f, ReS22S11, ImS22S11
-
+    scatCoefsDict = {}
+    scatCoefsDict['S11S11']=np.copy(VectCoef[0])
+    scatCoefsDict['S22S22']=np.copy(VectCoef[1])
+    scatCoefsDict['ReS22fmS11f']=np.copy(VectCoef[2])
+    scatCoefsDict['ReS22S11']=np.copy(VectCoef[3])
+    scatCoefsDict['ImS22S11']=np.copy(VectCoef[4])
+              
     del VectCoef
+    return scatCoefsDict

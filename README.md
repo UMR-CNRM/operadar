@@ -55,14 +55,14 @@ Usage: ./exec_operadar.sh -f FILENAME -c CONFIG [--verbose]
 
 ```
 ## Inside another Python program (ideal for multiple file)
-The user can work with multiple files, if desired. The paths, output directories and other parameters must be specified in the configuration file. Here is a way of doing so.
+The user can work with multiple files, if desired. Here is a way of doing so.
 ### Simple tutorial
-1) In another python code (let say `operadar_multi.py`), call `operdar()` function :
+1) In another python code (let say `operadar_multi.py`), call `operadar()` function :
    ```python
    from operadar.forward_operator import operadar
    ```
 
-2) The configuration file need to be copied beforehand under the name and location `operadar/operadar_conf.py`, so all files of the module can access the settings.
+2) The configuration file need to be copied beforehand under the name and location `operadar/operadar_conf.py`, so the module can access the settings.
    ```python
    import os
    configFileName = 'my_conf_file' # based on the template provided
@@ -94,8 +94,30 @@ The user can work with multiple files, if desired. The paths, output directories
                                               )
       ```
 
-## To go further
-This code has been designed so the user can loop on multiple files and eventually with varying configurations over files that share common config parameters. Thus, some of the parameters can be overwritten when calling `operadar()` :
+### `operadar()` parameters
+This code has been designed so the user can loop on multiple files and eventually with varying configurations over files that share common config parameters. Thus, all the configuration parameters can be overwritten when calling `operadar()`. When arguments are optional, the default value is always read in the last copied configuration file :
+
+| Parameter      | Status | Description |
+| -----------    | ----------- | ----------- |
+| `filename`     | <span style='color:red'>mandatory</span>  | Only the name of the file. |
+| `modelname`    |<span style='color:green'>optional</span>| Can be either `'Arome'` or `'MesoNH'`. |
+| `read_tmatrix` |<span style='color:green'>optional</span>| Option to save computing time within a loop. Needs to always be `True` for the first iteration. Defaults to `True`. |
+| `in_dir_path`  |<span style='color:green'>optional</span>| Path where the input files are stored. |
+| `out_dir_path` |<span style='color:green'>optional</span>| Path to store the output files. |
+| `tmatrix_path` |<span style='color:green'>optional</span>| Path where the Tmatrix lookup tables are stored. |
+| `microphysics_scheme` |<span style='color:green'>optional</span>| Can be `ICE3`, `ICE4` or `LIMA` + a name extension (e.g. `LIMA_noHail` or `ICE3_CIBU_moins`), which is optional. Please note that only the three first characters are used to select the right scheme in the lookup tables. Then, the microphysics and correct computations are handles with the `hydrometeorMoments` argument. |
+| `hydrometeorMoments` |<span style='color:green'>optional</span>| Dictionary of form `{'hydrometeor_key' : number of moment}` corresponding to the microphysics scheme. |
+| `radar_band`   |<span style='color:green'>optional</span>| Available bands : `'C'`, `'X'`, `'S'`, `'W'` or `'K'` |
+| `radarloc`     |<span style='color:green'>optional</span>| Location of the radar to emulate radar geometry. Either `'center'` (i.e. center of the grid) or a `[lat_radar,lon_radar]` coordinate. |
+| `distmax_rad`  |<span style='color:green'>optional</span>| Maximum radar radius to compute pseudo-observations. |
+|`Tmatrix_params`|<span style='color:green'>optional</span>| Dictionary containing the Tmatrix tables parameters. Used to pass the dictionary throughout loop iterations. Please, also read the [To go further](#2gofurther) section. |
+| `mixed_phase_parametrization` |<span style='color:green'>optional</span>| Can be either :<ul><li>`'T_pos'` : the species content is transferred to the melting species only at positive temperatures.</li><li>`'Fw_pos'` : the rain and graupel content are emptied and transferred into the wet graupel content within the melting layer.</li></ul><ul><li>`'Fw_posg'` : only the graupel content is emptied and transferred to the wet graupel content within the melting layer.</li></ul>  |
+|`subDomain` |<span style='color:green'>optional</span>|This argument can be used to reduce the size of the output file, so you can chunk the output into smaller domain and thus lower the size of the outputs. Or, you want to work on different areas over the same file. Should be defined like `[lon_min,lon_max,lat_min,lat_max]` or set to `None` to work on all grid points.|
+|`get_more_details`|<span style='color:green'>optional</span>| Boolean to print more details and computation steps. |
+
+
+
+## <a name="2gofurther"></a>To go further
 - `radar_band` and `read_tmatrix` : the Tmatrix lookup tables are red once, for the radar band set in the config file, at the beginning of the code. To save computation time, it is not necessary to read the tables as long as the radar band remains the same, and thus, `read_tmatrix` is automatically set to `False` after the first iteration that produces an output file. If you want to change the radar band over the iterations, you must also set `read_tmatrix=True`. Based on the tutorial :
    ```python
       import itertools
@@ -129,21 +151,42 @@ This code has been designed so the user can loop on multiple files and eventuall
                                            )
 
    ```
-- `out_dir_path` : similarly, one may want to store the output files in different folders depending on the radar band for exemple.
+- `out_dir_path` and `in_dir_path` : similarly, one may want to store the output files in different folders depending on the radar band...
    ```python
       for band in radar_band :
          read_tmatrix=True
+         dict_Tmatrix={}
          outPath = f'/home/my_path/output/{band}band_simus/'
          for fname in fname_list :
             read_tmatrix,dict_Tmatrix = operadar(filename=fname,
                                                  read_tmatrix=read_tmat,
                                                  radar_band=band,
+                                                 Tmatrix_params=dict_Tmatrix,
                                                  out_dir_path=outPath,
                                                 )
 
    ```
-- `subDomain` : This argument can be used to reduce the size of the output file, so you can chunk the output into smaller domain and thus lower the size of the outputs. Or, you want to work on different areas over the same file. 
+   ... or provide files from different folders :
+   ```python
+      fpath_list = ['xp_arome/GOV2/',
+                    'xp_arome/GOV5/',
+                   ]
+      fname_list = ['historic.arome.franmg-01km30+0006:00.fa',
+                    'historic.arome.franmg-01km30+0006:05.fa',
+                   ]
+      combinations = list(itertools.product(fpath_list,fname_list))
+      band='X'
+      read_tmatrix=True
+      dict_Tmatrix={}
+      for fpath,fname in combinations :
+         read_tmatrix,dict_Tmatrix = operadar(filename=fname,
+                                             read_tmatrix=read_tmat,
+                                             radar_band=band,
+                                             Tmatrix_params=dict_Tmatrix,
+                                             in_dir_path=fpath,
+                                             )
 
+   ```
 
 
 # To Do
@@ -161,6 +204,7 @@ This code has been designed so the user can loop on multiple files and eventuall
 - [ ] read_mesonh : changer les sorties (enlever CC et CCI pour Nc)
 - [ ] calcul explicite de la concentration pour les espèces 1 moment
 - [ ] check radar band consistency if operdar used within a loop
+- [ ] add a way to reinject the compute dpol fields into the input file
 
 
 # Contributing
