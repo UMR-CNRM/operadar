@@ -489,7 +489,7 @@ C     ***********************************************************************
 	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
       
       !======= Loop over hydrometeor types
-      DO idtype=1,1!3,3 !2,2 !1,1 !2,2
+      DO idtype=3,3 !1,1 !2,2
       IF (idtype .EQ. 1) typeh='rr'
       IF (idtype .EQ. 2) typeh='ss'
       IF (idtype .EQ. 3) typeh='ii'
@@ -582,8 +582,8 @@ C     ***********************************************************************
    
    
       !-- Output files
-      nomfileResu='../OUTPUT/TmatResu_'//bande//typeh
-      nomfileCoef='../OUTPUT/TmatCoefDiff_'//bande//typeh
+      nomfileResu='../tables/TmatResu_'//bande//typeh
+      nomfileCoef='../tables/TmatCoefDiff_'//bande//typeh
 
 
       WRITE(0,*) nomfileCoef,'ok'
@@ -681,6 +681,16 @@ C ============================================================================
         CALL AR_BRANDES(Deqr,ARr)
         AR=ARcnst
       
+      ! ----- Axis ratio dry snow Augros 2016
+      ! (linear increase towards 1 for diameters < 8 mm)
+      ELSE IF (ARfunc .EQ. "AUds") THEN
+        CALL AR_AU16drys(D,ARcnst,AR)          
+        Dm=D*(AR**(-1.0/3))   ! Dm
+        Deq=D ! Deq        
+        CALL QRHOX(aj,bj,D,Dm,P,RHOP) ! RHOP
+        Deqr=D*(RHOP/RHOLW)**(1.0/3)   ! Deqr
+        CALL AR_BRANDES(Deqr,ARr)
+
       ! ----- Axis ratio dry graupel hail Ryzhkov 2011, 2019 4.31 p83
       ! (linear increase towards 1 for diameters < 10 mm)
       ELSE IF (ARfunc .EQ. "RYdg") THEN
@@ -1224,6 +1234,28 @@ C     ###################################
       RETURN
       END
       !END FUNCTION AR_RY11dryg
+
+C     ###################################
+      SUBROUTINE AR_AU16drys(D,ARcnst,AR)
+C     ###################################
+      ! Dry snow axis ratio function
+      ! Augros 2016
+      
+      !in: equivolume diameter (mm), constant axis ratio (0.8 in RY11)
+      !out: AR axis ratio 
+      
+      REAL*8 D,ARcnst 
+      REAL*8 AR 
+      
+      IF (D .GT. 8) THEN    
+            AR=ARcnst
+      ELSE
+            AR=1+(ARcnst-1)/(8-0)*D
+      ENDIF
+      RETURN
+      END
+      !END FUNCTION AR_RY11dryg
+
 
 C     ###################################
       SUBROUTINE AR_RY11wetg(Fw,ARg,ARr,ARwg)
