@@ -90,7 +90,7 @@ def operadar(filename:str,
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
     
     # Format temporal variable and output file name
-    input_file_path = Path(in_dir_path+filename) ; print(input_file_path)    
+    input_file_path = Path(in_dir_path+filename)    
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
                                                  )
@@ -100,7 +100,7 @@ def operadar(filename:str,
                                      radar_band=radar_band,
                                      temporal_variable=temporal_variable,
                                      ) 
-    if not Path(outFilePath).with_suffix('.nc').exists():
+    if not Path(outFilePath).with_suffix('.nc').exists() or append_in_file :
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
