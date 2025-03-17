@@ -51,8 +51,10 @@ def save_netcdf(X:np.ndarray,
                        ),
         coords=dict(y = (["y"], Y.astype('i4')),
                     x = (["x"], X.astype('i4')),
-                    lon = (["y","x"], lon.astype('f4')),
-                    lat = (["y","x"], lat.astype('f4')),
+                    #lon = (["y","x"], lon.astype('f4')),
+                    #lat = (["y","x"], lat.astype('f4')),
+                    lon = (["y","x"]),
+                    lat = (["y","x"]),
                     level =(["level"], np.arange(Z.shape[0]).astype('i4')),
                     hydrometeor = (["hydrometeor"],hydromet_list),
 		            time = (datetime),
@@ -87,7 +89,7 @@ def create_tree_structure_outFiles(output_dir:Path):
 
 def add_dualPol_variables(ds:xr.Dataset,dpolDict:dict,dpolvar2add:list):
     if 'Zh' in dpolvar2add :
-        ds['Zh'] = (["level","y","x"],dpolDict["Zhh"].astype('f4'), {"units": "dBZ"})
+        ds['Zh'] = (["level","y","x"],dpolDict["Zh"].astype('f4'), {"units": "dBZ"})
     if 'Zdr' in dpolvar2add :
         ds['Zdr'] = (["level","y","x"],dpolDict["Zdr"].astype('f4'), {"units": "dB"})
     if 'Kdp' in dpolvar2add :

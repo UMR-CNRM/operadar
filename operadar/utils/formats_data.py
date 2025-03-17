@@ -21,9 +21,10 @@ def format_temporal_variable(filePath:Path,model_type:str)-> Timestamp:
         return Timestamp(date_time_file)
     
     elif model_type=='MesoNH':
-        date_time_file = 'how to get MNH date/time argument ??'
-        sys.exit()
-        #return date_time_file
+        #date_time_file = 'how to get MNH date/time argument ??'
+        date_time_file = Timestamp('2018-11-10T10')
+        #sys.exit()
+        return date_time_file
 
 
 

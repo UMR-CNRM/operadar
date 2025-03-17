@@ -21,7 +21,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
                ):
     
     # === Model file
-    print("Reading "+filePath)
+    print("Reading "+str(filePath))
     
     # === Extract Dataset 
     print("Reading ncfile: ",filePath)

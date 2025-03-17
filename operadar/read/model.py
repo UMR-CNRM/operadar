@@ -5,6 +5,7 @@ import sys
 import time as tm
 from pathlib import Path
 from numpy import ndarray
+import numpy as np
 from operadar.operadar_conf import real_case, micro_scheme 
 
 
@@ -22,11 +23,18 @@ def read_model_file(filePath:Path,
     
     if (modelname=="MesoNH"):
         from operadar.read.mesonh import read_mesonh
-        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = read_mesonh(filePath=filePath,
-                                                         micro=micro_scheme,
-                                                         subDomain=domain,
-                                                         hydrometeorMoments=hydrometeorMoments,
-                                                         real_case = real_case)
+        Nc={}
+        [M, Tc, CC, CCI, lat, lon, X, Y, Z] = read_mesonh(filePath=filePath,
+                                                          micro=micro_scheme,
+                                                          subDomain=domain,
+                                                          hydrometeorMoments=hydrometeorMoments,
+                                                          real_case = real_case)
+        Nc['cc'] = np.zeros(CC.shape)
+        Nc['rr'] = CC
+        Nc['ii'] = CCI
+        Nc['ss'] = np.zeros(CC.shape)
+        Nc['gg'] = np.zeros(CC.shape)
+        Alt = Z
     elif (modelname=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,

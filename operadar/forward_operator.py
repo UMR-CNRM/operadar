@@ -114,6 +114,7 @@ def operadar(filename:str,
                                                    verbose=get_more_details,
                                                    )
         # Read model variables
+        print("test 4")
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                            modelname=modelname,
                                                            domain=subDomain,
@@ -121,6 +122,7 @@ def operadar(filename:str,
                                                            verbose=get_more_details,
                                                            )
         # Compute radar geometry
+        print("test 5")
         mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
                                                            elev_max=Tmatrix_params['ELEVmax']["rr"],
                                                            model=modelname,
@@ -128,14 +130,17 @@ def operadar(filename:str,
                                                            radarloc=radarloc,
                                                            )
         # Mask precipitations
+        print("test 6")
         mask_precip = mask_precipitations(contents=M,
                                           expMmin=Tmatrix_params['expMmin']["rr"],
                                           hydrometeors_moments=hydrometeorMoments,
                                           )
         # Combine masks
+        print("test 7")
         partial_mask = (mask_precip & mask_dist_max)
         
         # Compute mixed phase parametrization
+        print("test 8")
         [M, Nc,Fw] = compute_mixed_phase(contents=M,
                                          concentrations=Nc,
                                          hydrometeorMoments=hydrometeorMoments,
@@ -143,6 +148,7 @@ def operadar(filename:str,
                                          parametrization=mixed_phase_parametrization,
                                          ) 
         # Compute dual-pol radar variables
+        print("test 9")
         dpolDict = compute_dualpol_variables(temperature=Tc,
                                              mask_precip_dist=partial_mask,
                                              elev=elevations, Fw=Fw,
@@ -164,6 +170,7 @@ def operadar(filename:str,
                                  var2add=cf.dpol2add,
                                  )
         else :
+            print("test 10",dpolDict)
             save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon,
                         datetime=temporal_variable, dpolDict=dpolDict,
                         contentsDict=M, concentrationsDict=Nc,
