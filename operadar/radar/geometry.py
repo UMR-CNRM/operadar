@@ -50,9 +50,11 @@ def compute_radar_geometry(X:np.ndarray,
             radar_lon = radarloc[1]
             print(f'\tComputing radar geometry at latitude {radar_lat}° and longitude {radar_lon}°.')
             
-        distance_mask, radar_dist_3D = compute_distance_mask(X, Y, Z, X0, Y0, Z0, distmax_rad)
-        elev = compute_radar_elevation(radar_dist_3D, Z, elev_max)
-        
+        #distance_mask, radar_dist_3D = compute_distance_mask(X, Y, Z, X0, Y0, Z0, distmax_rad)
+        #elev = compute_radar_elevation(radar_dist_3D, Z, elev_max)
+        elev = np.zeros(Tc.shape)
+        distance_mask = (elev >= 0.)
+
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")   
     return distance_mask, elev
     
