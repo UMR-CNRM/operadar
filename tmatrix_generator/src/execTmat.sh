@@ -9,10 +9,10 @@ function show_help {
     echo ""
     echo "  -hydro HYDRO   : rr, ii, gg, ss, tt, wg, hh, wh "
     echo "  -af ARfunc     : AUds, CNST, BR02, RYdg, RYwg"
-    echo "  -av ARvalue    : any value."
-    echo "  -c CANTING     : any value."
+    echo "  -av ARvalue    : any float value."
+    echo "  -c CANTING     : any float value."
     echo "  -dsty DSTYfunc : BR07, RHOX"
-    echo "  -riming RIMING : any value starting from 1 (1=unrimed)"
+    echo "  -riming RIMING : any float value >= 1 (1=unrimed)"
     echo "  -diel DIELfunc : Liebe91, RY19dry, LBwetgr, MGwMA08"
     echo ""
 }
