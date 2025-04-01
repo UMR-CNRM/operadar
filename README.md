@@ -37,6 +37,7 @@ pip install git+https://github.com/UMR-CNRM/operadar.git
 The lookup tables should be generated BEFORE running `operadar`.
 
 ## Generation of the Tmatrix lookup tables
+### Basic steps
 To work properly, the forward operator needs to access to Tmatrix lookup tables. The code that generates the tables is in Fortran, and requires the installation of the `lapack` library.
 1) First, clone the last version of `lapack` ([check here](https://github.com/Reference-LAPACK/lapack)).
    ```
@@ -68,8 +69,9 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
    ```shell
    LIBS = -L ./my_lapack -llapack -lrefblas
    ```
-4) To specify which radar band and hydrometeor types the lookup tables should be created, in `Tmatrix.f`, search for `DO idtype` and `DO idband`. You can loop over all the band and hydrometeor types (`DO idxxx=minNumber,maxNumber`), or just a few combination of them, or only a single band and/or hydrometeor type (`DO idxxx=sameNumber,sameNumber`). In the following example, tables will be generated for C band only and for rain, snow, pristine ice, graupel, and wet graupel hydrometeor types. 
-   ```fortran
+4) The parametrization for each hydrometeor type (density, axis ratio, etc) is defined in a txt file that you need to modify according to your needs : `tmatrix_generator/param/TmatParam_(radarBand)(hydrometeorType)`
+5) To specify which radar band and hydrometeor types the lookup tables should be created, in `Tmatrix.f`, search for `DO idtype` and `DO idband`. You can loop over all the band and hydrometeor types (`DO idxxx=minNumber,maxNumber`), or just a few combination of them, or only a single band and/or hydrometeor type (`DO idxxx=sameNumber,sameNumber`). In the following example, tables will be generated for C band only and for rain, snow, pristine ice, graupel, and wet graupel hydrometeor types.
+   ```fortran{
    !=======  Loop over radar frequency bands
       DO idbande=2,2
           IF (idbande .EQ. 1) bande='S'
@@ -91,7 +93,7 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
          IF (idtype .EQ. 9) typeh='wh' ! wet hail
          IF (idtype .EQ. 10) typeh='ws' !wet snow
    ```
-5) To compile the `Tmatrix.f` code and create the `Tmat` executable, just do :
+6) To compile the `Tmatrix.f` code and create the `Tmat` executable, just do :
    ```
    make
    ```
@@ -100,7 +102,7 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
    chmod u+x Tmat
    ```
 
-6) You can now generate the lookup tables for different hydrometeor types and different radar band ! 
+7) You can now generate the lookup tables for different hydrometeor types and different radar band ! 
    ```
    Tmat
    ```
@@ -109,6 +111,24 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
    make clean
    make
    ```
+### Executable
+An executable is provided to facilitate table generation for a single hydrometeor type but different parameters combinations. You still need to complete step 5 (select one or multiple radar band but **only one** hydrometeor type), and step 7.
+```
+>>> $ ./execTmat.sh --help
+----------------------------------------
+ Executable to create the lookup tables 
+----------------------------------------
+
+Usage: ./execTmat.sh -hydro HYDRO -af ARfunc -av ARvalue -c CANTING -dsty DSTYfunc -riming RIMING -diel DIELfunc
+
+  -hydro HYDRO   : rr, ii, gg, ss, tt, wg, hh, wh 
+  -af ARfunc     : AUds, CNST, BR02, RYdg, RYwg
+  -av ARvalue    : any value.
+  -c CANTING     : any value.
+  -dsty DSTYfunc : BR07, RHOX
+  -riming RIMING : any value starting from 1 (1=unrimed)
+  -diel DIELfunc : Liebe91, RY19dry, LBwetgr, MGwMA08
+```
 
 ## Forward operator configuration file
 The user must set up, beforehand, a configuration file based on the template provided `./configFile/conf_template.py`. Please, do not modify the template directly. Instead, make a copy of the file and name it differently. 
