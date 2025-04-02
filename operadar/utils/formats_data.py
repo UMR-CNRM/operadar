@@ -6,26 +6,30 @@ import epygram
 import pandas as pd
 from pathlib import Path
 from numpy import ndarray
+from netCDF4 import Dataset
 from pandas import Timestamp
 
 
 
 def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Timestamp:
     """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
-    epygram.init_env()
+
     if model_type=='Arome':
+        epygram.init_env()
         epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r', fmt = 'FA')
         date_time_file = epygram_file.validity.get()
         epygram_file.close()
         return Timestamp(date_time_file)
-    elif model_type=='MesoNH' and real_case:
+    elif model_type=='MesoNH' and real_case :
         epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r',fmt='netCDFMNH') 
         field = epygram_file.readfield('ZWS')
         date_time_file = field.validity.get()
         epygram_file.close()
         return Timestamp(date_time_file)
-    elif model_type=='MesoNH' and not real_case:
-        return 1
+    elif model_type=='MesoNH' and not real_case :
+        mnh_file = Dataset(filePath,'r')
+        date_time_file = mnh_file.variables['time'][:]
+        return date_time_file[0]
 
 
 
