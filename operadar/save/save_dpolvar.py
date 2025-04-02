@@ -51,16 +51,16 @@ def save_netcdf(X:np.ndarray,
                                               dpolDict=dpolDict,
                                               dpolvar2add=cf.dpol2add,
                                               ) 
-    
     dataset_coordinates = dict(y = (["y"], Y.astype('i4')),
                                x = (["x"], X.astype('i4')),
-                               lon = (["y","x"], lon.astype('f4')),
-                               lat = (["y","x"], lat.astype('f4')),
                                level =(["level"], np.arange(Z.shape[0]).astype('i4')),
                                hydrometeor = (["hydrometeor"],hydromet_list),
                                time = (datetime),
-                               #Radloc = (["radpos"],Radpos),
                                )
+    dataset_coordinates = add_lat_lon_coordinates(ds_coordinates=dataset_coordinates,
+                                                  lat=lat,
+                                                  lon=lon,
+                                                  )
     dataset_attributes = dict(horizontal_resolution = int(Y[1]-Y[0]),
                               model = cf.model,
                               microphysics = cf.micro_scheme,
@@ -103,3 +103,11 @@ def add_dualPol_variables(ds_variables:dict,dpolDict:dict,dpolvar2add:list):
         ds_variables[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
     
     return ds_variables
+
+
+
+def add_lat_lon_coordinates(ds_coordinates:dict,lat:np.ndarray,lon:np.ndarray,real_case:bool=cf.real_case):
+    if real_case :
+        ds_coordinates['lon'] = (["y","x"], lon.astype('f4'))
+        ds_coordinates['lat'] = (["y","x"], lat.astype('f4'))
+    return ds_coordinates

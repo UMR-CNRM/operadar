@@ -94,7 +94,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
         M_zoom,Nc_zoom={},{}
         for key in hydromet_list:
             M_zoom[key]=M[key][:,lonmin:lonmax,latmin:latmax]
-            Nc_zoom[key]=Nc_zoom[key][:,lonmin:lonmax,latmin:latmax]
+            Nc_zoom[key]=Nc[key][:,lonmin:lonmax,latmin:latmax]
         
         Tc_zoom=Tc[:,lonmin:lonmax,latmin:latmax]
         LAT_zoom=LAT[lonmin:lonmax,latmin:latmax]
