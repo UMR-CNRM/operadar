@@ -26,7 +26,8 @@ def read_model_file(filePath:Path,
                                                          micro=micro_scheme,
                                                          subDomain=domain,
                                                          hydrometeorMoments=hydrometeorMoments,
-                                                         real_case = real_case)
+                                                         real_case = real_case,
+                                                         verbose = verbose)
     elif (modelname=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
