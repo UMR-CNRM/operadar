@@ -36,8 +36,9 @@ def compute_radar_geometry(X:np.ndarray,
     print("Compute radar geometry") ; deb_timer = tm.time()
     np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
     
-    if (model=="Arome"):
-        print('\tNo radar geometry computation implemented yet in Arome.')
+    if model=="Arome" or radarloc == None:
+        if model=="Arome": print('\tNo radar geometry computation implemented yet in Arome.')
+        print('\tNot computing radar geometry : radarloc =',radarloc)
         elev = np.zeros(Tc.shape)
         distance_mask = (elev >= 0.)
         
