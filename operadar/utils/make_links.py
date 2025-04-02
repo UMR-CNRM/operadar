@@ -12,6 +12,15 @@ def link_varname_with_arome_name ()-> dict[int]:
 
 
 
+def link_varname_with_mesonh_name ()-> dict[int]:
+    """Make the correspondance between the hydrometeor keys and the variable names commonly used in MesoNH."""
+    model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
+    model_name=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
+    name_hydro_linked={t:model_name[it] for it,t in enumerate(model_hydrometeors)}
+    return name_hydro_linked
+
+
+
 def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
                                           datatype:str,
                                           verbose:bool=False) -> list[str]:

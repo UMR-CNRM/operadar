@@ -6,12 +6,12 @@ Created on Tue Apr 11 09:55:15 2023
 @author: augros
 """
 
-#import epygram
+
 import sys
 import time as tm
 import numpy as np
 from netCDF4 import Dataset
-from operadar.utils.make_links import link_keys_with_available_hydrometeors
+from operadar.utils.make_links import link_keys_with_available_hydrometeors, link_varname_with_mesonh_name
 from operadar.utils.formats_data import get_lat_lon_from_subdomain
 
 
@@ -22,8 +22,6 @@ Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents
 def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
                 hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
                ):
-    
-    #epygram.init_env() # mandatory
 
     print("\tMesoNH .nc file:",filePath)
     if verbose : deb=tm.time()
@@ -73,47 +71,41 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     Tc=Th*((p/100000)**(0.4/1.4))-273.15 
     del Th, p
     
-    rhodref = mnh_file.variables['RHOREFZ'][:] # MODIF ? voir epygram (quelle fonction ?)
+    rhodref = mnh_file.variables['RHOREFZ'][:]
     rho3D=np.ones(Tc.shape)
     
     IKE=Tc.shape[0]
     for k in range(IKE):    
         rho3D[k,:,:]=rhodref[k]
-    # =====================
     
     # === Hydrometeors contents and concentrations
     
     hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
+    name_hydro = link_varname_with_mesonh_name()
+    #list_t_full=['vv','cc','rr','ii','ss','gg','hh']
+    #list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
+    #name_hydro={}
     
-    sys.exit()
-    list_t_full=['vv','cc','rr','ii','ss','gg','hh']
-    list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
-    name_hydro={}
-    M={}
-    for t in hydromet_list:
-        M[t] = np.empty(Tc.shape)    
+    M = {}
+    for key in hydromet_list:
+        M[key] = np.empty(Tc.shape)
+        M[key] = mnh_file.variables[name_hydro[key]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
+        M[key][M[key]==999.] = float('nan')
     
-    # Arrays initialisation
-    for it,t in enumerate(list_t_full):
-        name_hydro[t]=list_hydro[it]
+    Nc = {}
+    for key in hydromet_list:
+        Nc[key] = np.zeros(Tc.shape)
     
-    
-    for t in hydromet_list:
-        M[t]=mnh_file.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
-        M[t][M[t]==999.]=float('nan')
-    
-    if(micro =="ICE3" or micro =="ICE4"):
-        CCI=mnh_file.variables['CIT'][0,:,:,:]
-        CCI[CCI==999.]=float('nan')
-        CC=np.empty(Tc.shape)
-    if(micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG"):
-        CC=mnh_file.variables['CRAIN'][0,:,:,:] #former name: CRAINT
-        CC[CC==999.]=float('nan')
-        CCI=mnh_file.variables['CICE'][0,:,:,:] #former name: CICET
-        CCI[CCI==999.]=float('nan')
-    CC*=rho3D
-    CCI*=rho3D
-
+    if micro[0:3]=="ICE":
+        Nc['ii'] = mnh_file.variables['CIT'][0,:,:,:]
+        Nc['ii'][Nc['ii']==999.] = float('nan')
+    if micro[0:3] =="LIM" :
+        Nc['rr'] = mnh_file.variables['CRAIN'][0,:,:,:] #former name: CRAINT
+        Nc['rr'][Nc['rr']==999.]=float('nan')
+        Nc['ii'] = mnh_file.variables['CICE'][0,:,:,:] #former name: CICET
+        Nc['ii'][Nc['ii']==999.]=float('nan')
+    Nc['rr']*=rho3D
+    Nc['ii']*=rho3D
 
     # ===== Calcul of the grid considering orography
     #Orography =mnh_file.variables['ZS'][:]
@@ -122,26 +114,21 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     #else:
     #    Z=mnh_file.variables['level'][:] # but in 3D shape ?
     
-    # =====================================================
-    print("Z.shape",Z.shape)
     print("End reading model variables")
     
     if real_case and subDomain != None :
-        Mzoom={}
-        for t in hydromet_list:
-            Mzoom[t]=M[t][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
+        Mzoom,Nczoom={},{}
+        for key in hydromet_list:
+            Mzoom[key]=M[key][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
+            Nczoom[key]=Nczoom[key][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
         
         Tczoom=Tc[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
-        CCzoom=Tc[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
-        CCIzoom=CCI[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
         LATzoom=LAT[i_lonmin:i_lonmax,j_latmin:j_latmax]
         LONzoom=LON[i_lonmin:i_lonmax,j_latmin:j_latmax]
         Xzoom=X[j_latmin:j_latmax]
         Yzoom=Y[i_lonmin:i_lonmax]
         Zzoom=Z[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
         
-        return Mzoom, Tczoom, CCzoom, CCIzoom, LATzoom, LONzoom, Xzoom, Yzoom, Zzoom
-    
+        return Xzoom, Yzoom, Zzoom, LONzoom, LATzoom, Mzoom, Nczoom, Tczoom 
     else:
-        return M, Tc, CC, CCI, LAT, LON, X, Y, Z
-#=====================================================================
+        return X, Y, Z, LON, LAT, M, Nc, Tc
