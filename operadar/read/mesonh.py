@@ -47,111 +47,147 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     mnh_file = Dataset(filePath,'r')
     if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
 
-    X, Y, Z = get_geometry(mnh_file=mnh_file)
+    X, Y, Z = get_geometry(mnhFile=mnh_file)
     if verbose : print('\t\tGot geometry (X,Y,Z) in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
     if real_case:
         LAT = mnh_file.variables['latitude'][:]
         LON = mnh_file.variables['longitude'][:]
         if subDomain != None :
-            lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
-            mask_zoom=((LON>lon_min) & (LON<lon_max) & (LAT>lat_min) & (LAT<lat_max))
-            [ilon,jlat]=np.where(mask_zoom) ; print(ilon)
-            i_lonmin,i_lonmax=np.nanmin(ilon),np.nanmax(ilon)
-            j_latmin,j_latmax=np.nanmin(jlat),np.nanmax(jlat)
+            lonmin, lonmax, latmin, latmax = extract_subdomain(mnhFile=mnh_file,
+                                                               longitude_field=LON,
+                                                               latitude_field=LAT,
+                                                               subDomain=subDomain,
+                                                               )
             if verbose : print('\t\tSubdomain extracted in',round(tm.time()-deb,6),'seconds'); deb=tm.time()
         else :
             if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
     else:
         LAT=float('nan')
         LON = float('nan')
-        if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
+        if verbose : print('\t\tIdealized case, will use all the points.'); deb=tm.time()
     
-    #    #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
-    #    if X.shape!=LON.shape : 
-    #        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(filePath,LAT[0],LAT[-1],LON[0],LON[-1])
-    #        X=mnh_file.variables['XHAT'][ilonmin:ilonmax+1]
-    #        Y=mnh_file.variables['YHAT'][ilatmin:ilatmax+1]
+    Tc, rho3D = get_temperature_and_density(mnhFile=mnh_file)
+    if verbose : print('\t\tGot temperature and dry air density in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    # =======================
-    
-    # === Pressure and temperature and dry air density
-    p=mnh_file.variables['PABST'][0,:,:,:]
-    p[np.where(p==999.)]=float('nan')
-    Th=mnh_file.variables['THT'][0,:,:,:]
-    Th[np.where(Th==999.)]=float('nan')
-    Tc=Th*((p/100000)**(0.4/1.4))-273.15 
-    del Th, p
-    
-    rhodref = mnh_file.variables['RHOREFZ'][:]
-    rho3D=np.ones(Tc.shape)
-    
-    IKE=Tc.shape[0]
-    for k in range(IKE):    
-        rho3D[k,:,:]=rhodref[k]
-    
-    # === Hydrometeors contents and concentrations
     hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
     name_hydro = link_varname_with_mesonh_name()
-    #list_t_full=['vv','cc','rr','ii','ss','gg','hh']
-    #list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
-    #name_hydro={}
     
-    M = {}
-    for key in hydromet_list:
-        M[key] = np.empty(Tc.shape)
-        M[key] = mnh_file.variables[name_hydro[key]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
-        M[key][M[key]==999.] = float('nan')
+    M = get_contents(mnhFile=mnh_file,
+                     hydrometeors=hydromet_list,
+                     name_var_hydro=name_hydro,
+                     temperature=Tc,
+                     rho=rho3D,
+                     )
+    if verbose : print('\t\tGot 3D contents in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    Nc = {}
-    for key in hydromet_list:
-        Nc[key] = np.zeros(Tc.shape)
-    
-    if micro[0:3]=="ICE":
-        Nc['ii'] = mnh_file.variables['CIT'][0,:,:,:]
-        Nc['ii'][Nc['ii']==999.] = float('nan')
-    if micro[0:3] =="LIM" :
-        Nc['rr'] = mnh_file.variables['CRAIN'][0,:,:,:] #former name: CRAINT
-        Nc['rr'][Nc['rr']==999.]=float('nan')
-        Nc['ii'] = mnh_file.variables['CICE'][0,:,:,:] #former name: CICET
-        Nc['ii'][Nc['ii']==999.]=float('nan')
-    Nc['rr']*=rho3D
-    Nc['ii']*=rho3D
+    Nc = get_concentrations(mnhFile=mnh_file,
+                            microphysics_scheme=micro,
+                            hydrometeors=hydromet_list,
+                            temperature=Tc,
+                            rho=rho3D,
+                            )
+    if verbose : print('\t\tGot 3D number concentrations in',round(tm.time()-deb,6),'seconds');deb=tm.time()
 
-    # ===== Calcul of the grid considering orography
-    #Orography =mnh_file.variables['ZS'][:]
-    #if np.any(Orography > 0):
-    #    Z = ope_lib.compute_grid_alt(var3D,ztop,orography,level)
-    #else:
-    #    Z=mnh_file.variables['level'][:] # but in 3D shape ?
-    
-    print("End reading model variables")
-    
+    # Cropping data if necessary (in a function later ?)
     if real_case and subDomain != None :
-        Mzoom,Nczoom={},{}
+        M_zoom,Nc_zoom={},{}
         for key in hydromet_list:
-            Mzoom[key]=M[key][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
-            Nczoom[key]=Nczoom[key][:,i_lonmin:i_lonmax,j_latmin:j_latmax]
+            M_zoom[key]=M[key][:,lonmin:lonmax,latmin:latmax]
+            Nc_zoom[key]=Nc_zoom[key][:,lonmin:lonmax,latmin:latmax]
         
-        Tczoom=Tc[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
-        LATzoom=LAT[i_lonmin:i_lonmax,j_latmin:j_latmax]
-        LONzoom=LON[i_lonmin:i_lonmax,j_latmin:j_latmax]
-        Xzoom=X[j_latmin:j_latmax]
-        Yzoom=Y[i_lonmin:i_lonmax]
-        Zzoom=Z[:,i_lonmin:i_lonmax,j_latmin:j_latmax]
+        Tc_zoom=Tc[:,lonmin:lonmax,latmin:latmax]
+        LAT_zoom=LAT[lonmin:lonmax,latmin:latmax]
+        LON_zoom=LON[lonmin:lonmax,latmin:latmax]
+        X_zoom=X[latmin:latmax]
+        Y_zoom=Y[lonmin:lonmax]
+        Z_zoom=Z[:,lonmin:lonmax,latmin:latmax]
         
-        return Xzoom, Yzoom, Zzoom, LONzoom, LATzoom, Mzoom, Nczoom, Tczoom 
+        return X_zoom, Y_zoom, Z_zoom, LON_zoom, LAT_zoom, M_zoom, Nc_zoom, Tc_zoom 
     else:
         return X, Y, Z, LON, LAT, M, Nc, Tc
 
 
 
-def get_geometry(mnh_file:Dataset):
-    X = mnh_file.variables['XHAT'][:]
-    Y = mnh_file.variables['YHAT'][:]
-    ZHAT = mnh_file.variables['ZHAT'][:] # height above ground (m)
-    ZS = mnh_file.variables['ZS'][:] # altitude (m) of model surface (ground)
+def get_geometry(mnhFile:Dataset):
+    X = mnhFile.variables['XHAT'][:]
+    Y = mnhFile.variables['YHAT'][:]
+    ZHAT = mnhFile.variables['ZHAT'][:] # height above ground (m)
+    ZS = mnhFile.variables['ZS'][:] # altitude (m) of model surface (ground)
     Z = np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
     for level in range(ZHAT.shape[0]):
         Z[level,:,:]=ZS[:,:]+ZHAT[level]
     return X, Y, Z
+
+
+
+def extract_subdomain(mnhFile:Dataset,
+                      longitude_field:np.ndarray,
+                      latitude_field:np.ndarray,
+                      subDomain:list[float],
+                      ):
+    lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
+    mask__zoom = ((longitude_field>lon_min)
+                 &(longitude_field<lon_max)
+                 & (latitude_field>lat_min)
+                 & (latitude_field<lat_max)
+                 )
+    [ilon,jlat]=np.where(mask__zoom)
+    i_lonmin,i_lonmax=np.nanmin(ilon),np.nanmax(ilon)
+    j_latmin,j_latmax=np.nanmin(jlat),np.nanmax(jlat)
+    return i_lonmin, i_lonmax, j_latmin, j_latmax
+
+
+
+def get_temperature_and_density(mnhFile:Dataset):
+    # Temperature
+    p=mnhFile.variables['PABST'][0,:,:,:]
+    p[np.where(p==999.)]=float('nan')
+    Th=mnhFile.variables['THT'][0,:,:,:]
+    Th[np.where(Th==999.)]=float('nan')
+    Tc=Th*((p/100000)**(0.4/1.4))-273.15
+    # Density
+    rhodref = mnhFile.variables['RHOREFZ'][:]
+    rho3D = np.ones(Tc.shape)
+    IKE = Tc.shape[0]
+    for k in range(IKE):    
+        rho3D[k,:,:]=rhodref[k]
+    return Tc, rho3D
+
+
+
+def get_contents(mnhFile:Dataset,
+                 hydrometeors:list,
+                 name_var_hydro:dict,
+                 temperature:np.ndarray,
+                 rho:np.ndarray,
+                 )->dict[np.ndarray]:
+    contents = {}
+    for key in hydrometeors:
+        contents[key] = np.empty(temperature.shape)
+        contents[key] = mnhFile.variables[name_var_hydro[key]][0,:,:,:]*rho[:,:,:] # kg/kg of dry air
+        contents[key][contents[key]==999.] = float('nan')
+    return contents
+
+
+
+def get_concentrations(mnhFile:Dataset,
+                       microphysics_scheme:str,
+                       hydrometeors:list,
+                       temperature:np.ndarray,
+                       rho:np.ndarray,):
+    concentrations = {}
+    for key in hydrometeors:
+        concentrations[key] = np.zeros(temperature.shape)
+    
+    if microphysics_scheme[0:3]=="ICE":
+        concentrations['ii'] = mnhFile.variables['CIT'][0,:,:,:]
+        concentrations['ii'][concentrations['ii']==999.] = float('nan')
+    if microphysics_scheme[0:3] =="LIM" :
+        concentrations['rr'] = mnhFile.variables['CRAIN'][0,:,:,:] #former name: CRAINT
+        concentrations['rr'][concentrations['rr']==999.]=float('nan')
+        concentrations['ii'] = mnhFile.variables['CICE'][0,:,:,:] #former name: CICET
+        concentrations['ii'][concentrations['ii']==999.]=float('nan')
+    concentrations['rr']*=rho
+    concentrations['ii']*=rho
+    return concentrations
