@@ -100,7 +100,7 @@ def operadar(filename:str,
                                      radar_band=radar_band,
                                      temporal_variable=temporal_variable,
                                      ) 
-    if not Path(outFilePath).with_suffix('.nc').exists():
+    if not Path(outFilePath).with_suffix('.nc').exists() or append_in_file :
         
         # Read Tmatrix tables (files from Clotilde)
         if read_tmatrix :
