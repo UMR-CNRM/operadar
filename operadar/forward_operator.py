@@ -160,6 +160,7 @@ def operadar(filename:str,
                                              output_file_path=outFilePath,
                                              append_in_fa=append_in_file,
                                              )
+        exit()
         # Saving file or reinjecting fields into the input file
         if append_in_file :
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations
