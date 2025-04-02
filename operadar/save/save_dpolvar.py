@@ -86,13 +86,12 @@ def create_tree_structure_outFiles(output_dir:Path):
 
 
 def add_dualPol_variables(ds:xr.Dataset,dpolDict:dict,dpolvar2add:list):
-    if 'Zh' in dpolvar2add :
-        ds['Zh'] = (["level","y","x"],dpolDict["Zhh"].astype('f4'), {"units": "dBZ"})
-    if 'Zdr' in dpolvar2add :
-        ds['Zdr'] = (["level","y","x"],dpolDict["Zdr"].astype('f4'), {"units": "dB"})
-    if 'Kdp' in dpolvar2add :
-        ds['Kdp'] = (["level","y","x"],dpolDict["Kdp"].astype('f4'), {"units": "°/km"})
-    if 'Rhohv' in dpolvar2add :
-        ds['Rhohv'] = (["level","y","x"],dpolDict["Rhohv"].astype('f4'), {"units": "1"})
+    units = {'Zh' : {"units": "dBZ"},
+             'Zdr' : {"units": "dB"},
+             'Kdp' : {"units": "°/km"},
+             'Rhohv' :{"units": "1"},
+             }
+    for var in dpolvar2add :
+        ds[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
     
     return ds
