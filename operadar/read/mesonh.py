@@ -3,9 +3,8 @@
 """
 Created on Tue Apr 11 09:55:15 2023
 
-@author: augros
+@author: augros & davidcl
 """
-
 
 import sys
 import time as tm
@@ -22,22 +21,30 @@ Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents
 def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
                 hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
                ):
+    """_summary_
+
+    Args:
+        filePath (str): _description_
+        micro (str): _description_
+        subDomain (list[float] | None): _description_
+        hydrometeorMoments (dict[int]): _description_
+        real_case (bool): _description_
+        verbose (bool): _description_
+
+    Returns:
+        _type_: _description_
+    """
 
     print("\tMesoNH .nc file:",filePath)
     if verbose : deb=tm.time()
     mnh_file = Dataset(filePath,'r')
     if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
 
-    X=mnh_file.variables['XHAT'][:]
-    Y=mnh_file.variables['YHAT'][:]
-    ZHAT=mnh_file.variables['ZHAT'][:] # height above ground (m)
-    ZS=mnh_file.variables['ZS'][:] # altitude (m) of model surface (ground)
-    Z=np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
-    for level in range(ZHAT.shape[0]):
-        Z[level,:,:]=ZS[:,:]+ZHAT[level]
-    time=mnh_file.variables['time'][:]
+    X, Y, Z = get_geometry(mnh_file=mnh_file)
     if verbose : print('\t\tGot geometry (X,Y,Z) in',round(tm.time()-deb,6),'seconds');deb=tm.time()
 
+    time=mnh_file.variables['time'][:]
+    
     if real_case:
         LAT = mnh_file.variables['latitude'][:]
         LON = mnh_file.variables['longitude'][:]
@@ -79,7 +86,6 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
         rho3D[k,:,:]=rhodref[k]
     
     # === Hydrometeors contents and concentrations
-    
     hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
     name_hydro = link_varname_with_mesonh_name()
     #list_t_full=['vv','cc','rr','ii','ss','gg','hh']
@@ -132,3 +138,15 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
         return Xzoom, Yzoom, Zzoom, LONzoom, LATzoom, Mzoom, Nczoom, Tczoom 
     else:
         return X, Y, Z, LON, LAT, M, Nc, Tc
+
+
+
+def get_geometry(mnh_file:Dataset):
+    X = mnh_file.variables['XHAT'][:]
+    Y = mnh_file.variables['YHAT'][:]
+    ZHAT = mnh_file.variables['ZHAT'][:] # height above ground (m)
+    ZS = mnh_file.variables['ZS'][:] # altitude (m) of model surface (ground)
+    Z = np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
+    for level in range(ZHAT.shape[0]):
+        Z[level,:,:]=ZS[:,:]+ZHAT[level]
+    return X, Y, Z
