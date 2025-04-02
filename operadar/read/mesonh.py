@@ -6,6 +6,9 @@ Created on Tue Apr 11 09:55:15 2023
 @author: augros
 """
 
+#import epygram
+import sys
+import time as tm
 import numpy as np
 from netCDF4 import Dataset
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
@@ -17,64 +20,60 @@ from operadar.utils.formats_data import get_lat_lon_from_subdomain
 Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents 
 """
 def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
-                hydrometeorMoments: dict[int],real_case: bool,
+                hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
                ):
     
-    # === Model file
-    print("Reading "+filePath)
-    
-    # === Extract Dataset 
-    print("Reading ncfile: ",filePath)
-    ncfile1 = Dataset(filePath,'r')
-    #print(ncfile1.variables.keys())
-    
-    
-    # === Geometry: X, Y, Z coordinates and radar cover mask
-    X=ncfile1.variables['XHAT'][:]
-    Y=ncfile1.variables['YHAT'][:]
-    ZHAT=ncfile1.variables['ZHAT'][:] # height above ground (m)
-    ZS=ncfile1.variables['ZS'][:] # altitude (m) of model surface (ground)
+    #epygram.init_env() # mandatory
+
+    print("\tMesoNH .nc file:",filePath)
+    if verbose : deb=tm.time()
+    mnh_file = Dataset(filePath,'r')
+    if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
+
+    X=mnh_file.variables['XHAT'][:]
+    Y=mnh_file.variables['YHAT'][:]
+    ZHAT=mnh_file.variables['ZHAT'][:] # height above ground (m)
+    ZS=mnh_file.variables['ZS'][:] # altitude (m) of model surface (ground)
     Z=np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
     for level in range(ZHAT.shape[0]):
         Z[level,:,:]=ZS[:,:]+ZHAT[level]
-    time=ncfile1.variables['time'][:]
-    print("MesoNH ncfile time = ",time)
-    
-    # === Get lat lon if real case
-    if (real_case):
+    time=mnh_file.variables['time'][:]
+    if verbose : print('\t\tGot geometry (X,Y,Z) in',round(tm.time()-deb,6),'seconds');deb=tm.time()
+
+    if real_case:
+        LAT = mnh_file.variables['latitude'][:]
+        LON = mnh_file.variables['longitude'][:]
         if subDomain != None :
             lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
+            mask_zoom=((LON>lon_min) & (LON<lon_max) & (LAT>lat_min) & (LAT<lat_max))
+            [ilon,jlat]=np.where(mask_zoom) ; print(ilon)
+            i_lonmin,i_lonmax=np.nanmin(ilon),np.nanmax(ilon)
+            j_latmin,j_latmax=np.nanmin(jlat),np.nanmax(jlat)
+            if verbose : print('\t\tSubdomain extracted in',round(tm.time()-deb,6),'seconds'); deb=tm.time()
         else :
-            lon_min, lon_max, lat_min, lat_max = -5.2, 8.3, 41.3, 51.15
-        LAT = ncfile1.variables['latitude'][:]
-        LON = ncfile1.variables['longitude'][:]
-        mask_zoom=((LON>lon_min) & (LON<lon_max) & (LAT>lat_min) & (LAT<lat_max))
-        [ilon,jlat]=np.where(mask_zoom)
-        i_lonmin,i_lonmax=np.nanmin(ilon),np.nanmax(ilon)
-        j_latmin,j_latmax=np.nanmin(jlat),np.nanmax(jlat)
+            if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
     else:
         LAT=float('nan')
         LON = float('nan')
-    
+        if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
     
     #    #This is for taking care of cropped netcdf which still contain XHAT and YHAT with non cropped indices
     #    if X.shape!=LON.shape : 
     #        ilatmin,ilatmax,ilonmin,ilonmax = ope_lib.crop_latlon(filePath,LAT[0],LAT[-1],LON[0],LON[-1])
-    #        X=ncfile1.variables['XHAT'][ilonmin:ilonmax+1]
-    #        Y=ncfile1.variables['YHAT'][ilatmin:ilatmax+1]
-    
+    #        X=mnh_file.variables['XHAT'][ilonmin:ilonmax+1]
+    #        Y=mnh_file.variables['YHAT'][ilatmin:ilatmax+1]
     
     # =======================
     
     # === Pressure and temperature and dry air density
-    p=ncfile1.variables['PABST'][0,:,:,:]
+    p=mnh_file.variables['PABST'][0,:,:,:]
     p[np.where(p==999.)]=float('nan')
-    Th=ncfile1.variables['THT'][0,:,:,:]
+    Th=mnh_file.variables['THT'][0,:,:,:]
     Th[np.where(Th==999.)]=float('nan')
     Tc=Th*((p/100000)**(0.4/1.4))-273.15 
     del Th, p
     
-    rhodref = ncfile1.variables['RHOREFZ'][:] # MODIF ? voir epygram (quelle fonction ?)
+    rhodref = mnh_file.variables['RHOREFZ'][:] # MODIF ? voir epygram (quelle fonction ?)
     rho3D=np.ones(Tc.shape)
     
     IKE=Tc.shape[0]
@@ -86,6 +85,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     
     hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
     
+    sys.exit()
     list_t_full=['vv','cc','rr','ii','ss','gg','hh']
     list_hydro=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
     name_hydro={}
@@ -99,34 +99,34 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     
     
     for t in hydromet_list:
-        M[t]=ncfile1.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
+        M[t]=mnh_file.variables[name_hydro[t]][0,:,:,:]*rho3D[:,:,:] # kg/kg of dry air
         M[t][M[t]==999.]=float('nan')
     
     if(micro =="ICE3" or micro =="ICE4"):
-        CCI=ncfile1.variables['CIT'][0,:,:,:]
+        CCI=mnh_file.variables['CIT'][0,:,:,:]
         CCI[CCI==999.]=float('nan')
         CC=np.empty(Tc.shape)
     if(micro =="LIMA" or micro =="LIMT" or micro =="LIMASG" or micro =="LIMAAG"):
-        CC=ncfile1.variables['CRAIN'][0,:,:,:] #former name: CRAINT
+        CC=mnh_file.variables['CRAIN'][0,:,:,:] #former name: CRAINT
         CC[CC==999.]=float('nan')
-        CCI=ncfile1.variables['CICE'][0,:,:,:] #former name: CICET
+        CCI=mnh_file.variables['CICE'][0,:,:,:] #former name: CICET
         CCI[CCI==999.]=float('nan')
     CC*=rho3D
     CCI*=rho3D
 
 
     # ===== Calcul of the grid considering orography
-    #Orography =ncfile1.variables['ZS'][:]
+    #Orography =mnh_file.variables['ZS'][:]
     #if np.any(Orography > 0):
     #    Z = ope_lib.compute_grid_alt(var3D,ztop,orography,level)
     #else:
-    #    Z=ncfile1.variables['level'][:] # but in 3D shape ?
+    #    Z=mnh_file.variables['level'][:] # but in 3D shape ?
     
     # =====================================================
     print("Z.shape",Z.shape)
     print("End reading model variables")
     
-    if (real_case):
+    if real_case and subDomain != None :
         Mzoom={}
         for t in hydromet_list:
             Mzoom[t]=M[t][:,i_lonmin:i_lonmax,j_latmin:j_latmax]

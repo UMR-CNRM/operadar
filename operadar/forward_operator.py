@@ -85,14 +85,18 @@ def operadar(filename:str,
     if append_in_file and subDomain != None :
         print('Cannot reinject a subdomain into the original input file. Please, set subDomaine = None to continue.')
         exit()
-    
+    print(cf.real_case)
     # Create or check tree structure of the output directory path
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
-    
     # Format temporal variable and output file name
+<<<<<<< HEAD
     input_file_path = Path(in_dir_path+filename)    
+=======
+    input_file_path = Path(in_dir_path+filename)
+>>>>>>> 7359c82 (Integration of BenoitVie modifications)
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
+						 real_case=cf.real_case,
                                                  )
     outFilePath = define_output_path(out_dir_path=out_dir_path,
                                      model=modelname,
