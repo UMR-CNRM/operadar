@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import epygram
 import pandas as pd
 from pathlib import Path
@@ -21,6 +20,7 @@ def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Time
         epygram_file.close()
         return Timestamp(date_time_file)
     elif model_type=='MesoNH' and real_case :
+        epygram.init_env()
         epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r',fmt='netCDFMNH') 
         field = epygram_file.readfield('ZWS')
         date_time_file = field.validity.get()
