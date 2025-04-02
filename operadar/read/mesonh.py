@@ -20,19 +20,26 @@ Read MesoNH 3D variables in ncfile: pressure, temperature, hydrometeor contents
 """
 def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
                 hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
-               ):
-    """_summary_
+               )-> tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray,dict[np.ndarray],dict[np.ndarray],np.ndarray]:
+    """Read and extract data from an MesoNH.nc file
 
     Args:
-        filePath (str): _description_
-        micro (str): _description_
-        subDomain (list[float] | None): _description_
-        hydrometeorMoments (dict[int]): _description_
-        real_case (bool): _description_
-        verbose (bool): _description_
+        filePath (str): input file path.
+        micro (str): microphysics scheme.
+        subDomain (list[float] | None): either a list of 4 float or None.
+        hydrometeorMoments (dict[int]): dictionary of form {'hydrometeor key':number of moments}.
+        real_case (bool): if False, consider it is an idealized case.
+        verbose (bool): show more messages to the user.
 
     Returns:
-        _type_: _description_
+        X (ndarray): 1D horizontal coordinates in m
+        Y (ndarray): 1D horizontal coordinates in m
+        Z (ndarray): 1D array of vertical coordinates in model pressure levels
+        LON (ndarray): 2D array of longitude coordinates
+        LAT (ndarray): 2D array of latitude coordinates
+        M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
+        Nc (dict[ndarray]): dictionary of 3D number concentrations for each hydrometeor
+        Tc (ndarray) : 3D temperature in Celsius
     """
 
     print("\tMesoNH .nc file:",filePath)
@@ -42,8 +49,6 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
 
     X, Y, Z = get_geometry(mnh_file=mnh_file)
     if verbose : print('\t\tGot geometry (X,Y,Z) in',round(tm.time()-deb,6),'seconds');deb=tm.time()
-
-    time=mnh_file.variables['time'][:]
     
     if real_case:
         LAT = mnh_file.variables['latitude'][:]
