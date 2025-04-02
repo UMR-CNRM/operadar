@@ -42,30 +42,38 @@ def save_netcdf(X:np.ndarray,
     hydromet_list = list(contentsDict.keys())
     contents = np.array([contentsDict[hydromet]*1000 for hydromet in hydromet_list]).astype('f4') # from kg/m3 to g/m3
     concentrations = np.array([concentrationsDict[hydromet] for hydromet in hydromet_list]).astype('f4')
+    dataset_variables = dict(Contents = (["hydrometeor","level","y","x"],contents, {"units": "g/m3"}),
+                             Concentrations = (["hydrometeor","level","y","x"],concentrations, {"units": "kg^-1"}),
+                             T = (["level","y","x"],temperature.astype('f4'), {"units": "°C"}),
+                             Alt = (["level","y","x"],Z.astype('i4'), {"units": "m"}),
+                             )
+    dataset_variables = add_dualPol_variables(ds_variables=dataset_variables,
+                                              dpolDict=dpolDict,
+                                              dpolvar2add=cf.dpol2add,
+                                              ) 
     
-    ds=xr.Dataset(
-        data_vars=dict(Contents = (["hydrometeor","level","y","x"],contents, {"units": "g/m3"}),
-                       Concentrations = (["hydrometeor","level","y","x"],concentrations, {"units": "kg^-1"}),
-                       T = (["level","y","x"],temperature.astype('f4'), {"units": "°C"}),
-                       Alt = (["level","y","x"],Z.astype('i4'), {"units": "m"}),
-                       ),
-        coords=dict(y = (["y"], Y.astype('i4')),
-                    x = (["x"], X.astype('i4')),
-                    lon = (["y","x"], lon.astype('f4')),
-                    lat = (["y","x"], lat.astype('f4')),
-                    level =(["level"], np.arange(Z.shape[0]).astype('i4')),
-                    hydrometeor = (["hydrometeor"],hydromet_list),
-		            time = (datetime),
-		            #Radloc = (["radpos"],Radpos),
-                    ),
-        attrs=dict(horizontal_resolution = int(Y[1]-Y[0]),
-                   model = cf.model,
-                   microphysics = cf.micro_scheme,
-                   radar_band = cf.radar_band,
-                   mixed_phase_type = cf.MixedPhase,
-                   ).update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
-        )
-    ds = add_dualPol_variables(ds,dpolDict,dpolvar2add=cf.dpol2add) 
+    dataset_coordinates = dict(y = (["y"], Y.astype('i4')),
+                               x = (["x"], X.astype('i4')),
+                               lon = (["y","x"], lon.astype('f4')),
+                               lat = (["y","x"], lat.astype('f4')),
+                               level =(["level"], np.arange(Z.shape[0]).astype('i4')),
+                               hydrometeor = (["hydrometeor"],hydromet_list),
+                               time = (datetime),
+                               #Radloc = (["radpos"],Radpos),
+                               )
+    dataset_attributes = dict(horizontal_resolution = int(Y[1]-Y[0]),
+                              model = cf.model,
+                              microphysics = cf.micro_scheme,
+                              radar_band = cf.radar_band,
+                              mixed_phase_type = cf.MixedPhase,
+                              radar_location = str(cf.radarloc)
+                              )
+    dataset_attributes.update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
+        
+    ds=xr.Dataset(data_vars = dataset_variables,
+                  coords = dataset_coordinates,
+                  attrs=dataset_attributes,
+                  )
     ds.to_netcdf(outfile.with_suffix('.nc'))
     ds.close() ; del ds
     print("Model and dpol variables saved at :",outfile.with_suffix('.nc'))
@@ -85,13 +93,13 @@ def create_tree_structure_outFiles(output_dir:Path):
 
 
 
-def add_dualPol_variables(ds:xr.Dataset,dpolDict:dict,dpolvar2add:list):
+def add_dualPol_variables(ds_variables:dict,dpolDict:dict,dpolvar2add:list):
     units = {'Zh' : {"units": "dBZ"},
              'Zdr' : {"units": "dB"},
              'Kdp' : {"units": "°/km"},
              'Rhohv' :{"units": "1"},
              }
     for var in dpolvar2add :
-        ds[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
+        ds_variables[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
     
-    return ds
+    return ds_variables
