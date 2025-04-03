@@ -30,7 +30,8 @@ micro_scheme = 'LIMA_exp_GNZR'
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 hydrometeors_moments = {'cc':2,'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
 
-# ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max]
+# ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
+#                           or as [i_min,i_max,j_min,j_max] for an idealized case
 #                           or None (will use all the points in the file)
 subDomain = None
 
