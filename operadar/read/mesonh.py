@@ -30,7 +30,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     Returns:
         X (ndarray): 1D horizontal coordinates in m
         Y (ndarray): 1D horizontal coordinates in m
-        Z (ndarray): 3D array of vertical coordinates in model pressure levels
+        Z (ndarray): 3D array of altitude values for each model level
         LON (ndarray): 2D array of longitude coordinates
         LAT (ndarray): 2D array of latitude coordinates
         M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
