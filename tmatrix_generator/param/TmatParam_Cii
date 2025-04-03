@@ -1,9 +1,11 @@
 type:ii
 canting:analyt
-sigbeta:12.0
+sigbeta:45.0
 DIEL:RY19dry
 ARfunc:CNST
-ARcnst:0.20
+ARcnst:1.0
+DSTYfunc:RHOX
+Frim:0.0
 LAM:53.2
 ELEVmin:0.0
 ELEVmax:10.0

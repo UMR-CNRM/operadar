@@ -4,6 +4,7 @@ sigbeta:10.0
 DIEL:Liebe91
 ARfunc:BR02
 ARcnst:1.0
+DSTYfunc:RHOX
 LAM:53.2
 ELEVmin:0.0
 ELEVmax:10.0

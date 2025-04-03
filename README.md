@@ -33,14 +33,109 @@ pip install git+https://github.com/UMR-CNRM/operadar.git
 ```
 
 
-# How to run ( WIKI )
+# How to run
+The lookup tables should be generated BEFORE running `operadar`.
 
-## Configuration file
+## Generation of the Tmatrix lookup tables
+### Basic steps
+To work properly, the forward operator needs to access to Tmatrix lookup tables. The code that generates the tables is in Fortran, and requires the installation of the `lapack` library.
+1) First, clone the last version of `lapack` ([check here](https://github.com/Reference-LAPACK/lapack)).
+   ```
+   cd tmatrix_generator/src
+   mkdir my_lapack
+   cd my_lapack
+   git clone https://github.com/Reference-LAPACK/lapack.git
+   ```
+   **NOTE** : You can install `lapack` wherever you like but need to check that the path specified in the `makefile` corresponds to your installation.
+2) To compile the library, you need a `make.inc` file. Multiple examples of such a configuration file are available in the `INSTALL` folder, or you can simply use the `make.inc.example`. Still in the `lapack/` directory do :
+   ```
+   cp make.inc.example make.inc
+   make
+   ```
+   When the installation is completed, you should see on your terminal :
+   ```
+               -->   LAPACK TESTING SUMMARY  <--
+      Processing LAPACK Testing output found in the TESTING directory
+   SUMMARY             	nb test run numerical error   other error  
+   ================   	===========	=================	================  
+   REAL             	   1569648		0	(0.000%)	      0	(0.000%)	
+   DOUBLE PRECISION	   1570470		0	(0.000%)	      0	(0.000%)	
+   COMPLEX          	   980455		0	(0.000%)	      0	(0.000%)	
+   COMPLEX16         	1030797		0	(0.000%)	      0	(0.000%)	
+
+   --> ALL PRECISIONS	5151370		0	(0.000%)	      0	(0.000%)
+   ``` 
+3) Go back to `src/` and open the makefile. Make sure the `LIBS` variable points to the previously installed version of `lapack` :
+   ```shell
+   LIBS = -L ./my_lapack -llapack -lrefblas
+   ```
+4) The parametrization for each hydrometeor type (density, axis ratio, etc) is defined in a txt file that you need to modify according to your needs : `tmatrix_generator/param/TmatParam_(radarBand)(hydrometeorType)`
+5) To specify which radar band and hydrometeor types the lookup tables should be created, in `Tmatrix.f`, search for `DO idtype` and `DO idband`. You can loop over all the band and hydrometeor types (`DO idxxx=minNumber,maxNumber`), or just a few combination of them, or only a single band and/or hydrometeor type (`DO idxxx=sameNumber,sameNumber`). In the following example, tables will be generated for C band only and for rain, snow, pristine ice, graupel, and wet graupel hydrometeor types.
+   ```fortran{
+   !=======  Loop over radar frequency bands
+      DO idbande=2,2
+          IF (idbande .EQ. 1) bande='S'
+          IF (idbande .EQ. 2) bande='C'
+          IF (idbande .EQ. 3) bande='X' ! LAM=31.9 mm
+          IF (idbande .EQ. 4) bande='W' ! LAM=3.15 mm (Rasta) 
+	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
+      
+   !======= Loop over hydrometeor types
+      DO idtype=1,5!3,3 !2,2 !1,1 !2,2
+         IF (idtype .EQ. 1) typeh='rr'
+         IF (idtype .EQ. 2) typeh='ss'
+         IF (idtype .EQ. 3) typeh='ii'
+         IF (idtype .EQ. 4) typeh='gg'
+         IF (idtype .EQ. 5) typeh='wg' !wet graupel
+         IF (idtype .EQ. 6) typeh='tt' ! MARY: cloud water over land
+         IF (idtype .EQ. 7) typeh='mm' ! MARY: cloud water over sea
+         IF (idtype .EQ. 8) typeh='hh' ! hail
+         IF (idtype .EQ. 9) typeh='wh' ! wet hail
+         IF (idtype .EQ. 10) typeh='ws' !wet snow
+   ```
+6) To compile the `Tmatrix.f` code and create the `Tmat` executable, just do :
+   ```
+   make
+   ```
+   It should take a few moment to compile the code. Once it's done, check that `Tmat` is executable, and if not do :
+   ```
+   chmod u+x Tmat
+   ```
+
+7) You can now generate the lookup tables for different hydrometeor types and different radar band ! 
+   ```
+   Tmat
+   ```
+   Each time you modify `Tmatrix.f`, you will need to update the `Tmat` executable with :
+   ```
+   make clean
+   make
+   ```
+### Executable
+An executable is provided to facilitate table generation for a single hydrometeor type but different parameters combinations. You still need to complete step 5 (select one or multiple radar band but **only one** hydrometeor type), and step 7.
+```
+>>> $ ./execTmat.sh --help
+----------------------------------------
+ Executable to create the lookup tables 
+----------------------------------------
+
+Usage: ./execTmat.sh -hydro HYDRO -af ARfunc -av ARvalue -c CANTING -dsty DSTYfunc -riming RIMING -diel DIELfunc
+
+  -hydro HYDRO   : rr, ii, gg, ss, tt, wg, hh, wh 
+  -af ARfunc     : AUds, CNST, BR02, RYdg, RYwg
+  -av ARvalue    : any value.
+  -c CANTING     : any value.
+  -dsty DSTYfunc : BR07, RHOX
+  -riming RIMING : any value starting from 1 (1=unrimed)
+  -diel DIELfunc : Liebe91, RY19dry, LBwetgr, MGwMA08
+```
+
+## Forward operator configuration file
 The user must set up, beforehand, a configuration file based on the template provided `./configFile/conf_template.py`. Please, do not modify the template directly. Instead, make a copy of the file and name it differently. 
 
 ## Quick execution in a terminal (suitable for 1 file at a time)
 The script `exec_operadar.sh` wraps the execution of the Python code. To show the help :
-```bash
+```
 >>> $ ./exec_operadar.sh -h
 
 ----------------------------------------------------------------
@@ -212,20 +307,20 @@ If you wish to contribute to the project, first, fork the code to create your ow
 <br>NOTE : If you want to be part of the main developpers (ask clotilde.augros@meteo.fr)
 
 Then, clone the repository in a dedicated folder.
-```bash
+```
 mkdir my_folder
 cd my_folder
 git clone https://github.com/UMR-CNRM/operadar.git
 ```
 
 Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch.
-```bash
+```
 git branch my_branch
 git checkout my_branch
 ```
 
 In the installation folder, install operadar as a package with
-```bash
+```
 pip install -e .
 ```
 

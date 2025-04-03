@@ -440,15 +440,16 @@ C     ***********************************************************************
       COMPLEX*16 EPSSHELL,EPSSHELL1,EPSSHELL2
       COMPLEX*16 EPSCORE,EPSCORE1,EPSCORE2
       COMPLEX*16 D1, D2, EPSXws, NUMws, DENws, EPSXsw, NUMsw, DENsw
-      REAL*8 FVW
+      REAL*8 FVW, Frim ! Frim degree of riming factor
       CHARACTER*2 typeh
       CHARACTER*6 canting
       CHARACTER*1 bande
       CHARACTER*4 ARfunc
+      CHARACTER*4 DSTYfunc
       CHARACTER*7 DIEL
-      CHARACTER*26 nomfileCoef 
+      CHARACTER*29 nomfileCoef 
       CHARACTER*25 nomfileVar
-      CHARACTER*22 nomfileResu
+      CHARACTER*25 nomfileResu
       CHARACTER*23 nomfileParam  
 
       REAL*8 zhh,zvv,zdr,kdp,rhohv,sighh,sigvv,Ah,Av ! Tmatrix
@@ -489,7 +490,7 @@ C     ***********************************************************************
 	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
       
       !======= Loop over hydrometeor types
-      DO idtype=1,1!3,3 !2,2 !1,1 !2,2
+      DO idtype=5,5 !1,1 !2,2
       IF (idtype .EQ. 1) typeh='rr'
       IF (idtype .EQ. 2) typeh='ss'
       IF (idtype .EQ. 3) typeh='ii'
@@ -535,7 +536,11 @@ C     ***********************************************************************
       READ (5,5) ARfunc
     5 FORMAT (7X,A4) 
       READ (5,6) ARcnst
-    6 FORMAT (7X,F4.2)  
+    6 FORMAT (7X,F4.2)
+      READ (5,7) DSTYfunc
+    7 FORMAT (9X,A4)
+      READ (5,8) Frim
+    8 FORMAT (5X,F5.1)  
       READ (5,13) LAM
    13 FORMAT (4X,F5.1)   
       READ (5,14) ELEVmin
@@ -567,8 +572,10 @@ C     ***********************************************************************
       WRITE (0,*) 'canting=',canting !,"ok"
       WRITE (0,*) 'SIGBETA=',SIGBETA !,"ok"
       WRITE (0,*) 'DIEL=',DIEL !,"ok" options: 
-      WRITE (0,*) 'ARfunc=',ARfunc !,"ok"  options: BR02, CNST    
-      WRITE (0,*) 'ARcnst=',ARcnst !,"ok" options: -1 (if ARfunc=CNST), 0.8,0.2,0.6     
+      WRITE (0,*) 'ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
+      WRITE (0,*) 'ARcnst=',ARcnst !,"ok" options: -1 (if ARfunc=CNST), 0.8,0.2,0.6  
+      WRITE (0,*) 'DSTYfunc=',DSTYfunc !,"ok"  options: BR07, RHOX, ZA05, LS15
+      WRITE (0,*) 'Frim=',Frim !,"ok"  used only in ZA05 and LS15
       WRITE (0,50) LAM
    50 FORMAT ('LAM=',F5.1)
       WRITE (0,51) ELEVmin, ELEVmax, ELEVstep
@@ -582,8 +589,8 @@ C     ***********************************************************************
    
    
       !-- Output files
-      nomfileResu='../OUTPUT/TmatResu_'//bande//typeh
-      nomfileCoef='../OUTPUT/TmatCoefDiff_'//bande//typeh
+      nomfileResu='../tables/'//typeh//'/TmatResu_'//bande//typeh
+      nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh
 
 
       WRITE(0,*) nomfileCoef,'ok'
@@ -599,15 +606,15 @@ C     ***********************************************************************
       
       ! Scattering coefficients file: min/step/max
       WRITE (7,1000)
- 1000 FORMAT ('canting  SIGBETA  DIEL  ARfunc  ARcnst  LAM  '
-     & 'ELEVmin  ELEVstep  ELEVmax  Tcmin  Tcstep  Tcmax  expDmin  '
-     & 'expDstep  expDmax  Fwmin  Fwstep  Fwmax')   
-      WRITE (7,1001) canting,SIGBETA,DIEL,ARfunc,ARcnst,LAM,
-     & ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,
+ 1000 FORMAT ('canting  SIGBETA  DIEL  ARfunc  ARcnst  DSTYfunc  LAM  '
+     & 'Frim  ELEVmin  ELEVstep  ELEVmax  Tcmin  Tcstep  Tcmax  '
+     & 'expDmin  expDstep  expDmax  Fwmin  Fwstep  Fwmax')   
+      WRITE (7,1001) canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM,
+     & Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,
      & expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
- 1001 FORMAT (A6,2X,F4.1,2X,A7,2X,A4,2X,F4.2,2X,F6.2,2X,
-     &        F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,
-     &        F6.2,2X,F6.4,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2)
+ 1001 FORMAT (A6,2X,F4.1,2X,A7,2X,A4,2X,F4.2,2X,A4,2X,F6.2,2X,
+     &        F5.1,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,
+     &        F6.2,2X,F6.2,2X,F6.4,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2)
           
       WRITE (7,5003)
  5003 FORMAT ('Tc  ELEV  Fw  D  Dm  Deq  Deqm  Deqr  Deqrm  '
@@ -662,37 +669,9 @@ C ============================================================================
 !   * estimation of riming factor (from snow content + cloud water content ?)
 !   * implement new density functions for snow (Brandes 2007 ?)
 
-      
-      ! ----- Rain : Brandes et al. 2002 (horizontal axis divided by vertical axis)           
-      IF (ARfunc .EQ. "BR02") THEN
-        CALL AR_BRANDES(D,AR) ! AR
-        Dm=D*(AR**(-1.0/3.))   ! Dm
-        Deq=D ! Deq
-        RHOP=RHOLW ! RHOP
-        Deqr=D ! Deqr
-        ARr=AR
-      
-      ! ----- Constant axis ratio (snow 0.6 ? graupel 0.8 ? pristine ice 0.2 ?)
-      ELSE IF (ARfunc .EQ. "CNST") THEN      
-        Dm=D*(ARcnst**(-1.0/3.))   ! Dm
-        Deq=D ! Deq         
-        CALL QRHOX(aj,bj,D,Dm,P,RHOP) ! RHOP
-        Deqr=D*(RHOP/RHOLW)**(1.0/3)   ! Deqr
-        CALL AR_BRANDES(Deqr,ARr)
-        AR=ARcnst
-      
-      ! ----- Axis ratio dry graupel hail Ryzhkov 2011, 2019 4.31 p83
-      ! (linear increase towards 1 for diameters < 10 mm)
-      ELSE IF (ARfunc .EQ. "RYdg") THEN
-        CALL AR_RY11dryg(D,ARcnst,AR)          
-        Dm=D*(AR**(-1.0/3))   ! Dm
-        Deq=D ! Deq        
-        CALL QRHOX(aj,bj,D,Dm,P,RHOP) ! RHOP
-        Deqr=D*(RHOP/RHOLW)**(1.0/3)   ! Deqr
-        CALL AR_BRANDES(Deqr,ARr) 
-      
+      ! ===== SPECIAL CASE : wet graupel / hail ===== !
       ! Axis ratio wet graupel hail Ryzhkov 2011, 2019 4.33 p85
-      ELSE IF (ARfunc .EQ. "RYwg") THEN
+      IF (ARfunc .EQ. "RYwg") THEN
         CALL AR_RY11dryg(D,ARcnst,ARdg)
         AR=ARdg             ! AR initial (dry graupel) 
         Dm=D*(AR**(-1.0/3.))   ! Dm        
@@ -715,7 +694,61 @@ C ============================================================================
           CALL AR_RY11wetg(Fw,ARdg,ARr,ARwg)
           AR=ARwg ! AR
         ENDIF
-
+      
+      ! ===== OTHER CASES ===== !  
+      ELSE
+        ! ----- Axis ratio ----- !
+        ! ----- BR02 (rain only) : Brandes et al. 2002 (horizontal axis divided by vertical axis)
+        IF (ARfunc .EQ. "BR02") THEN
+          CALL AR_BRANDES(D,AR) ! AR
+          Dm=D*(AR**(-1.0/3.))  ! Dm
+          Deq=D                 ! Deq
+        ! ----- CNST : snow 0.6 ? graupel 0.8 ? pristine ice 0.2 ?
+        ELSE IF (ARfunc .EQ. "CNST") THEN      
+          Dm=D*(ARcnst**(-1.0/3.)) ! Dm
+          Deq=D                    ! Deq 
+          AR=ARcnst                ! AR
+        ! ----- AUds (dry snow only) : Augros 2016
+        ELSE IF (ARfunc .EQ. "AUds") THEN
+          CALL AR_AU16drys(D,ARcnst,AR) ! AR        
+          Dm=D*(AR**(-1.0/3))           ! Dm
+          Deq=D                         ! Deq
+        ! ----- RYdg (dry graupel/hail) : Ryzhkov 2011, 2019 4.31 p83 (linear increase towards 1 for diameters < 10 mm)
+        ELSE IF (ARfunc .EQ. "RYdg") THEN
+          CALL AR_RY11dryg(D,ARcnst,AR) ! AR          
+          Dm=D*(AR**(-1.0/3))           ! Dm
+          Deq=D                         ! Deq
+        ENDIF
+        
+        ! ----- Particle density ----- !
+        ! ----- Special case : particle is rain
+        IF (typeh .EQ. "rr") THEN
+          RHOP=RHOLW
+          Deqr=D ! Deqr
+          ARr=AR ! ARr
+        ! ----- Special case : particle is snow
+        ELSE IF (typeh .EQ. "ss") THEN  
+          ! ----- density Brandes et al. 2007
+          IF (DSTYfunc .EQ. "BR07") THEN 
+            CALL BR07RHOX(D,RHOP)
+          ! ----- density Zawadzki et al. 2005
+          ELSE IF (DSTYfunc .EQ. "ZA05") THEN
+            CALL ZA05RHOX(D,Frim,RHOP)
+          ! ----- density Leinonen and Szyrmer (2015)
+          ELSE IF (DSTYfunc .EQ. "LS15") THEN
+            CALL LS15RHOX(D,Frim,RHOP)
+          ! ----- m-D relationship ICE3/LIMA
+          ELSE 
+            CALL QRHOX(aj,bj,D,Dm,P,RHOP)
+          ENDIF ! RHOP
+          Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
+          CALL AR_BRANDES(Deqr,ARr)    ! ARr
+        ! ----- Other particles : RHOP from m-D relationship ICE3/LIMA
+        ELSE
+          CALL QRHOX(aj,bj,D,Dm,P,RHOP)
+          Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
+          CALL AR_BRANDES(Deqr,ARr)    ! ARr
+        ENDIF
       ENDIF 
       
       Deqrm=Deqr*(ARr**(-1.0/3.))   !- Maximum diameter of the equivalent raindrop (completely melted particle)
@@ -1226,6 +1259,28 @@ C     ###################################
       !END FUNCTION AR_RY11dryg
 
 C     ###################################
+      SUBROUTINE AR_AU16drys(D,ARcnst,AR)
+C     ###################################
+      ! Dry snow axis ratio function
+      ! Augros 2016
+      
+      !in: equivolume diameter (mm), constant axis ratio (0.8 in RY11)
+      !out: AR axis ratio 
+      
+      REAL*8 D,ARcnst 
+      REAL*8 AR 
+      
+      IF (D .GT. 8) THEN    
+        AR=ARcnst
+      ELSE
+        AR=1+(ARcnst-1)/(8-0)*D
+      ENDIF
+      RETURN
+      END
+      !END FUNCTION AR_AU16drys
+
+
+C     ###################################
       SUBROUTINE AR_RY11wetg(Fw,ARg,ARr,ARwg)
 C     ###################################
       ! Melting graupel/hail axis ratio using linear approximations of experimental results of
@@ -1324,6 +1379,70 @@ C     ###################################
       END
       !END FUNCTION QRHOX
       
+
+C     ###################################
+      SUBROUTINE BR07RHOX(D, RHOX) 
+C     ###################################
+      ! Caclul de la masse volumique selon Brandes et al. 2007
+      ! pour la neige
+      ! in  : d
+      ! out : rhox=masse volumique
+      
+      REAL*8 D
+      REAL*8 RHOX
+
+      RHOX=1000*0.178*D**(-0.922) !kg/m3
+
+      RETURN
+      END
+      !END FUNCTION QRHOX   
+            
+
+
+C     ###################################
+      SUBROUTINE ZA05RHOX(D,Frim, RHOX) 
+C     ###################################
+      ! Caclul de la masse volumique selon Zawadzki et al. 2005
+      ! pour la neige
+      ! in  : d
+      ! out : rhox=masse volumique
+      
+      REAL*8 D,Frim
+      REAL*8 RHOX
+      
+      IF (Frim .LE. 1) THEN
+        RHOX=1000*1*0.0116*D**(-1.1) !kg/m3
+      ELSE
+        RHOX=1000*Frim*0.0116*D**(-1.1) !kg/m3
+      ENDIF
+      RETURN
+      END
+      !END FUNCTION QRHOX
+
+
+
+C     ###################################
+      SUBROUTINE LS15RHOX(D,Frim, RHOX) 
+C     ###################################
+      ! Caclul de la masse volumique selon Leinonen and Szyrmer (2015)
+      ! pour la neige
+      ! in  : d
+      ! out : rhox=masse volumique
+      
+      REAL*8 D,Frim
+      REAL*8 RHOX
+
+      IF (Frim .LE. 1) THEN
+        RHOX=1000*0.0286*D**(-0.92) !kg/m3
+      ELSE IF ((Frim .GT. 1) .AND. (Frim .LE. 3)) THEN
+        RHOX=1000*1.1*D**(-0.88) !kg/m3
+      ELSE IF (Frim .GT. 3) THEN
+        RHOX=1000*3.24*D**(-0.7) !kg/m3
+      ENDIF
+      RETURN
+      END
+      !END FUNCTION QRHOX
+
 c     ###################################
       SUBROUTINE QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSX) 
 c     ###################################

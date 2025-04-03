@@ -3,7 +3,9 @@ canting:analyt
 sigbeta:40.0
 DIEL:RY19dry
 ARfunc:CNST
-ARcnst:0.60
+ARcnst:0.8
+DSTYfunc:LS15
+Frim:3.2
 LAM:53.2
 ELEVmin:0.0
 ELEVmax:10.0
