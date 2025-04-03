@@ -54,7 +54,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
                                                            subDomain=subDomain,
                                                            real_case=real_case,
                                                            )
-        if verbose : print('\t\tSubdomain indices extracted in',round(tm.time()-deb,6),'seconds'); deb=tm.time()
+        if verbose : print('\t\tSubdomain indices extracted.'); deb=tm.time()
     else:
         i_min, i_max, j_min, j_max = 0, -1, 0, -1
         if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
@@ -76,14 +76,14 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     name_hydro = link_varname_with_mesonh_name()
     
     M = get_contents(mnhFile=mnh_file, hydrometeors=hydromet_list,
-                     name_var_hydro=name_hydro, temperature=Tc, rho=rho3D,
+                     name_var_hydro=name_hydro, temperature=Tc, rho3D=rho3D,
                      i_min=i_min, i_max=i_max,
                      j_min=j_min, j_max=j_max,
                      )
     if verbose : print('\t\tGot 3D contents in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
     Nc = get_concentrations(mnhFile=mnh_file, microphysics_scheme=micro,
-                            hydrometeors=hydromet_list, temperature=Tc, rho=rho3D,
+                            hydrometeors=hydromet_list, temperature=Tc, rho3D=rho3D,
                             i_min=i_min, i_max=i_max,
                             j_min=j_min, j_max=j_max,
                             )
@@ -106,7 +106,7 @@ def get_geometry(mnhFile:Dataset,
         LAT = mnhFile.variables['latitude'][:][i_min:i_max,j_min:j_max]
         LON = mnhFile.variables['longitude'][:][i_min:i_max,j_min:j_max]
     else :
-        ZS = np.zeros((X.shape,Y.shape)) # is null for idealized cases
+        ZS = np.zeros((X.shape[0],Y.shape[0])) # is null for idealized cases
         LAT =float('nan')
         LON = float('nan')
     Z_3D = np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
@@ -176,7 +176,7 @@ def get_concentrations(mnhFile:Dataset,
                        microphysics_scheme:str,
                        hydrometeors:list,
                        temperature:np.ndarray,
-                       rho:np.ndarray,
+                       rho3D:np.ndarray,
                        i_min:int, i_max:int,
                        j_min:int, j_max:int,):
     concentrations = {}
@@ -191,6 +191,6 @@ def get_concentrations(mnhFile:Dataset,
         concentrations['rr'][concentrations['rr']==999.]=float('nan')
         concentrations['ii'] = mnhFile.variables['CICE'][0,:,:,:][:,i_min:i_max,j_min:j_max] #former name: CICET
         concentrations['ii'][concentrations['ii']==999.]=float('nan')
-    concentrations['rr']*=rho
-    concentrations['ii']*=rho
+    concentrations['rr']*=rho3D
+    concentrations['ii']*=rho3D
     return concentrations
