@@ -22,7 +22,7 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import LIMToption
+from operadar.operadar_conf import LIMToption, radar_band
 
 
 
@@ -74,7 +74,7 @@ def read_Tmatrix_Clotilde(band:str,
     Returns:
         Tmatrix_params (dict) : dictionary containing min/step/max values for multiple parameters
     """
-    print("Reading Tmatrix tables")
+    print("Reading Tmatrix tables for",radar_band,"band")
     deb_timer = tm.time()
     micro_for_Tmatrix = get_scheme_to_fetch_table(microphysics=scheme)
     Tmatrix_params = initialize_Tmatrix_dictionary()
