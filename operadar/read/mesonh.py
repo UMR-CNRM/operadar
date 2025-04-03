@@ -34,7 +34,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     Returns:
         X (ndarray): 1D horizontal coordinates in m
         Y (ndarray): 1D horizontal coordinates in m
-        Z (ndarray): 1D array of vertical coordinates in model pressure levels
+        Z (ndarray): 3D array of vertical coordinates in model pressure levels
         LON (ndarray): 2D array of longitude coordinates
         LAT (ndarray): 2D array of latitude coordinates
         M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
@@ -47,8 +47,10 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     mnh_file = Dataset(filePath,'r')
     if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
 
-    X, Y, Z = get_geometry(mnhFile=mnh_file)
-    if verbose : print('\t\tGot geometry (X,Y,Z) in',round(tm.time()-deb,6),'seconds');deb=tm.time()
+    X, Y, Z = get_geometry(mnhFile=mnh_file,
+                           real_case=real_case,
+                           )
+    if verbose : print('\t\tGot geometry in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
     if real_case:
         LAT = mnh_file.variables['latitude'][:]
@@ -109,15 +111,18 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
 
 
 
-def get_geometry(mnhFile:Dataset):
+def get_geometry(mnhFile:Dataset,real_case:bool):
     X = mnhFile.variables['XHAT'][:]
     Y = mnhFile.variables['YHAT'][:]
     ZHAT = mnhFile.variables['ZHAT'][:] # height above ground (m)
-    ZS = mnhFile.variables['ZS'][:] # altitude (m) of model surface (ground)
-    Z = np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
+    if real_case :
+        ZS = mnhFile.variables['ZS'][:] # altitude (m) of model surface (ground)
+    else :
+        ZS = np.zeros((X.shape,Y.shape)) # is null for idealized cases
+    Z_3D = np.empty((ZHAT.shape[0],ZS.shape[0],ZS.shape[1]))
     for level in range(ZHAT.shape[0]):
-        Z[level,:,:]=ZS[:,:]+ZHAT[level]
-    return X, Y, Z
+        Z_3D[level,:,:]=ZS[:,:]+ZHAT[level]
+    return X, Y, Z_3D
 
 
 
