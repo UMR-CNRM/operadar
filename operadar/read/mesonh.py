@@ -43,7 +43,7 @@ def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
     mnh_file = Dataset(filePath,'r')
     if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    #add check variables
+    check_variable_is_in_dataset(mnh_file)
     
     if subDomain != None :
         i_min, i_max, j_min, j_max = get_subdomain_indices(mnhFile=mnh_file,

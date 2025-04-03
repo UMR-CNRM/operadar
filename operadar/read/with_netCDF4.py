@@ -4,9 +4,26 @@
 @author: davidcl
 """
 
+import sys
 import numpy as np
 from netCDF4 import Dataset
 from operadar.utils.formats_data import get_lat_lon_from_subdomain
+
+
+
+def check_variable_is_in_dataset(mnhFile:Dataset):
+    necessary_variables = ['XHAT','YHAT','ZHAT','PABST','THT','RHOREFZ']
+    variables_list = mnhFile.variables.keys()
+    missing_var = []
+    for var in necessary_variables :
+        if var not in variables_list :
+            missing_var += [var]
+
+    if len(missing_var)>0 :
+        print('_____________')
+        print('/!\ ERROR /!\ Missing variables :',missing_var)
+        sys.exit()
+
 
 
 def get_geometry(mnhFile:Dataset,
