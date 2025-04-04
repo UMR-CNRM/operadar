@@ -1,14 +1,13 @@
 type:rr
-oscill:0
-sigbeta:1
-DIEL:1
-CEPS:1
-LAMmin:8.40
-LAMmax:8.40
-LAMstep:0.1
+canting:analyt
+sigbeta:10.0
+DIEL:Liebe91
+ARfunc:BR02
+ARcnst:1.0
+LAM:8.40
 ELEVmin:0.0
-ELEVmax:90.0
-ELEVstep:90.0
+ELEVmax:10.0
+ELEVstep:10.0
 Tcmin:-20.0
 Tcmax:40.0
 Tcstep:1.0
@@ -18,4 +17,3 @@ expDstep:0.02
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0
-axis_ratio:1.00

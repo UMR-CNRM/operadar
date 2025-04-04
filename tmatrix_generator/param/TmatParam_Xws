@@ -3,8 +3,8 @@ oscill:0
 sigbeta:1
 DIEL:3
 CEPS:6
-LAMmin:31.9
-LAMmax:31.9
+LAMmin:53.2
+LAMmax:53.2
 LAMstep:0.1
 ELEVmin:0.0
 ELEVmax:20.0
