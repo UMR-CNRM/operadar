@@ -62,9 +62,9 @@ def operadar(filename:str,
                 for each hydrometeor of the microphysics scheme.
                 Defaults to cf.hydrometeors_moments
         radar_band (str, optional): Defaults to cf.radar_band.
-        radarloc (str | list): location of the radar for simulation.
+        radarloc (str | list | None) : location of the radar for simulation.
                 Either 'center' (i.e. center of the grid) or a [lat_radar,lon_radar]
-                coordinate. Defaults to cf.radarloc.
+                coordinate or None. Defaults to cf.radarloc.
         distmax_rad (float): Maximum radius of the radar data to compute pseudo-observations.
                 DEfaults to cf.distmax_rad.
         Tmatrix_params (dict, optional): dictionary containing the Tmatrix tables parameters.
@@ -89,11 +89,7 @@ def operadar(filename:str,
     # Create or check tree structure of the output directory path
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
     # Format temporal variable and output file name
-<<<<<<< HEAD
-    input_file_path = Path(in_dir_path+filename)    
-=======
     input_file_path = Path(in_dir_path+filename)
->>>>>>> 7359c82 (Integration of BenoitVie modifications)
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
 						 real_case=cf.real_case,
