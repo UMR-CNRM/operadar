@@ -88,11 +88,11 @@ def operadar(filename:str,
     
     # Create or check tree structure of the output directory path
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
-    
     # Format temporal variable and output file name
-    input_file_path = Path(in_dir_path+filename)    
+    input_file_path = Path(in_dir_path+filename)
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
+						 real_case=cf.real_case,
                                                  )
     outFilePath = define_output_path(out_dir_path=out_dir_path,
                                      model=modelname,
@@ -156,6 +156,7 @@ def operadar(filename:str,
                                              output_file_path=outFilePath,
                                              append_in_fa=append_in_file,
                                              )
+        
         # Saving file or reinjecting fields into the input file
         if append_in_file :
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations

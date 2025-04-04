@@ -22,11 +22,12 @@ def read_model_file(filePath:Path,
     
     if (modelname=="MesoNH"):
         from operadar.read.mesonh import read_mesonh
-        [M, Tc, CC, CCI, lat,lon, X, Y, Z] = read_mesonh(filePath=filePath,
+        [X, Y, Alt, lon, lat, M, Nc, Tc] = read_mesonh(filePath=filePath,
                                                          micro=micro_scheme,
                                                          subDomain=domain,
                                                          hydrometeorMoments=hydrometeorMoments,
-                                                         real_case = real_case)
+                                                         real_case = real_case,
+                                                         verbose = verbose)
     elif (modelname=="Arome"):
         from operadar.read.arome import read_arome
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,

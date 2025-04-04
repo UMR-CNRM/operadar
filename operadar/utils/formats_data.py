@@ -1,29 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import epygram
 import pandas as pd
 from pathlib import Path
 from numpy import ndarray
+from netCDF4 import Dataset
 from pandas import Timestamp
 
 
 
-def format_temporal_variable(filePath:Path,model_type:str)-> Timestamp:
+def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Timestamp:
     """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
-    
+
     if model_type=='Arome':
-        #epygram.init_env()
+        epygram.init_env()
         epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r', fmt = 'FA')
         date_time_file = epygram_file.validity.get()
         epygram_file.close()
         return Timestamp(date_time_file)
-    
-    elif model_type=='MesoNH':
-        date_time_file = 'how to get MNH date/time argument ??'
-        sys.exit()
-        #return date_time_file
+    elif model_type=='MesoNH' and real_case :
+        epygram.init_env()
+        epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r',fmt='netCDFMNH') 
+        field = epygram_file.readfield('ZWS')
+        date_time_file = field.validity.get()
+        epygram_file.close()
+        return Timestamp(date_time_file)
+    elif model_type=='MesoNH' and not real_case :
+        mnh_file = Dataset(filePath,'r')
+        date_time_file = mnh_file.variables['time'][:]
+        return date_time_file[0]
 
 
 
@@ -69,8 +75,10 @@ def select_Tmatrix_column(momentsDict:dict[int],
 
 def define_output_path(out_dir_path,model,scheme,radar_band,temporal_variable):
     """Define output path depending on the temporal variable type."""
+
     if type(temporal_variable) is pd.Timestamp :
         outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
-    elif type(temporal_variable)==int:
+    else :
+        temporal_variable = int(temporal_variable)
         outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable}"
     return outPath
