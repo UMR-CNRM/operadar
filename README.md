@@ -34,11 +34,12 @@ pip install git+https://github.com/UMR-CNRM/operadar.git
 
 
 # How to run
-The lookup tables should be generated BEFORE running `operadar`.
+The lookup tables should be generated BEFORE running `operadar` (unless you have a direct access to the tables).
 
 ## Generation of the Tmatrix lookup tables
-### Basic steps
-To work properly, the forward operator needs to access to Tmatrix lookup tables. The code that generates the tables is in Fortran, and requires the installation of the `lapack` library.
+To work properly, the forward operator needs to have access to the Tmatrix lookup tables. The codes that generate the tables are in Fortran, and requires the installation of a Fortran compiler.
+### 1. Fortran compiler installation
+For this installation, we will use the `lapack` library.
 1) First, clone the last version of `lapack` ([check here](https://github.com/Reference-LAPACK/lapack)).
    ```
    cd tmatrix_generator/src
@@ -65,13 +66,16 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
 
    --> ALL PRECISIONS	5151370		0	(0.000%)	      0	(0.000%)
    ``` 
-3) Go back to `src/` and open the makefile. Make sure the `LIBS` variable points to the previously installed version of `lapack` :
+3) Go back to `src/` and open both `makefile` and `makeTmatInt`. Make sure the `LIBS` variable points to the previously installed version of `lapack` :
    ```shell
    LIBS = -L ./my_lapack -llapack -lrefblas
    ```
-4) The parametrization for each hydrometeor type (density, axis ratio, etc) is defined in a txt file that you need to modify according to your needs : `tmatrix_generator/param/TmatParam_(radarBand)(hydrometeorType)`
-5) To specify which radar band and hydrometeor types the lookup tables should be created, in `Tmatrix.f`, search for `DO idtype` and `DO idband`. You can loop over all the band and hydrometeor types (`DO idxxx=minNumber,maxNumber`), or just a few combination of them, or only a single band and/or hydrometeor type (`DO idxxx=sameNumber,sameNumber`). In the following example, tables will be generated for C band only and for rain, snow, pristine ice, graupel, and wet graupel hydrometeor types.
-   ```fortran{
+### 2. Creation of the lookup tables for discrete hydrometeor diameters
+This is a mandatory step. These tables will be used later for the integration of the diameters over the particle size distribution (PSD), in the second Fortran code.
+1) Make sure you are in the `tmatrix_generator/` directory.
+2) The parametrization for each hydrometeor type (density, axis ratio, etc) is defined in a txt file that you may need to modify accordingly to your needs : `tmatrix_generator/param/TmatParam_(radarBand)(hydrometeorType)`
+3) To specify which radar band and hydrometeor types the lookup tables should be created, open `tmatrix_generator/src/Tmatrix.f`, search for `DO idtype` and `DO idband`. You can loop over all the band and hydrometeor types (`DO idxxx=minNumber,maxNumber`), or just a few combination of them, or only a single band and/or hydrometeor type (`DO idxxx=sameNumber,sameNumber`). In the following example, tables will be generated for C band only and for rain, snow, pristine ice, graupel, and wet graupel hydrometeor types.
+   ```fortran
    !=======  Loop over radar frequency bands
       DO idbande=2,2
           IF (idbande .EQ. 1) bande='S'
@@ -93,7 +97,7 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
          IF (idtype .EQ. 9) typeh='wh' ! wet hail
          IF (idtype .EQ. 10) typeh='ws' !wet snow
    ```
-6) To compile the `Tmatrix.f` code and create the `Tmat` executable, just do :
+4) To compile the `Tmatrix.f` code and create the `Tmat` executable, just do :
    ```
    make
    ```
@@ -102,7 +106,7 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
    chmod u+x Tmat
    ```
 
-7) You can now generate the lookup tables for different hydrometeor types and different radar band ! 
+5) You can now generate the lookup tables (for discrete diameters) for different hydrometeor types and different radar band ! 
    ```
    Tmat
    ```
@@ -111,8 +115,30 @@ To work properly, the forward operator needs to access to Tmatrix lookup tables.
    make clean
    make
    ```
-### Executable
-An executable is provided to facilitate table generation for a single hydrometeor type but different parameters combinations. You still need to complete step 5 (select one or multiple radar band but **only one** hydrometeor type), and step 7.
+### 3. Creation of the lookup tables for discrete hydrometeor contents (integration over the PSD)
+The previous step is mandatory, otherwise tables won't be created.
+1) Open `tmatrix_generator/src/TmatInt.f90` and search for `DO idtype` and `DO idband`.
+2) As in step 2.3, modify the loops to match those of `Tmatrix.f`. Given the previous example, we will have to loop over C band only and to loop over rain, snow, pristine ice, graupel, and wet graupel hydrometeor types.
+3) Search for the `CCLOUD` variable and update the wanted microphysics scheme for the integration over the PSD by changing the name.
+   ```fortran
+   CCLOUD="ICE3" ! Possible microphysics : "ICE3", "LIMA" or "LIMT"
+   ```
+4) No more modifications are required, you can now compile the code and create another executable (don't forget to check if it is executable) :
+   ```
+   make -f makeTmatInt
+   ```
+5) You can now generate the lookup tables for discrete hydrometeor contents ! 
+   ```
+   TmatInt
+   ```
+   Each time you modify `TmatInt.f90`, you will need to update the `TmatInt` executable with :
+   ```
+   make -f makeTmatInt clean
+   make 
+   ```
+
+### Executable (useful for sensitivity tests)
+An executable is provided to facilitate table generation for a single hydrometeor type but different parameters combinations. You still need to complete step 1.5 (select one or multiple radar band but **only one** hydrometeor type), and step 7.
 ```
 >>> $ ./execTmat.sh --help
 ----------------------------------------
