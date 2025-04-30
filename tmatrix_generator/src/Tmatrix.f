@@ -490,7 +490,7 @@ C     ***********************************************************************
 	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
       
       !======= Loop over hydrometeor types
-      DO idtype=5,5 !1,1 !2,2
+      DO idtype=8,8
       IF (idtype .EQ. 1) typeh='rr'
       IF (idtype .EQ. 2) typeh='ss'
       IF (idtype .EQ. 3) typeh='ii'

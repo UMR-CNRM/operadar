@@ -124,12 +124,14 @@ IMPLICIT NONE
 CHARACTER*6::canting
 CHARACTER*7::DIEL
 CHARACTER*4::ARfunc
+CHARACTER*4::DSTYfunc
 REAL:: SIGBETA,ARcnst
 REAL :: LAM,FREQ 
 REAL :: ELEV,ELEVmin,ELEVmax,ELEVstep !,ELEVrecinf,ELEVrecsup
 REAL  :: Tc,Tcmin,Tcmax,Tcstep,Tk !,Tcrecinf,Tcrecsup
 REAL :: Fwmin, Fwstep, Fwmax,Fw !,Fwrecinf,Fwrecsup
 REAL :: D,expD,expDmin,expDmax,expDstep
+REAL :: Frim ! degree of riming factor
 
 ! Sup and inf born for diameter parameters
 REAL :: Drecsup,Dmrecsup,Deqrecsup,Deqmrecsup,Deqrrecsup,Deqrmrecsup
@@ -150,7 +152,7 @@ REAL :: K2 !dielectric factor
 ! Variables for input and output files names
 CHARACTER*2 :: typeh
 CHARACTER*1 :: bande
-CHARACTER*26 :: nomfileCoef,nomfileCoef_rr
+CHARACTER*29 :: nomfileCoef,nomfileCoef_rr
 CHARACTER*42 :: nomfileCoefInt
 CHARACTER*4  :: CCLOUD ! LIMA OU ICE3
 CHARACTER*27 :: Hydromet_const_file
@@ -216,7 +218,7 @@ REAL :: LIGHTSPEED = 299792458.
 CCLOUD="ICE3" !"ICE3", "LIMA" or "LIMT" => LIMT for LIMA Marie Taufour with diagnostic nu : Taufour et al (2016)
 mumax=15.0 !6.0
 
-testMode=.FALSE. !.TRUE. !.FALSE. !.TRUE. !.TRUE. !.TRUE. !.FALSE. !.TRUE.
+testMode=.FALSE. !.TRUE.
 
 ! min/step/max values for the exponant of the hydromet content M (kg/m3):
 expMmin=-7.0
@@ -243,10 +245,10 @@ IF(CCLOUD=="LIMT") THEN
 END IF
 
 !****************************************************
-!          Loop over radar frequency bands (S,C,X,W,Ka)
+!   Loop over radar frequency bands (S,C,X,W,Ka)
 !****************************************************
 
-DO idbande=4,4
+DO idbande=2,2
   IF (idbande .EQ. 1) bande='S'
   IF (idbande .EQ. 2) bande='C'
   IF (idbande .EQ. 3) bande='X'
@@ -257,7 +259,7 @@ DO idbande=4,4
 !          Loop over hydrometeor types
 !****************************************************
 
-DO idtype=1,9 
+DO idtype=1,1 
   IF (idtype .EQ. 1) typeh='rr'
   IF (idtype .EQ. 2) typeh='ss'
   IF (idtype .EQ. 3) typeh='gg'
@@ -301,29 +303,29 @@ DO idtype=1,9
 
 
   !---- Input Files
-  nomfileCoef='../OUTPUT/TmatCoefDiff_'//bande//typeh !//numtable
-  nomfileCoef_rr='../OUTPUT/TmatCoefDiff_'//bande//'rr' !//numtable
+  nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh !//numtable
+  nomfileCoef_rr='../tables/'//typeh//'/TmatCoefDiff_'//bande//'rr' !//numtable
  
-  PRINT *,nomfileCoef,'ok'
-  PRINT *,nomfileCoef_rr,'ok'
+  PRINT *,nomfileCoef,' ok'
+  PRINT *,nomfileCoef_rr,' ok'
   
   
   !------ Reading of min/step/max parameters in the 2nd line 
   ! of coefficients file
   OPEN (1,FILE=nomfileCoef)
   READ (1,*) ! Reads the first line of the file
-  1001 FORMAT (A6,2X,F4.1,2X,A7,2X,A4,2X,F4.2,2X,F6.2,2X, & !2nd line
-               F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X, &
-               F6.2,2X,F6.4,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2)
-  READ (1,1001)  canting,SIGBETA,DIEL,ARfunc,ARcnst,LAM, &
-                 ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
+  1001 FORMAT (A6,2X,F4.1,2X,A7,2X,A4,2X,F4.2,2X,A4,2X,F6.2,2X, & !2nd line
+               F5.1,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2,2X, &
+               F6.2,2X,F6.2,2X,F6.4,2X,F6.2,2X,F6.2,2X,F6.2,2X,F6.2)
+  READ (1,1001)  canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
+                 Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
                  expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
 
-  WRITE (0,*) "canting,SIGBETA,DIEL,ARfunc,ARcnst,LAM,"&
-              "ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,"&
+  WRITE (0,*) "canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM,"&
+              "Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,"&
               "expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax"
-  WRITE (0,1001) canting,SIGBETA,DIEL,ARfunc,ARcnst,LAM, &
-                 ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
+  WRITE (0,1001) canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
+                 Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
                  expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
  
   
@@ -406,22 +408,22 @@ DO idtype=1,9
  
   !=================================
   !Output file
-  nomfileCoefInt='../OUTPUT/TmatCoefInt_'//CCLOUD//'_'//bande//typeh !//numtable
-  PRINT *,nomfileCoefInt,'ok'
+  nomfileCoefInt='../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//bande//typeh !//numtable
+  PRINT *,nomfileCoefInt,' ok'
 
   OPEN (6,FILE=nomfileCoefInt)
   
   ! ==== Description part of the output file ====
   ! Parameters values
   WRITE (6,1000)              
-  1000 FORMAT ('canting;SIGBETA;DIEL;ARfunc;ARcnst;LAM;'&
-               'ELEVmin;ELEVstep;ELEVmax;Tcmin;Tcstep;Tcmax;expDmin;'&
+  1000 FORMAT ('canting;SIGBETA;DIEL;ARfunc;ARcnst;DSTYfunc;LAM;' &
+               'Frim;ELEVmin;ELEVstep;ELEVmax;Tcmin;Tcstep;Tcmax;expDmin;' &
                'expDstep;expDmax;Fwmin;Fwstep;Fwmax')   
-  WRITE (6,1002) canting,SIGBETA,DIEL,ARfunc,ARcnst,LAM,&
-                 ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,&
-                 expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
-  1002 FORMAT (A6,';',F4.1,';',A7,';',A4,';',F4.2,';',F6.2,';',&
-               F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',&
+  WRITE (6,1002) canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
+                 Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
+                 expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax,CCLOUD
+  1002 FORMAT (A6,';',F4.1,';',A7,';',A4,';',F4.2,';',A4,';',F6.2,';', &
+               F5.1,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
                F6.2,';',F6.4,';',F6.2,';',F6.2,';',F6.2,';',F6.2)               
       
   ! Variables names
