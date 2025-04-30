@@ -18,13 +18,64 @@ It is adapted to read and manipulate AROME and MesoNH model files and currently 
 * dataset attributes such as the horizontal resolution, the options used to compute the mixed-phase or simulate the radar data.
 
 # Installation
-## On Belenos: 
-create a .gitconfig file (on your home directory) with:
+## On a server 
+NOTE : It is easier to work with virtual environments. Here we present the installation with anaconda, but using any module to create a virtual environment will do the trick. The installation can also be realised with `pip`.
+### Additional steps (only for HPCs at Météo-France)
+Create a .gitconfig file (on your home directory) with :
 
 ```
 [http]
        sslVerify = false
 ```
+And deactivate the pre-installed conda environment :
+```
+$ condam
+```
+### Procedure
+1) Create a virtual environment. Let's named it `myenv`. `operadar` requires at least Python 3.11 :
+   ```
+   $ conda create -n myenv python=3.11
+   ```
+2) Activate the environment with
+   ```
+   $ conda activate myenv
+   ```
+3) Install the following dependencies...
+   ```
+   $ conda install pandas xarray netCDF4 numpy h5py
+   ```
+   ...as well as the [EPyGrAM package](https://github.com/UMR-CNRM/EPyGrAM) (only available with `pip`).
+   ```
+   $ pip install epygram
+   ```
+   CAREFUL : You may need to install `matplotlib` and `cartopy`, but it seems to generate incompatibilities with `numpy`. To solve the issue, the currently proposed solution is either to remove the plot directory of `operadar`, or update `numpy` to its last version. This is a temporary solution and the issue will be fixed later.
+3) Now, clone the `operadar` repository
+   ```
+   $ git clone https://github.com/UMR-CNRM/operadar.git
+   $ cd operadar
+   >>> $ tree -L 1
+   .
+   ├── configFiles
+   ├── exec_operadar.sh
+   ├── operadar
+   ├── pyscattering
+   ├── README.md
+   ├── requirements.txt
+   └── setup.py
+   ```
+4) Installing the package with `pip install -e .` should create a `operadar.egg-info` directory.
+   ```
+   >>> $ tree -L 1
+   .
+   ├── configFiles
+   ├── exec_operadar.sh
+   ├── operadar
+   ├── operadar.egg-info
+   ├── pyscattering
+   ├── README.md
+   ├── requirements.txt
+   └── setup.py
+   ```
 
 ## As a package (not sure yet of the procedure)
 In a virtual environment (recommended) or in your base environment
@@ -157,7 +208,7 @@ Usage: ./execTmat.sh -hydro HYDRO -af ARfunc -av ARvalue -c CANTING -dsty DSTYfu
 ```
 
 ## Forward operator configuration file
-The user must set up, beforehand, a configuration file based on the template provided `./configFile/conf_template.py`. Please, do not modify the template directly. Instead, make a copy of the file and name it differently. 
+The user must set up, beforehand, a configuration file based on the template provided `./configFile/template.py`. Please, do not modify the template directly. Instead, make a copy of the file and name it differently. 
 
 ## Quick execution in a terminal (suitable for 1 file at a time)
 The script `exec_operadar.sh` wraps the execution of the Python code. To show the help :
