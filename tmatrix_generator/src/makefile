@@ -10,9 +10,8 @@ OBJECTS = ./Tmatrix.f
 #LIBS = -L ../LIB/LAPACK  -llapack_LINUX -lblas_LINUX
 
 # Local (ubuntu)
-#LIBS = -L ./LIB/lapack-3.10.0  -lliblapack.a -llibrefblas.a
-LIBS = -L ./lib/lapack -llapack -lrefblas
-#LIBS = -L /usr/lib/x86_64-linux-gnu/lapack -lliblapack
+# Should be something like : LIBS = -L ./my_lapack_path -llapack -lrefblas
+LIBS = -L ./libFortran/lapack -llapack -lrefblas
 
 CF = gfortran
 
