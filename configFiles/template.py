@@ -5,11 +5,12 @@
  *   ----------------------------------------------
  *
  *   You may want to adjust some parameters.
+ *   /!\ Possible options are displayed. Be careful and respect if quotes are needed or not.
  *   Please make a copy of this file before any changes
  *
 """
 
-# ----- INPUT file path (filename will be used to name the output file)
+# ----- INPUT file path (path to folder containing the files)
 input_filePath  = "home/my_input_folder/" 
 
 # ----- OUPUT file(s) directory
