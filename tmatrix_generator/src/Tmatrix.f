@@ -482,7 +482,7 @@ C     ***********************************************************************
       !==================================================== 
        
       !=======  Loop over radar frequency bands
-      DO idbande=2,2
+      DO idbande=5,5
           IF (idbande .EQ. 1) bande='S'
           IF (idbande .EQ. 2) bande='C'
           IF (idbande .EQ. 3) bande='X' ! LAM=31.9 mm
@@ -490,7 +490,7 @@ C     ***********************************************************************
 	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
       
       !======= Loop over hydrometeor types
-      DO idtype=8,8
+      DO idtype=1,9
       IF (idtype .EQ. 1) typeh='rr'
       IF (idtype .EQ. 2) typeh='ss'
       IF (idtype .EQ. 3) typeh='ii'

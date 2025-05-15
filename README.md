@@ -94,8 +94,8 @@ For this installation, we will use the `lapack` library.
 1) First, clone the last version of `lapack` ([check here](https://github.com/Reference-LAPACK/lapack)).
    ```
    cd tmatrix_generator/src
-   mkdir my_lapack
-   cd my_lapack
+   mkdir libFortran
+   cd libFortran
    git clone https://github.com/Reference-LAPACK/lapack.git
    ```
    **NOTE** : You can install `lapack` wherever you like but need to check that the path specified in the `makefile` corresponds to your installation.
@@ -119,7 +119,7 @@ For this installation, we will use the `lapack` library.
    ``` 
 3) Go back to `src/` and open both `makefile` and `makeTmatInt`. Make sure the `LIBS` variable points to the previously installed version of `lapack` :
    ```shell
-   LIBS = -L ./my_lapack -llapack -lrefblas
+   LIBS = -L ./libFortran/lapack -llapack -lrefblas
    ```
 ### 2. Creation of the lookup tables for discrete hydrometeor diameters
 This is a mandatory step. These tables will be used later for the integration of the diameters over the particle size distribution (PSD), in the second Fortran code.

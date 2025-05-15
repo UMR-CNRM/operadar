@@ -248,7 +248,7 @@ END IF
 !   Loop over radar frequency bands (S,C,X,W,Ka)
 !****************************************************
 
-DO idbande=2,2
+DO idbande=4,4
   IF (idbande .EQ. 1) bande='S'
   IF (idbande .EQ. 2) bande='C'
   IF (idbande .EQ. 3) bande='X'
@@ -259,7 +259,7 @@ DO idbande=2,2
 !          Loop over hydrometeor types
 !****************************************************
 
-DO idtype=1,1 
+DO idtype=1,7 
   IF (idtype .EQ. 1) typeh='rr'
   IF (idtype .EQ. 2) typeh='ss'
   IF (idtype .EQ. 3) typeh='gg'
@@ -321,8 +321,8 @@ DO idtype=1,1
                  Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
                  expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
 
-  WRITE (0,*) "canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM,"&
-              "Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,"&
+  WRITE (0,*) "canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM,", &
+              "Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax,", &
               "expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax"
   WRITE (0,1001) canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
                  Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
@@ -416,13 +416,13 @@ DO idtype=1,1
   ! ==== Description part of the output file ====
   ! Parameters values
   WRITE (6,1000)              
-  1000 FORMAT ('canting;SIGBETA;DIEL;ARfunc;ARcnst;DSTYfunc;LAM;' &
+  1000 FORMAT ('micro;canting;SIGBETA;DIEL;ARfunc;ARcnst;DSTYfunc;LAM;' &
                'Frim;ELEVmin;ELEVstep;ELEVmax;Tcmin;Tcstep;Tcmax;expDmin;' &
                'expDstep;expDmax;Fwmin;Fwstep;Fwmax')   
-  WRITE (6,1002) canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
+  WRITE (6,1002) CCLOUD,canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
                  Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
-                 expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax,CCLOUD
-  1002 FORMAT (A6,';',F4.1,';',A7,';',A4,';',F4.2,';',A4,';',F6.2,';', &
+                 expDmin,expDstep,expDmax,Fwmin,Fwstep,Fwmax
+  1002 FORMAT (A4,';',A6,';',F4.1,';',A7,';',A4,';',F4.2,';',A4,';',F6.2,';', &
                F5.1,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
                F6.2,';',F6.4,';',F6.2,';',F6.2,';',F6.2,';',F6.2)               
       
