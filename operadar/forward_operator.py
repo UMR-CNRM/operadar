@@ -17,7 +17,7 @@ from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
 from operadar.save.append_dpolvar import append_in_input_file
-from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
+from operadar.read.tmatrix_tables import read_Tmatrix_tables
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
@@ -107,12 +107,12 @@ def operadar(filename:str,
             Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
                                                                           datatype='tmatrix',
                                                                           )
-            Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,
-                                                   scheme=microphysics_scheme,
-                                                   pathTmat=tmatrix_path,
-                                                   hydrometeors=Tmatrix_hydromet_list,
-                                                   verbose=get_more_details,
-                                                   )
+            Tmatrix_params = read_Tmatrix_tables(band=radar_band,
+                                                 scheme=microphysics_scheme,
+                                                 pathTmat=tmatrix_path,
+                                                 hydrometeors=Tmatrix_hydromet_list,
+                                                 verbose=get_more_details,
+                                                )
         # Read model variables
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                            modelname=modelname,
