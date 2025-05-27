@@ -16,12 +16,13 @@ input_filePath  = "home/my_input_folder/"
 # ----- OUPUT file(s) directory
 outPath = f"/home/my_output_folder/"
 
-# ----- Tmatrix directory (TmatCoefInt_SCXW) path
-path_Tmatrix = "/my_path/TmatCoefInt_SCXW/"
+# ----- Lookup tables directory path
+path_tables = "./tmatrix_generator/tables/default/"
 
-# ----- Scattering method for each hydrometeor
-#       The user can specify if one method ('Tmatrix' or 'Rayleigh') or 'both' methods are employed to compute
-#       the polarimetric variables OR specify the method for each hydrometeor individually. See the examples below.
+# ----- Scattering method
+#       The user can specify if one method ('Tmatrix' or 'Rayleigh') or 'both' methods are employed to 
+#       compute the polarimetric variables, or, specify the method for each hydrometeor individually.
+#       See the examples below.
 #       * scattering_method = 'both' will create two output files instead of one, respectively named *_Tmatrix.nc and *_Rayleigh.nc
 #                                    + option --append --> will instead append fieldName_Tmatrix and fieldName_Rayleigh in the input file
 #       * scattering_method = 'Tmatrix' or 'Rayleigh' will create one output file named *_{scattering_method}.nc
@@ -29,7 +30,7 @@ path_Tmatrix = "/my_path/TmatCoefInt_SCXW/"
 #       * scattering_method = {'cc':'Rayleigh','rr':'Rayleigh','ss':'Tmatrix','gg':'Tmatrix','ii':'Tmatrix','wg':'Tmatrix'}
 #                             --> will create a unique file with the polarimetric fields resulting from the combinations
 #                                 of the chosen methods in this dictionnary
-scattering_method = {'cc':'Tmatrix','rr':'Tmatrix','ss':'Tmatrix','gg':'Tmatrix','ii':'Tmatrix','wg':'Tmatrix'}
+scattering_method = "Tmatrix"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
