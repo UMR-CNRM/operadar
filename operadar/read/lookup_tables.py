@@ -3,10 +3,10 @@
 """
 Created on Tue Apr 11 09:55:15 2023
 
-@author: augros
+@author: augros & davidcl
 
 Contains routines to :
-* read tmatrix tables: 
+* read lookup tables: 
   - Read_TmatrixClotilde
   - Read_VarTmatrixClotilde
 * extract the scattering coefficient 
@@ -22,24 +22,71 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import LIMToption, radar_band
+from operadar.operadar_conf import LIMToption, radar_band, dpol2add, hydrometeors_moments
 
 
 
-def initialize_Tmatrix_dictionary() -> dict :
-    """Initializes the Tmatrix dictionary to store all the variables and columns of the tables"""
-    Tmatrix_params = {}
-    list_of_parameters = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
-                          'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax', 'Tc_h',
-                          'ELEV_h', 'Fw_h', 'M_h', 'S11carre_h', 'S22carre_h', 'ReS22S11_h',
-                          'ImS22S11_h', 'ReS22fmS11f_h', 'ImS22ft_h', 'ImS11ft_h','RRint_h',
-                          'expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax',
+def initialize_table_dictionary(method:str='Tmatrix') -> dict :
+    """Initializes the dictionary to store all the necessary parameters and columns of the tables"""
+    empty_table_dict = {}
+    list_of_parameters = ['LAM',
+                          'ELEVmin', 'ELEVstep', 'ELEVmax',
+                          'Tcmin', 'Tcstep', 'Tcmax',
+                          'Fwmin', 'Fwstep', 'Fwmax', 
+                          'expMmin', 'expMstep', 'expMmax',
+                          'expCCmin', 'expCCstep', 'expCCmax',
                           ]
-    
-    for param in list_of_parameters :
-        Tmatrix_params[param] = {}
+    columns_to_retrieve = retrieve_needed_columns(dpol2add=dpol2add,
+                                                  scattering_method=method,
+                                                  )
+    for key in list_of_parameters+columns_to_retrieve :
+        empty_table_dict[key] = {}
         
-    return Tmatrix_params
+    return empty_table_dict, list_of_parameters, columns_to_retrieve
+
+
+
+def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix'):
+    """Depending on the variables the user wants to compute and the chosen scattering method,
+    creating a list of the table's column names to extract."""
+    
+    table_columnNames = ['Tc', 'ELEV', 'Fw', 'M', 'N']
+    
+    if scattering_method == 'Tmatrix' or scattering_method == 'both' :
+        if 'Zh' in dpol2add :
+            table_columnNames += ['sighh']
+        if 'Zdr' in dpol2add :
+            table_columnNames += ['sigvv']
+            if 'sighh' not in table_columnNames : table_columnNames += ['sighh']
+        if 'Kdp' in dpol2add :
+            table_columnNames += ['kdp']
+        if 'Rhohv' in dpol2add :
+            table_columnNames += ['REdeltaco','IMdeltaco']
+            if 'sighh' not in table_columnNames : table_columnNames += ['sighh']
+            if 'sigvv' not in table_columnNames : table_columnNames += ['sigvv']
+        if 'Ah' in dpol2add :
+            table_columnNames += ['Ah']
+        if 'Av' in dpol2add :
+            table_columnNames += ['Av']
+            
+    if scattering_method == 'Rayleigh' or scattering_method == 'both' :
+        if 'Zh' in dpol2add :
+            table_columnNames += ['sighhR']
+        if 'Zdr' in dpol2add :
+            table_columnNames += ['sigvvR']
+            if 'sighh' not in table_columnNames : table_columnNames += ['sighhR']
+        if 'Kdp' in dpol2add :
+            table_columnNames += ['kdpR']
+        if 'Rhohv' in dpol2add :
+            table_columnNames += ['REdeltacoR','IMdeltacoR']
+            if 'sighh' not in table_columnNames : table_columnNames += ['sighhR']
+            if 'sigvv' not in table_columnNames : table_columnNames += ['sigvvR']
+        if 'Ah' in dpol2add :
+            table_columnNames += ['AhR']
+        if 'Av' in dpol2add :
+            table_columnNames += ['AvR']    
+    
+    return table_columnNames
 
 
 
@@ -52,69 +99,63 @@ def get_scheme_to_fetch_table(microphysics:str) -> str :
         return "LIMA"
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',microphysics,'is not a valid name for Tmatrix computation')
+        print('/!\ ERROR /!\ :',microphysics,'is not a valid name for table computation')
+        print('                the name has to start with : "ICE" or "LIM"')
         sys.exit()
 
 
 
-def read_Tmatrix_Clotilde(band:str,
-                          hydrometeors:list,
-                          scheme:str,
-                          pathTmat:str,
-                          verbose:bool,
-                          )-> dict:
-    """Extract min/step/max in coefficient tables and other parameters from Clotilde's 2020 Tmatrix tables.
+def read_and_extract_tables_content(band:str,
+                                    hydrometeors:list,
+                                    scheme:str,
+                                    path_table:str,
+                                    verbose:bool,
+                                    )-> dict:
+    """Extract min/step/max parameters and necessary columns in the table for later
+    computation of the dual-pol variables.
     
     Args:
         band (str): radar band.
-        hydrometeors (list): list of hydrometeors for which Tmatrix tables must be read.
+        hydrometeors (list): list of hydrometeors for which tables must be read.
         scheme (str): microphysics scheme.
-        pathTmat (str): Tmatrix directory path.
+        path_table (str): table's directory path.
 
     Returns:
-        Tmatrix_params (dict) : dictionary containing min/step/max values for multiple parameters
+        table_dict (dict) : dictionary containing min/step/max values for multiple parameters
     """
-    print("Reading Tmatrix tables for",radar_band,"band")
+    print("Reading tables for",radar_band,"band")
     deb_timer = tm.time()
-    micro_for_Tmatrix = get_scheme_to_fetch_table(microphysics=scheme)
-    Tmatrix_params = initialize_Tmatrix_dictionary()
+    micro_for_table = get_scheme_to_fetch_table(microphysics=scheme)
+    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary()
     
     for h in hydrometeors: 
-        nomfileCoefInt = f'{pathTmat}TmatCoefInt_{micro_for_Tmatrix}_{band}{h}'
+        nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{band}{h}'
         
         if verbose : print("\tReading min/step/max for",h)
-        df = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1) 
-        df['LAMstep'],df['LAMmax'] = df['LAMmin'],df['LAMmin'] # currently no loop over LAM so no LAMstep and LAMmax column (maybe later)
-        values_to_get = ['LAMmin', 'LAMstep', 'LAMmax', 'ELEVmin', 'ELEVstep', 'ELEVmax',
-                         'Tcmin', 'Tcstep', 'Tcmax','Fwmin', 'Fwstep', 'Fwmax',
-                         'expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
-        for value in values_to_get :
-            Tmatrix_params[value][h] = np.copy(df[value])[0]
-
-        if verbose : print("\tReading scattering coefficients for",h)
-        df_scat = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
-        table_columns_to_read = ['Tc_h', 'ELEV_h', 'Fw_h', 'M_h', 'S11carre_h', 'S22carre_h', 'ReS22S11_h',
-                                 'ImS22S11_h', 'ReS22fmS11f_h', 'ImS22ft_h', 'ImS11ft_h','RRint_h']
-        for column in table_columns_to_read :
-            if column == 'Fw_h':
-                Tmatrix_params[column][h] = df_scat['P3'].to_numpy()
+        df_params = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
+        for value in parameters_to_retrieve :
+            table_dict[value][h] = np.copy(df_params[value])[0]
+        del df_params
+        
+        if verbose : print("\tRetrieving necessary columns in the table for",h)
+        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
+        for columnName in columns_to_retrieve :
+            if columnName == 'Fw' and hydrometeors_moments[h]==1 :
+                table_dict[columnName][h] = df_columns['P3'].to_numpy()
+                table_dict['N'][h] = df_columns['P3'].to_numpy()*0
+            elif columnName == 'N' and hydrometeors_moments[h]==2 :
+                table_dict[columnName][h] = df_columns['P3'].to_numpy()
+                table_dict['Fw'][h] = df_columns['P3'].to_numpy()*0
             else :
-                Tmatrix_params[column][h] = df_scat[column[:-2]].to_numpy()
-        del df_scat
+                table_dict[columnName][h] = df_columns[columnName].to_numpy()
+        del df_columns
     
-    # WILL BE REMOVED LATER FOR COMPUTATION PURPOSE
-    # for contents and number concentration: same min/step/max for all class of hydrometeors
-    #same_value_for_all_hydrometeors = ['expMmin', 'expMstep', 'expMmax', 'expCCmin', 'expCCstep', 'expCCmax']
-    #for value in same_value_for_all_hydrometeors :
-    #    Tmatrix_params[value] = np.copy(df[value])[0]
-    
-    del df
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
-    return Tmatrix_params
+    return table_dict
 
 
 
-def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
+def Read_VarTmatrixClotilde(path_table,band,schema_micro,table_ind,h):
         
     # Dictionnaries initialization
     LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
@@ -124,7 +165,7 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
     Tc_h, ELEV_h, Fw_h, M_h = {}, {}, {}, {}
     Zhh, Zdr, Rhv, Kdp = {}, {}, {}, {}
     
-    nomfileVarInt = pathTmat+'TmatVarInt_'+schema_micro+'_'+band+'_'+h+table_ind  
+    nomfileVarInt = path_table+'TmatVarInt_'+schema_micro+'_'+band+'_'+h+table_ind  
 
     print("reading min/step/max in : ", nomfileVarInt)
     df = pd.read_csv(nomfileVarInt, sep=";",nrows = 1)
@@ -173,45 +214,45 @@ def Read_VarTmatrixClotilde(pathTmat,band,schema_micro,table_ind,h):
 
     
 
-def get_scatcoef(tmatDict:dict, scat_coefs:list, hydrometeor:str, colName_tmatrix:str,
+def get_scatcoef(tableDict:dict, scat_coefs:list, hydrometeor:str, colName:str,
                  colMin:float, colStep:float, colMax:float,
-                 el_temp:np.ndarray, Tc_temp:np.ndarray, colTmat:np.ndarray,
+                 el_temp:np.ndarray, Tc_temp:np.ndarray, colTable:np.ndarray,
                  M_temp:np.ndarray, n_interpol:int, shutdown_warnings = True):    
     """Extract scattering coefficients for each class of hydrometeor
     
     Input:
     - full table of scattering coef for type t (S11carre_h[h] ...)
     - parameters of each column of the table (min, max, step): ELEVmin...
-    - value of table columns in 3d arrays (el_temp, Tc_temp, colTmat, M_temp)
+    - value of table columns in 3d arrays (el_temp, Tc_temp, colTable, M_temp)
     
     Ouput :
     - scattering coef for type t within mask
     """
-    S11carre_h = tmatDict['S11carre_h'][hydrometeor]
-    S22carre_h = tmatDict['S22carre_h'][hydrometeor]
-    ReS22fmS11f_h = tmatDict['ReS22fmS11f_h'][hydrometeor]
-    ReS22S11_h = tmatDict['ReS22S11_h'][hydrometeor]
-    ImS22S11_h = tmatDict['ImS22S11_h'][hydrometeor]
-    LAMmin_h= tmatDict['LAMmin'][hydrometeor]
-    LAMmax_h= tmatDict['LAMmax'][hydrometeor]
-    LAMstep_h= tmatDict['LAMstep'][hydrometeor]
-    ELEVmin_h= tmatDict['ELEVmin'][hydrometeor]
-    ELEVmax_h= tmatDict['ELEVmax'][hydrometeor]
-    ELEVstep_h= tmatDict['ELEVstep'][hydrometeor]
-    Tcmin_h= tmatDict['Tcmin'][hydrometeor]
-    Tcmax_h= tmatDict['Tcmax'][hydrometeor]
-    Tcstep_h= tmatDict['Tcstep'][hydrometeor]
-    expMmin = tmatDict['expMmin'][hydrometeor]
-    expMstep = tmatDict['expMstep'][hydrometeor]
-    expMmax = tmatDict['expMmax'][hydrometeor]
+    S11carre_h = tableDict['S11carre_h'][hydrometeor]
+    S22carre_h = tableDict['S22carre_h'][hydrometeor]
+    ReS22fmS11f_h = tableDict['ReS22fmS11f_h'][hydrometeor]
+    ReS22S11_h = tableDict['ReS22S11_h'][hydrometeor]
+    ImS22S11_h = tableDict['ImS22S11_h'][hydrometeor]
+    LAMmin_h= tableDict['LAMmin'][hydrometeor]
+    LAMmax_h= tableDict['LAMmax'][hydrometeor]
+    LAMstep_h= tableDict['LAMstep'][hydrometeor]
+    ELEVmin_h= tableDict['ELEVmin'][hydrometeor]
+    ELEVmax_h= tableDict['ELEVmax'][hydrometeor]
+    ELEVstep_h= tableDict['ELEVstep'][hydrometeor]
+    Tcmin_h= tableDict['Tcmin'][hydrometeor]
+    Tcmax_h= tableDict['Tcmax'][hydrometeor]
+    Tcstep_h= tableDict['Tcstep'][hydrometeor]
+    expMmin = tableDict['expMmin'][hydrometeor]
+    expMstep = tableDict['expMstep'][hydrometeor]
+    expMmax = tableDict['expMmax'][hydrometeor]
     
     
                                                             
-    # Find position in the T-matrix table
-    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp, Tc_temp,colTmat, M_temp, LAMmin_h, LAMmax_h,
+    # Find position in the table
+    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp, Tc_temp,colTable, M_temp, LAMmin_h, LAMmax_h,
                                                               LAMstep_h, ELEVmin_h, ELEVmax_h, ELEVstep_h,
                                                               Tcmin_h, Tcmax_h, Tcstep_h, colMin, colMax, colStep,
-                                                              expMmin, expMstep, expMmax, colName_tmatrix, shutdown_warnings)
+                                                              expMmin, expMstep, expMmax, colName, shutdown_warnings)
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}

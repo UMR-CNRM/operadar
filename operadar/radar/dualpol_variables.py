@@ -10,8 +10,8 @@ from pandas import Timestamp
 from operadar.operadar_conf import save_netcdf_single_hydrometeor, n_interpol,dpol2add
 from operadar.save.save_dpolvar import save_netcdf
 from operadar.utils.masking import mask_hydrometeor
-from operadar.read.tmatrix_tables import get_scatcoef
-from operadar.utils.formats_data import select_Tmatrix_column
+from operadar.read.lookup_tables import get_scatcoef
+from operadar.utils.formats_data import select_table_column
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
@@ -21,7 +21,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               elev:np.ndarray, Fw:np.ndarray,
                               contents:dict[np.ndarray],
                               concentrations:dict[np.ndarray],
-                              tmatrix_param:dict,
+                              tables_dict:dict,
                               hydrometeorMoments:dict[int],
                               X:np.ndarray,
                               Y:np.ndarray,
@@ -42,7 +42,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         Fw (np.ndarray): 3D array.
         contents (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
         concentrations (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
-        tmatrix_param (dict): dict of Tmatrix parameters.
+        tables_dict (dict): dict containing the tables parameters and required columns.
         hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme.
         X (np.ndarray): 1D array of horizontal grid coordinates.
         Y (np.ndarray): 1D array of horizontal grid coordinates.
@@ -57,10 +57,10 @@ def compute_dualpol_variables(temperature:np.ndarray,
         dict[np.ndarray]: dictionary containing all the dual-polarimetrization fields.
     """
 
-    dpol_var, scat_coefs = build_list_dpol_var_and_scatcoefs(dpol2add=dpol2add)
+    dpol_var, scat_coefs = build_list_dpol_var(dpol2add=dpol2add)
     
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
-                                                         datatype='tmatrix'
+                                                         datatype='tables'
                                                          )
     print("Computation of",dpol_var,"and",scat_coefs,"for :") ; deb_timer = tm.time()
     dpol_var_dict = {var:np.zeros(temperature.shape) for var in dpol_var}
@@ -70,7 +70,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         
         # Mask single hydrometeor type
         mask_content = mask_hydrometeor(content=contents[h],
-                                        expMmin=tmatrix_param['expMmin'][h]
+                                        expMmin=tables_dict['expMmin'][h]
                                         )
         mask_tot = (mask_precip_dist & mask_content) 
 
@@ -82,7 +82,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                                                          el=elev, Fw=Fw,
                                                          content_h=contents[h],
                                                          concentration_h=concentrations[h],
-                                                         tmatrix_param=tmatrix_param,
+                                                         tables_dict=tables_dict,
                                                          hydrometeorMoments=hydrometeorMoments,
                                                     )
 
@@ -129,7 +129,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                           content_h:np.ndarray,
                                           mask_tot:np.ndarray,
                                           concentration_h:np.ndarray,
-                                          tmatrix_param:dict,
+                                          tables_dict:dict,
                                           hydrometeorMoments:dict[int],
                                         ) -> dict[np.ndarray]:
     """Compute radar scattering coefficients for a single hydrometeor class."""
@@ -141,28 +141,28 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
     concentration_temp=concentration_h[mask_tot]
     
     # Define P3 : Nc (2 moments) or Fw (1 moment) 
-    field_temp, colMin, colMax, colStep, colName = select_Tmatrix_column(momentsDict=hydrometeorMoments,
+    field_temp, colMin, colMax, colStep, colName = select_table_column(momentsDict=hydrometeorMoments,
                                                                          hydrometeor=hydrometeor,
                                                                          concentration=concentration_temp,
                                                                          Fw=Fw_temp,
-                                                                         tmatrix_param=tmatrix_param,
+                                                                         tables_dict=tables_dict,
                                                                          )
     # Extract scattering coefficients for save_netcdf_single_hydrometeor
-    scat_coefs_dict = get_scatcoef(tmatDict=tmatrix_param,
+    scat_coefs_dict = get_scatcoef(tableDict=tables_dict,
                                    scat_coefs=scat_coefs,
                                    hydrometeor=hydrometeor,
-                                   colName_tmatrix=colName,
+                                   colName=colName,
                                    colMin=colMin,
                                    colStep=colStep,
                                    colMax=colMax,
                                    el_temp=elev_temp,
                                    Tc_temp=Tc_temp,
-                                   colTmat=field_temp,
+                                   colTable=field_temp,
                                    M_temp=content_temp,
                                    n_interpol=n_interpol,
                                    )
     # Compute dualpol variables from scattering coefficients
-    dpolDict_h = dpol_var_from_scatcoefs(wavelength=tmatrix_param['LAMmin']['rr']/1000.,
+    dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM']['rr']/1000.,
                                          dpol_var=dpol_var,
                                          scatCoefDict=scat_coefs_dict,
                                          )
@@ -193,7 +193,7 @@ def dpol_var_from_scatcoefs(wavelength:float,
 
 
 def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
-    """Compute ZH, ZDR and RHOHV radar variables."""
+    """Compute polarimetric variables."""
     if 'Zh' in dpol2add :
         dpolDict["Zh"] = np.copy(dpolDict["Zhhlin"])
         dpolDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(dpolDict["Zhhlin"][dpolDict["Zhhlin"]>0])
@@ -201,6 +201,8 @@ def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
         dpolDict["Zdr"] = np.copy(dpolDict["Zhhlin"])
         mask_Zdr = (dpolDict["Zhhlin"]>0) & (dpolDict["Zvvlin"]>0)
         dpolDict["Zdr"][mask_Zdr] = linear_to_dBZ((dpolDict["Zhhlin"]/dpolDict["Zvvlin"])[mask_Zdr])
+    if "Kdp" in dpol2add :
+        dpolDict["Kdp"] = np.copy(dpolDict["kdp"])
     if 'Rhohv' in dpol2add :
         dpolDict["Rhohv"] = np.sqrt(np.divide(dpolDict["S11S22"], dpolDict["S11S11xS22S22"]))
     
@@ -218,23 +220,35 @@ def linear_to_dBZ(Z:np.ndarray) -> np.ndarray:
 
 
 
-def build_list_dpol_var_and_scatcoefs(dpol2add:list):
-    """Depending on the variables user wants to add, creating lists of linear variables and scattering coefficients to compute."""
-    dpol_var,scat_coefs = [],[]
-    if 'Zh' in dpol2add :
-        dpol_var += ['Zhhlin']
-        scat_coefs += ['S22S22']
-    if 'Zdr' in dpol2add :
-        if 'Zhhlin' not in dpol_var : dpol_var += ['Zhhlin','Zvvlin']
-        else : dpol_var += ['Zvvlin']
-        scat_coefs += ['S11S11']
-    if 'Kdp' in dpol2add :
-        dpol_var += ['Kdp']
-        scat_coefs += ['ReS22fmS11f']
-    if 'Rhohv' in dpol2add :
-        dpol_var += ['Rhohv','S11S22','S11S11xS22S22']
-        if 'S11S11' not in scat_coefs : scat_coefs += ['S11S11']
-        if 'S22S22' not in scat_coefs : scat_coefs += ['S22S22']
-        scat_coefs += ['ReS22S11','ImS22S11']
+def build_list_dpol_var(dpol2add:list,scattering_method:str='Tmatrix'):
+    """Depending on the variables user wants to add and the chosen scattering method, creating lists of linear variables and scattering coefficients to compute."""
+    dpol_var = []
+    if scattering_method == 'Tmatrix' or scattering_method == 'both' :
+        if 'Zh' in dpol2add :
+            dpol_var += ['Zhhlin']
+        if 'Zdr' in dpol2add :
+            dpol_var += ['Zvvlin']
+        if 'Kdp' in dpol2add :
+            dpol_var += ['Kdp']
+        if 'Rhohv' in dpol2add :
+            dpol_var += ['Rhohv']
+        #if 'Attenuation' in dpol2add :
     
-    return dpol_var, scat_coefs
+    # if scattering_method == 'Rayleigh' or scattering_method == 'both' :
+    #     if 'Zh' in dpol2add :
+    #         dpol_var += ['ZhhlinR']
+    #         table_columns += ['sighhR']
+    #     if 'Zdr' in dpol2add :
+    #         if 'ZhhlinR' not in dpol_var : dpol_var += ['ZhhlinR']
+    #         if 'sighhR' not in table_columns : table_columns += ['sighhR']
+    #         dpol_var += ['ZvvlinR']
+    #         table_columns += ['sigvvR']
+    #     if 'Kdp' in dpol2add :
+    #         dpol_var += ['kdpR']
+    #     if 'Rhohv' in dpol2add :
+    #         dpol_var += ['RhohvR','S11S22','S11S11xS22S22']
+    #         if 'S11S11' not in table_columns : table_columns += ['S11S11']
+    #         if 'S22S22' not in table_columns : table_columns += ['S22S22']
+    #         table_columns += ['ReS22S11','ImS22S11']
+    #     if 'Attenuation v' in dpol2add :
+    return dpol_var

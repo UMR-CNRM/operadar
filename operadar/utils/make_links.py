@@ -24,11 +24,11 @@ def link_varname_with_mesonh_name ()-> dict[int]:
 def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
                                           datatype:str,
                                           verbose:bool=False) -> list[str]:
-    """Make the correspondance between available hydrometeor keys in the model or Tmatrix tables
+    """Make the correspondance between available hydrometeor keys in the model or tables
     and the desired keys given in the configuration file.
     
     Available keys/hydrometeors in the model : 'vv','cc','rr','ss','gg','ii','hh'
-    Available keys/hydrometeors in the Tmatrix tables : 'rr','ss','ws','ii','gg','wg','hh','wh'
+    Available keys/hydrometeors in the tables : 'rr','ss','ws','ii','gg','wg','hh','wh'
     
     Legend:
     - 'vv' : water vapour
@@ -44,10 +44,10 @@ def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
     """
     if datatype == 'model' :
         list_to_compare = ['vv','cc','rr','ss','gg','ii','hh']
-    elif datatype == 'tmatrix':
+    elif datatype == 'tables':
         list_to_compare = ['rr','ss','ws','ii','gg','wg','hh','wh']
     else :
-        print(datatype,'is not a valid datatype. Can be "model" or "tmatrix".')
+        print(datatype,'is not a valid datatype. Can be "model" or "tables".')
     
     hydrometeors_to_extract = []
     for key in hydrometeorMoments.keys() :
