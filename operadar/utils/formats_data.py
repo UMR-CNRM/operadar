@@ -43,7 +43,7 @@ def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float,float,float,flo
 
 
 
-def select_table_column(momentsDict:dict[int],
+def Fw_or_Nc(momentsDict:dict[int],
                           hydrometeor:str,
                           concentration:ndarray,
                           Fw:ndarray,
