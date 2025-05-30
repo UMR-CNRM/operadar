@@ -19,7 +19,7 @@ outPath = f"/home/my_output_folder/"
 # ----- Lookup tables directory path
 path_tables = "./tmatrix_generator/tables/default/"
 
-# ----- Scattering method
+# ----- Scattering method (TO COME)
 #       The user can specify if one method ('Tmatrix' or 'Rayleigh') or 'both' methods are employed to 
 #       compute the polarimetric variables, or, specify the method for each hydrometeor individually.
 #       See the examples below.
@@ -57,8 +57,8 @@ MixedPhase = 'Fw_posg'
 #                           and save the resultant netcdf (1 file/hydrometeor class)
 save_netcdf_single_hydrometeor = False
 
-# ----- Dual-pol variables to add in the output file : provide a list of at least one
-#                                                      element in ['Zh','Zdr','Kdp','Rhohv'] 
+# ----- Dual-pol variables to add in the output file : provide a list of at least one element 
+#                                                      in ['Zh','Zdr','Kdp','Rhohv', 'Ah', 'Av'] 
 dpol2add = ['Zh','Zdr','Kdp']
 
 # ----- Radar simulation options 
