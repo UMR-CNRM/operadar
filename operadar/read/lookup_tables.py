@@ -10,7 +10,7 @@ Contains routines to :
   - Read_TmatrixClotilde
   - Read_VarTmatrixClotilde
 * extract the scattering coefficient 
-  - get_scatcoef
+  - perform_nD_interpolation
   - CALC_KTMAT
   - INTERPOL
         
@@ -22,7 +22,12 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import LIMToption, radar_band, dpol2add, hydrometeors_moments
+from operadar.operadar_conf import (LIMToption,
+                                    radar_band,
+                                    dpol2add,
+                                    hydrometeors_moments,
+                                    micro_scheme,
+                                    )
 
 
 
@@ -46,24 +51,23 @@ def initialize_table_dictionary(method:str='Tmatrix') -> dict :
 
 
 
-def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix'):
+def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix')->list:
     """Depending on the variables the user wants to compute and the chosen scattering method,
     creating a list of the table's column names to extract."""
     
-    table_columnNames = ['Tc', 'ELEV', 'Fw', 'M', 'N']
+    table_columnNames = ['Tc', 'ELEV', 'M']
+    if micro_scheme[0:3]=='ICE' : table_columnNames +=['Fw'] # to remove later ?
+    elif micro_scheme[0:3]=='LIM' : table_columnNames +=['N'] # to remove later ?
     
     if scattering_method == 'Tmatrix' or scattering_method == 'both' :
         if 'Zh' in dpol2add :
             table_columnNames += ['sighh']
         if 'Zdr' in dpol2add :
-            table_columnNames += ['sigvv']
-            if 'sighh' not in table_columnNames : table_columnNames += ['sighh']
+            table_columnNames += ['sighh','sigvv']
         if 'Kdp' in dpol2add :
             table_columnNames += ['kdp']
         if 'Rhohv' in dpol2add :
-            table_columnNames += ['REdeltaco','IMdeltaco']
-            if 'sighh' not in table_columnNames : table_columnNames += ['sighh']
-            if 'sigvv' not in table_columnNames : table_columnNames += ['sigvv']
+            table_columnNames += ['REdeltaco','IMdeltaco','sighh','sigvv']
         if 'Ah' in dpol2add :
             table_columnNames += ['Ah']
         if 'Av' in dpol2add :
@@ -73,20 +77,17 @@ def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix'):
         if 'Zh' in dpol2add :
             table_columnNames += ['sighhR']
         if 'Zdr' in dpol2add :
-            table_columnNames += ['sigvvR']
-            if 'sighh' not in table_columnNames : table_columnNames += ['sighhR']
+            table_columnNames += ['sighhR'',sigvvR']
         if 'Kdp' in dpol2add :
             table_columnNames += ['kdpR']
         if 'Rhohv' in dpol2add :
-            table_columnNames += ['REdeltacoR','IMdeltacoR']
-            if 'sighh' not in table_columnNames : table_columnNames += ['sighhR']
-            if 'sigvv' not in table_columnNames : table_columnNames += ['sigvvR']
+            table_columnNames += ['REdeltacoR','IMdeltacoR','sighhR','sigvvR']
         if 'Ah' in dpol2add :
             table_columnNames += ['AhR']
         if 'Av' in dpol2add :
             table_columnNames += ['AvR']    
     
-    return table_columnNames
+    return list(set(table_columnNames)) # return unique list of strings
 
 
 
@@ -138,14 +139,14 @@ def read_and_extract_tables_content(band:str,
         del df_params
         
         if verbose : print("\tRetrieving necessary columns in the table for",h)
-        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1],dtype=np.float32)
+        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])#,dtype=np.float32)
         for columnName in columns_to_retrieve :
             if columnName == 'Fw' and hydrometeors_moments[h]==1 :
                 table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                table_dict['N'][h] = df_columns['P3'].to_numpy()*0
+                #table_dict['N'][h] = df_columns['P3'].to_numpy()*0
             elif columnName == 'N' and hydrometeors_moments[h]==2 :
                 table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                table_dict['Fw'][h] = df_columns['P3'].to_numpy()*0
+                #table_dict['Fw'][h] = df_columns['P3'].to_numpy()*0
             else :
                 table_dict[columnName][h] = df_columns[columnName].to_numpy()
         del df_columns
@@ -214,10 +215,10 @@ def Read_VarTmatrixClotilde(path_table,band,schema_micro,table_ind,h):
 
     
 
-def get_scatcoef(tableDict:dict, scat_coefs:list, hydrometeor:str, colName:str,
+def perform_nD_interpolation(tableDict:dict, which_columns:list, hydrometeor:str, colName:str,
                  colMin:float, colStep:float, colMax:float,
                  el_temp:np.ndarray, Tc_temp:np.ndarray, colTable:np.ndarray,
-                 M_temp:np.ndarray, n_interpol:int, shutdown_warnings = True):    
+                 M_temp:np.ndarray):    
     """Extract scattering coefficients for each class of hydrometeor
     
     Input:
@@ -228,65 +229,60 @@ def get_scatcoef(tableDict:dict, scat_coefs:list, hydrometeor:str, colName:str,
     Ouput :
     - scattering coef for type t within mask
     """
-    S11carre_h = tableDict['S11carre_h'][hydrometeor]
-    S22carre_h = tableDict['S22carre_h'][hydrometeor]
-    ReS22fmS11f_h = tableDict['ReS22fmS11f_h'][hydrometeor]
-    ReS22S11_h = tableDict['ReS22S11_h'][hydrometeor]
-    ImS22S11_h = tableDict['ImS22S11_h'][hydrometeor]
-    LAMmin_h= tableDict['LAMmin'][hydrometeor]
-    LAMmax_h= tableDict['LAMmax'][hydrometeor]
-    LAMstep_h= tableDict['LAMstep'][hydrometeor]
-    ELEVmin_h= tableDict['ELEVmin'][hydrometeor]
-    ELEVmax_h= tableDict['ELEVmax'][hydrometeor]
-    ELEVstep_h= tableDict['ELEVstep'][hydrometeor]
-    Tcmin_h= tableDict['Tcmin'][hydrometeor]
-    Tcmax_h= tableDict['Tcmax'][hydrometeor]
-    Tcstep_h= tableDict['Tcstep'][hydrometeor]
-    expMmin = tableDict['expMmin'][hydrometeor]
-    expMstep = tableDict['expMstep'][hydrometeor]
-    expMmax = tableDict['expMmax'][hydrometeor]
-    
-    
-                                                            
+    columns_2use_for_interpolation = 4 # elevation, temperature, P3 (=Fw or Nc), and content 
+                                      
     # Find position in the table
-    [kTmat, LAMred, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(el_temp, Tc_temp,colTable, M_temp, LAMmin_h, LAMmax_h,
-                                                              LAMstep_h, ELEVmin_h, ELEVmax_h, ELEVstep_h,
-                                                              Tcmin_h, Tcmax_h, Tcstep_h, colMin, colMax, colStep,
-                                                              expMmin, expMstep, expMmax, colName, shutdown_warnings)
+    [kTmat, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(ELEV = el_temp,
+                                                      Tc = Tc_temp,
+                                                      P3r = colTable,
+                                                      M = M_temp,
+                                                      ELEVmin = tableDict['ELEVmin'][hydrometeor],
+                                                      ELEVmax = tableDict['ELEVmax'][hydrometeor],
+                                                      ELEVstep = tableDict['ELEVstep'][hydrometeor],
+                                                      Tcmin = tableDict['Tcmin'][hydrometeor],
+                                                      Tcmax = tableDict['Tcmax'][hydrometeor],
+                                                      Tcstep = tableDict['Tcstep'][hydrometeor],
+                                                      expMmin = tableDict['expMmin'][hydrometeor],
+                                                      expMmax = tableDict['expMmax'][hydrometeor],
+                                                      expMstep = tableDict['expMstep'][hydrometeor],
+                                                      P3min = colMin,
+                                                      P3max = colMax,
+                                                      P3step = colStep,
+                                                      P3name = colName,
+                                                      ncol_interpolation = columns_2use_for_interpolation,
+                                                      shutdown_warnings = True,
+                                                      )
     
      # Store scat coef values for each min/max born in Matcoef     
     MatCoef = {}
+    idx_key_pair = []
     
-    for ind in list(range((n_interpol))):
-        MatCoef[0, ind] = S11carre_h[kTmat[ind]]
-        MatCoef[1, ind] = S22carre_h[kTmat[ind]]
-        MatCoef[2, ind] = ReS22fmS11f_h[kTmat[ind]]
-        MatCoef[3, ind] = ReS22S11_h[kTmat[ind]]
-        MatCoef[4, ind] = ImS22S11_h[kTmat[ind]]
-    
+    for ind in range((2**columns_2use_for_interpolation)): #list(...)
+        for idx,key in enumerate(which_columns) :
+            idx_key_pair += [(idx,key)]
+            MatCoef[idx, ind] = tableDict[key][hydrometeor][kTmat[ind]]
+            
     # Interpol scat coef values
-    scatCoefsDict = INTERPOL(LAMred, ELEVred, Tcred, P3red, Mred, MatCoef)   
+    scatCoefsDict = INTERPOL(ELEVred, Tcred, P3red, Mred, MatCoef,which_columns,idx_key_pair)   
 
-    wanted_scatCoefs = {}
-    for coef in scat_coefs :
-        wanted_scatCoefs[coef] = scatCoefsDict[coef]
-    
-    return wanted_scatCoefs#S11carre, S22carre, ReS22fmS11f, ReS22S11, ImS22S11
+    return scatCoefsDict 
 
 
 
-def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMmax:float, LAMstep:float,
-    ELEVmin:float, ELEVmax:float, ELEVstep:float, Tcmin:float, Tcmax:float, Tcstep:float,
-    P3min, P3max, P3step, expMmin:float, expMstep:float, expMmax:float, P3name, shutdown_warnings) :
-    """Return the indexes of the scattering coef (S11..) corresponding to the upper and lower bounds of
-    LAM, ELEV, Tc, P3, M for => used for the interpolation of these coefficients.
+def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray,
+                ELEVmin:float, ELEVmax:float, ELEVstep:float,
+                Tcmin:float, Tcmax:float, Tcstep:float,
+                P3min:float, P3max:float, P3step:float,
+                expMmin:float, expMstep:float, expMmax:float,
+                P3name:str, ncol_interpolation:int, shutdown_warnings:bool) :
+    """Return the indexes of the scattering coef corresponding to the upper and lower bounds
+     of ELEV, Tc, P3, M for => used for the interpolation of these coefficients.
        
     Args:
         ELEV (float) : elevation in radians
         Tc (np.ndarray) : temeprature in Celsius degree
         P3r : liquid water fraction (1-moment) or concentration (2-moment)
         M (np.ndarray) : contents in kg/m3
-        LAMmin,max,step (float) : wavelength in mm
         ELEVmin,max,step (float) : degrees
         Tcmin,max,step (float) : Celsius degree
         P3min,max,step (float) : values between 0 and 1
@@ -294,23 +290,15 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
         P3name : "Fw" liquid water fraction or "Nc" number concentration
 
     Returns:
-        kTmat (dict) : dict with 32 tables with the M shape/size
-    
+        kTmat (dict) : dict with 2**ncol_interpolation arrays with the M shape/size
     """
 
-     
     kTmat={}
     
-    for n in range(32):
-        #kTmat[n]=np.empty((nk,nj,ni))
+    for n in range(2**ncol_interpolation):
         kTmat[n]=np.copy(M)*float('nan') 
     
-    #Conversion de LAM de m en mm
-#    LAM=LAMm*10**3
-    LAM=LAMmin # No need interpolation with LAM (fixed in the Tmatrix tables)
-    
     #Hydromet content
-    #expM=np.ones((Min.shape[0]))*(-100.)
     expM=np.copy(M)*0.0-100
     expM[M>0]=(np.log10(M))[M>0]
     
@@ -324,21 +312,11 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
             P3[P3r>0]=np.log10(P3r[P3r>0])
             P3[P3r==0]=P3min
         else:
-            print("Error P3name (3d parameter in Tmatrix table), the only options are Fw (liq water fraction) or Nc (number concentration)")
+            print("Error P3name (3d parameter in the table), the only options are Fw (liq water fraction) or Nc (number concentration)")
             sys.exit(1)
     
-    # If LAM, ELEV, Tc, P3 or M are outside min and max ranges:
-    # warning and the values are set to the min (if below min) or max (if over max)
-
-    #if (abs(LAM-LAMmin) < LAMstep/10):
-    if (LAM<LAMmin):
-        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " < LAMmin=",LAMmin)
-        LAM=LAMmin
-    #if (abs(LAM-LAMmax) < LAMstep/10):
-    if (LAM > LAMmax):
-        if shutdown_warnings == False : print("Warning : LAM = ",LAM, " > LAMmax=",LAMmax)
-        LAM=LAMmax
-    
+    # If ELEV, Tc, P3 or M are outside min and max ranges:
+    # warning and the values are set to the min (if below min) or max (if over max)    
     if (len(ELEV[ELEV<ELEVmin])>0):
         if shutdown_warnings == False : print("Warning: ELEV < ELEVmin: ",ELEV[ELEV<ELEVmin])
     ELEV[ELEV<ELEVmin]=ELEVmin
@@ -370,10 +348,7 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
         if shutdown_warnings == False : print("Warning: expM > expMmax: ",expM[expM>expMmax])
     expM[expM>expMmax]=expMmax
     
-    #    condok=np.where((LAM >=LAMmin) & (LAM<=LAMmax) & (ELEV>=ELEVmin) & (ELEV<=ELEVmax) 
-    #                     & (Tc >=Tcmin) & (Tc<=Tcmax) & (P3 >=P3min) & (P3<=P3max)
-    #                     & (expM >=expMmin) & (expM<=expMmax) & (dist<=distmax_mod),1.,float('NaN'))
-    condok=np.where((LAM >=LAMmin) & (LAM<=LAMmax) & (ELEV>=ELEVmin) & (ELEV<=ELEVmax) 
+    condok=np.where((ELEV>=ELEVmin) & (ELEV<=ELEVmax) 
                      & (Tc >=Tcmin) & (Tc<=Tcmax) & (P3 >=P3min) & (P3<=P3max)
                      & (expM >=expMmin) & (expM<=expMmax),1.,float('NaN'))
     
@@ -386,16 +361,7 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     # Looking for the location in the table of the values given as input in the 
     # function
     # kP3, kTc, kexpM are numpy arrays with the shape/size of P3, Tc, expM
-    # with condok, values outside the min/max range are set to NaN
-    #------- LAM ------------------
-    kLAM=condok*math.floor((LAM-LAMmin)/LAMstep)
-    LAMinf=LAMmin+kLAM*LAMstep
-    kLAMs=np.copy(kLAM)
-    kLAMs[LAM!=LAMinf]+=1
-    
-    LAMsup=LAMmin+kLAMs*LAMstep
-    nLAM=condok*(((LAMmax-LAMmin)/LAMstep)+1)
-    
+    # with condok, values outside the min/max range are set to NaN    
     
     #------- ELEV ------------------
     kELEV=condok*(np.floor((ELEV-ELEVmin)/ELEVstep))
@@ -415,7 +381,6 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     Tcsup=Tcmin+(kTcs)*Tcstep
     nTc=condok*(int((Tcmax-Tcmin)/Tcstep)+1)
     
-    
     #------- P3 ------------------
     kP3=condok*(np.floor((P3-P3min)/P3step))
     P3inf=P3min+kP3*P3step
@@ -424,7 +389,6 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     
     P3sup=P3min+(kP3s)*P3step
     nP3=condok*(int((P3max-P3min)/P3step)+1)
-    
     
     #------- M ------------------
     kexpM=condok*(np.floor((expM-expMmin)/expMstep))
@@ -438,17 +402,12 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     Minf=10**expMinf
     Msup=10**expMsup
     
-    
     #-- Calcul des variables reduites (comprises entre 0 et 1)
     # pour l'interpolation linaire
-    LAMred=np.copy(LAMinf)*0.0
     ELEVred=np.copy(ELEV)*0.0
     Tcred=np.copy(Tc)*0.0
     P3red=np.copy(P3)*0.0
     Mred=np.copy(M)*0.0
-    
-    msk=LAMsup>LAMinf
-    LAMred[msk]=(LAM-LAMinf[msk])/(LAMsup[msk]-LAMinf[msk])
     
     msk=ELEVsup>ELEVinf
     ELEVred[msk]=(ELEV[msk]-ELEVinf[msk])/(ELEVsup[msk]-ELEVinf[msk])
@@ -461,17 +420,10 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     
     msk=Msup>Minf
     Mred[msk]=(M[msk]-Minf[msk])/(Msup[msk]-Minf[msk])
-    
-    
         
-    
-    # On regroupe autant que possible les produits et sommes dans le calcul de kTmat. Les calculs originaux 
-    # sont en commentaires un peu plus bas.
+    # On regroupe autant que possible les produits et sommes dans le calcul de kTmat.
     fact1=nP3*nM
     fact2=nELEV*fact1
-    fact3=nTc*fact2
-    fact41=kLAM*fact3
-    fact42=kLAMs*fact3
     fact51=kTc*fact2
     fact52=kTcs*fact2
     fact61=kELEV*fact1
@@ -479,34 +431,20 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     fact71=kP3*nM
     fact72=kP3s*nM
     
-    som11=fact41+fact51
+    som11=fact51
     som111=som11+fact61
     som112=som11+fact62
     som1111=som111+fact71
     som1112=som111+fact72
     som1121=som112+fact71
     som1122=som112+fact72
-    som12=fact41+fact52
+    som12=fact52
     som121=som12+fact61
     som122=som12+fact62
     som1211=som121+fact71
     som1212=som121+fact72
     som1221=som122+fact71
     som1222=som122+fact72
-    som21=fact42+fact51
-    som211=som21+fact61
-    som212=som21+fact62
-    som2111=som211+fact71
-    som2112=som211+fact72
-    som2121=som212+fact71
-    som2122=som212+fact72
-    som22=fact42+fact52
-    som221=som22+fact61
-    som222=som22+fact62
-    som2211=som221+fact71
-    som2212=som221+fact72
-    som2221=som222+fact71
-    som2222=som222+fact72
     
     kTmat[0]=som1111+kexpM+1
     kTmat[1]=som1111+kexpMs+1
@@ -524,103 +462,65 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray, LAMmin:float, LAMm
     kTmat[13]=som1221+kexpMs+1
     kTmat[14]=som1222+kexpM+1
     kTmat[15]=som1222+kexpMs+1
-    kTmat[16]=som2111+kexpM+1
-    kTmat[17]=som2111+kexpMs+1
-    kTmat[18]=som2112+kexpM+1
-    kTmat[19]=som2112+kexpMs+1
-    kTmat[20]=som2121+kexpM+1
-    kTmat[21]=som2121+kexpMs+1
-    kTmat[22]=som2122+kexpM+1
-    kTmat[23]=som2122+kexpMs+1
-    kTmat[24]=som2211+kexpM+1
-    kTmat[25]=som2211+kexpMs+1
-    kTmat[26]=som2212+kexpM+1
-    kTmat[27]=som2212+kexpMs+1
-    kTmat[28]=som2221+kexpM+1
-    kTmat[29]=som2221+kexpMs+1
-    kTmat[30]=som2222+kexpM+1
-    kTmat[31]=som2222+kexpMs+1
     
     
-    for i in range(32):
+    for i in range(2**ncol_interpolation):
         kTmat[i][np.isnan(kTmat[i])]=-999
         kTmat[i]=kTmat[i].astype(int)
  
-    return kTmat, LAMred, ELEVred,Tcred,P3red,Mred
-
-    del ELEV,Tc,expM,kLAM,LAMinf,kLAMs,LAMsup,nLAM,kELEV,ELEVinf,kELEVs,ELEVsup,nELEV
-    del kTc,Tcinf,kTcs,Tcsup,nTc,kP3,P3inf,kP3s,P3sup,nP3,kexpM,expMinf,kexpMs,expMsup,nM,Minf,Msup
+    return kTmat, ELEVred,Tcred,P3red,Mred
 
 
 
-def  INTERPOL(LAMred,ELEVred,Tcred,Fwred,Mred,MatCoef):
+def  INTERPOL(ELEVred,Tcred,Fwred,Mred,MatCoef,which_columns,idx_key_pair):
     """Multidimensional interpolation with outputs from CALC_KTMAT function
 
     Args:
-        LAMred (_type_): wavelength
         ELEVred (_type_): elevation
         Tcred (_type_): temperature
         Fwred (_type_): liquid water fraction
         Mred (_type_): content
-        MatCoef (_type_): 5*32 matrix with S11carre, S22carre, ReS22fmS11f, ReS22S11, and ImS22S11 coefficients to interpolate over the 32 bounds. 
+        MatCoef (_type_): ncoefx2**4 matrix with max ncoef=7 table's coefficient columns to interpolate over the 2**4 bounds. 
     
     Returns:
-        S11carre : description ?
-        S22carre : description ?
-        ReS22fmS11f : description ?
-        ReS22S11 : description ?
-        ImS22S11 : description ?
+        interpolated_fields (dict): dict containing the interpolated values
     """
-    ncoef=5
+    ncoef=len(which_columns)
     nval=Mred.shape[0]
     print("\t  INTERPOL func over nval=",nval)
     VectCoef={}
 
-    #--- Interpolation linéaire ---
+    #--- Linear interpolation ---
     for indcoef in range(ncoef):
         VectCoef[indcoef]=np.empty((nval))
         VectCoef[indcoef]= \
-           ( (1-LAMred)*((1-Tcred)*((1-ELEVred)*((1-Fwred)*((1-Mred)*MatCoef[indcoef,0]+
-                Mred*MatCoef[indcoef,1])+
-                    Fwred*((1-Mred)*MatCoef[indcoef,2]+
-                        Mred*MatCoef[indcoef,3]))+
-                            ELEVred*((1-Fwred)*((1-Mred)*MatCoef[indcoef,4]+
-                                Mred*MatCoef[indcoef,5])+
-                                    Fwred*((1-Mred)*MatCoef[indcoef,6]+
-                                        Mred*MatCoef[indcoef,7])))+
-                                        Tcred*((1-ELEVred)*((1-Fwred)*((1-Mred)*MatCoef[indcoef,8]+
-            Mred*MatCoef[indcoef,9])+
-                Fwred*((1-Mred)*MatCoef[indcoef,10]+
-                    Mred*MatCoef[indcoef,11]))+
-                        ELEVred*((1-Fwred)*((1-Mred)*MatCoef[indcoef,12]+
-                            Mred*MatCoef[indcoef,13])+
-                                Fwred*((1-Mred)*MatCoef[indcoef,14]+
-                                    Mred*MatCoef[indcoef,15]))))+
-                                    LAMred*((1-Tcred)*((1-ELEVred)*((1-Fwred)*((1-Mred)*MatCoef[indcoef,16]+
-            Mred*MatCoef[indcoef,17])+
-                Fwred*((1-Mred)*MatCoef[indcoef,18]+
-                    Mred*MatCoef[indcoef,19]))+
-                        ELEVred*((1-Fwred)*((1-Mred)*MatCoef[indcoef,20]+
-                            Mred*MatCoef[indcoef,21])+
-                                Fwred*((1-Mred)*MatCoef[indcoef,22]+
-                                    Mred*MatCoef[indcoef,23])))+
-                                    Tcred*((1-ELEVred)*((1-Fwred)*((1-Mred)*MatCoef[indcoef,24]+
-            Mred*MatCoef[indcoef,25])+
-                Fwred*((1-Mred)*MatCoef[indcoef,26]+
-                    Mred*MatCoef[indcoef,27]))+
-                        ELEVred*((1-Fwred)*((1-Mred)*MatCoef[indcoef,28]+
-                            Mred*MatCoef[indcoef,29])+
-                                Fwred*((1-Mred)*MatCoef[indcoef,30]+
-                                    Mred*MatCoef[indcoef,31]))))) 
-        #--- fin interpolation lineaire -----------------------
+           ((1-Tcred)*(
+                (1-ELEVred)*(
+                    (1-Fwred)*(
+                        (1-Mred)*MatCoef[indcoef,0] + Mred*MatCoef[indcoef,1] )+
+                    Fwred*(
+                        (1-Mred)*MatCoef[indcoef,2] + Mred*MatCoef[indcoef,3] ) 
+                )+ ELEVred*(
+                    (1-Fwred)*(
+                        (1-Mred)*MatCoef[indcoef,4] + Mred*MatCoef[indcoef,5] )+
+                    Fwred*(
+                        (1-Mred)*MatCoef[indcoef,6] + Mred*MatCoef[indcoef,7] ) 
+                )
+            )+ Tcred*(
+                (1-ELEVred)*(
+                    (1-Fwred)*(
+                        (1-Mred)*MatCoef[indcoef,8] + Mred*MatCoef[indcoef,9] )+
+                    Fwred*(
+                        (1-Mred)*MatCoef[indcoef,10] + Mred*MatCoef[indcoef,11] )
+                )+ ELEVred*(
+                    (1-Fwred)*(
+                        (1-Mred)*MatCoef[indcoef,12] + Mred*MatCoef[indcoef,13] )+
+                    Fwred*(
+                        (1-Mred)*MatCoef[indcoef,14] + Mred*MatCoef[indcoef,15] )
+                )))
         #print indcoef,np.count_nonzero(~np.isnan(VectCoef[indcoef]))
 
-    scatCoefsDict = {}
-    scatCoefsDict['S11S11']=np.copy(VectCoef[0])
-    scatCoefsDict['S22S22']=np.copy(VectCoef[1])
-    scatCoefsDict['ReS22fmS11f']=np.copy(VectCoef[2])
-    scatCoefsDict['ReS22S11']=np.copy(VectCoef[3])
-    scatCoefsDict['ImS22S11']=np.copy(VectCoef[4])
+    interpolated_fields = {key:np.copy(VectCoef[idx]) for (idx,key) in idx_key_pair}
               
     del VectCoef
-    return scatCoefsDict
+    return interpolated_fields
