@@ -1,4 +1,4 @@
-# This is the Makefile for TmatInt program
+# This is the Makefile for T-matrix Integration program
 
 # Compiler settings are here
 #include ./makefile_include
