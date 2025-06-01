@@ -4,7 +4,7 @@
 #include ./makefile_include
 
 # Objects to compile
-OBJECTS = ./TmatInt.f90
+OBJECTS = ./TmatrixIntegration.f90
 
 CF = gfortran
 
