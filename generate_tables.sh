@@ -1,0 +1,334 @@
+#!/bin/bash
+
+# Variables initialization
+MODE=""
+NEW_CONF=""
+BAND=""
+HYDRO=""
+ARF=""
+ARV=""
+CANTING=""
+DSTY=""
+RIMING=""
+DIEL=""
+
+# List of (fixed) parameters
+HYDRO_LIST=("cc" "rr" "ii" "ss" "ws" "gg" "wg" "hh" "wh")
+BAND_LIST=("C" "S" "X" "K" "W")
+ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
+DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
+DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
+MICRO_LIST=("ICE3" "LIMA")
+
+# Errors storage
+MISSING_FILES=()
+
+# Paths
+PARAM_FOLDER="./tmatrix_generator/param"
+TABLE_FOLDER="./tmatrix_generator/tables"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TMAT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/Tmat)")"
+TMATINT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/TmatInt)")"
+
+
+# Help function
+usage() {
+    echo " "
+    echo "How to use :"
+    echo "  DEFAULT MODE : $0 --default --band <val>"
+    echo "  NEWCONF MODE : $0 --newConf <confName> --band <val>"
+    echo "  EDIT MODE    : $0 --hydro <val> --band <val> [--arf <val>] [--arv <val>] [--canting <val>] [--dsty <val>] [--riming <val>] [--diel <val>]"
+    echo " "
+    echo "Accepted values for :"
+    echo "  --band    (radar band)          : C, K, S, W, X"
+    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, tt, wg, hh, wh "
+    echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
+    echo "  --arv     (axis ratio value)    : any float value."
+    echo "  --canting (canting angle)       : any float value."
+    echo "  --dsty    (density function)    : BR07, RHOX, LS15, ZA05"
+    echo "  --riming  (fraction of riming)  : any float value >= 1 (1=unrimed)"
+    echo "  --diel    (dielectric function) : Liebe91, RY19dry, LBwetgr, MGwMA08"
+    echo "Further details are available in the README.md "
+    echo " "
+    exit 1
+}
+
+# Checking validity
+valid_band() {
+    [[ "${BAND_LIST[*]}" =~ "$1" ]]
+}
+valid_hydro() {
+    [[ "${HYDRO_LIST[*]}" =~ "$1" ]]
+}
+valid_arf(){
+    [[ "${ARfunc_LIST[*]}" =~ "$1" ]]
+}
+valid_dstyf(){
+    [[ "${DSTYfunc_LIST[*]}" =~ "$1" ]]
+}
+valid_dielf(){
+    [[ "${DIELfunc_LIST[*]}" =~ "$1" ]]
+}
+
+# Reading arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --default)
+            [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
+            MODE="default"
+            ;;
+        --newConf)
+            [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
+            MODE="newConf"
+            shift
+            [[ -z "$1" || "$1" == --* ]] && { echo "/!\ Error: --newConf expect a folder name."; usage; exit 1; }
+            NEW_CONF="$1"
+            ;;
+        --hydro)
+            [[ -n "$MODE" && "$MODE" != "edit" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
+            MODE="edit"
+            shift
+            [[ -z "$1" || "$1" == --* ]] && { echo "/!\ Error: --hydro expect a value among : ${HYDRO_LIST[*]}"; exit 1; }
+            valid_hydro "$1" || { echo "/!\ Error: wrong value for --hydro. Expect one of the following : ${HYDRO_LIST[*]}"; exit 1; }
+            HYDRO="$1"
+            ;;
+        --arf)
+            shift
+            valid_arf "$1" || { echo "/!\ Error: invalid axis ratio function. Expect one of the following : ${ARfunc_LIST[*]}"; exit 1; }
+            ARF="$1"
+            ;;
+        --arv) shift; ARV="$1" ;;
+        --canting) shift; CANTING="$1" ;;
+        --dsty)
+            shift
+            valid_dstyf "$1" || { echo "/!\ Error: invalid density function. Expect one of the following : ${DSTYfunc_LIST[*]}"; exit 1; }
+            DSTY="$1"
+            ;;
+        --riming) shift; RIMING="$1" ;; # RAJOUTER TEST VALEUR <1 CAR =1 PAS DE RIMING, >1 RIMING
+        --diel)
+            shift
+            valid_dielf "$1" || { echo "/!\ Error: invalid dielectric function. Expect one of the following : ${DIELfunc_LIST[*]}"; exit 1; }
+            DIEL="$1"
+            ;;
+        --band)
+            shift
+            valid_band "$1" || { echo "/!\ Error: invalid band. Expect one of the following : ${BAND_LIST[*]}"; exit 1; }
+            BAND="$1"
+            ;;
+        *)
+            echo "/!\ Unknown option: $1"
+            usage
+            exit 1;
+            ;;
+    esac
+    shift
+done
+
+# Checking arguments
+if [[ -z "$MODE" ]]; then
+    echo "/!\ Error: wrong use of the tmatrix_generator. Can only be :"
+    usage
+fi
+
+if [[ -z "$BAND" ]]; then
+    echo "/!\ Error: --band argument is mandatory."
+    usage
+fi
+
+
+generate_tables() {
+    local output_subfolder="$1"
+
+    if [[ "$output_subfolder" == "default" ]]; then
+        echo "=========================================="
+        echo "               DEFAULT MODE               "
+        echo "=========================================="
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_*_default files."
+        echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
+        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
+        echo "/!\ Table generation is time-consuming and can take several hours."
+        echo ""
+    else
+        echo "=========================================="
+        echo "               NewConf MODE               "
+        echo "=========================================="
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_* files."
+        echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
+        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
+        echo "/!\ Table generation is time-consuming and can take several hours."
+        echo ""
+    fi
+
+    JOB_LIMIT=4
+    JOB_COUNT=0
+    OUTPUT_DISPLAY_DIR="${SCRIPT_DIR}/logs"
+    mkdir -p "$OUTPUT_DISPLAY_DIR"
+
+    declare -a TMP_FILES=()
+
+    for H in "${HYDRO_LIST[@]}"; do
+        OUT_LOG="${OUTPUT_DISPLAY_DIR}/out_${BAND}_${H}.log"
+        TMP_FILES+=("$OUT_LOG")
+
+        echo -e "Currently running for ${H}"
+
+        (
+        if [[ "$output_subfolder" == "default" ]]; then
+            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
+        else
+            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}"
+        fi
+        OUT_FILE_ICE3="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_ICE3_${BAND}${H}"
+        OUT_FILE_LIMA="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_LIMA_${BAND}${H}"
+
+        if [[ -f "$OUT_FILE_ICE3" && -f "$OUT_FILE_LIMA" ]]; then
+            echo "$OUT_FILE_ICE3 and $OUT_FILE_LIMA already exist."
+            exit 0
+        fi
+
+        mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+        if [[ -f "$PARAM_FILE" ]]; then
+            cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
+
+            DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
+            if [[ ! -f "$DIAMETER_TABLE" ]]; then
+                echo "Launching the creation of the tables for a range of diameters."
+                if ! "$TMAT_DIR/Tmat"; then
+                    echo "Error: Creation failed for $H."
+                    exit 1
+                fi
+            else
+                echo "Table for the range of diameters already exists."
+            fi
+
+            for MICRO in "${MICRO_LIST[@]}"; do
+                INTEGRATED_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${BAND}${H}"
+                USUAL_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
+
+                if [[ -f "$INTEGRATED_TABLE" ]]; then
+                    echo "$INTEGRATED_TABLE already exists."
+                else
+                    echo "Integrating over the ${H} PSD for ${MICRO} microphysics"
+                    if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO"; then
+                        echo "Tables generated for $H with $MICRO microphysics."
+                        mv "$USUAL_PATH" "$INTEGRATED_TABLE"
+                    else
+                        echo "Error: Failed integration for $H with $MICRO microphysics."
+                    fi
+                fi
+            done
+        else
+            echo "Missing or unknown file: $PARAM_FILE"
+            exit 2
+        fi
+        ) > "$OUT_LOG" 2>&1 &
+        
+        echo -e "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
+
+        ((JOB_COUNT++))
+        if (( JOB_COUNT >= JOB_LIMIT )); then
+            wait -n
+            ((JOB_COUNT--))
+        fi
+    done
+
+    wait
+
+    # Traitement des erreurs
+    for OUT_LOG in "${TMP_FILES[@]}"; do
+        if [[ -s "$OUT_LOG" ]]; then
+            while IFS= read -r line; do
+                if [[ "$line" == Missing* ]]; then
+                    MISSING_FILES+=("$line")
+                elif [[ "$line" == Error:* ]] ; then
+                    LAUNCH_ERRORS+=("$line")
+                fi
+            done < "$OUT_LOG"
+        fi
+    done
+
+    # Affichage des erreurs collectées
+    if (( ${#LAUNCH_ERRORS[@]} > 0 )); then
+        echo -e "\n======= LAUNCH ERRORS ======="
+        for err in "${LAUNCH_ERRORS[@]}"; do
+            echo "$err"
+        done
+    fi
+
+    if (( ${#MISSING_FILES[@]} > 0 )); then
+        echo -e "\n======= MISSING FILES ======="
+        for err in "${MISSING_FILES[@]}"; do
+            echo "$err"
+        done
+    fi
+
+    echo " "
+}
+
+
+# Mode 1 : default
+if [[ "$MODE" == "default" ]]; then
+    generate_tables "default"
+
+# Mode 2 : newConf
+elif [[ "$MODE" == "newConf" ]]; then
+    generate_tables "$NEW_CONF"
+fi
+
+# Mode 3 : edit/modification personnalisée
+if [[ "$MODE" == "edit" ]]; then
+    [[ -z "$HYDRO" ]] && { echo "Erreur : --hydro est requis en mode modification."; usage; }
+
+    FILE="toto_${BAND}.txt"
+    [[ ! -f "$FILE" ]] && { echo "Fichier $FILE introuvable."; exit 1; }
+
+    echo "Génération de config.txt à partir de $FILE avec les paramètres modifiés..."
+
+    cp "$FILE" config.txt
+
+    # Fonction de remplacement dans le fichier
+    update_param() {
+        local key="$1"
+        local value="$2"
+        if grep -q "^$key=" config.txt; then
+            sed -i "s/^$key=.*/$key=$value/" config.txt
+        else
+            echo "$key=$value" >> config.txt
+        fi
+    }
+
+    update_param "hydro" "$HYDRO"
+    [[ -n "$ARF" ]] && update_param "arf" "$ARF"
+    [[ -n "$ARV" ]] && update_param "arv" "$ARV"
+    [[ -n "$CANTING" ]] && update_param "canting" "$CANTING"
+    [[ -n "$DSTY" ]] && update_param "dsty" "$DSTY"
+    [[ -n "$RIMING" ]] && update_param "riming" "$RIMING"
+    [[ -n "$DIEL" ]] && update_param "diel" "$DIEL"
+
+    echo "config.txt généré avec modifications personnalisées."
+    exit 0
+fi
+
+
+
+# echo -e "\n===== ERRORS SUMMARY ====="
+
+# if (( ${#MISSING_FILES[@]} > 0 )); then
+#     echo -e "\nFile errors :"
+#     for err in "${MISSING_FILES[@]}"; do
+#         echo "  - $err"
+#     done
+# fi
+
+# if (( ${#LAUNCH_ERRORS[@]} > 0 )); then
+#     echo -e "\nLaunch errors :"
+#     for err in "${LAUNCH_ERRORS[@]}"; do
+#         echo "  - $err"
+#     done
+# fi
+
+# if (( ${#MISSING_FILES[@]} == 0 && ${#LAUNCH_ERRORS[@]} == 0 )); then
+#     echo "Aucune erreur détectée."
+# fi
+# exit 0
+
