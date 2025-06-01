@@ -139,7 +139,7 @@ def read_and_extract_tables_content(band:str,
         del df_params
         
         if verbose : print("\tRetrieving necessary columns in the table for",h)
-        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])#,dtype=np.float32)
+        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         for columnName in columns_to_retrieve :
             if columnName == 'Fw' and hydrometeors_moments[h]==1 :
                 table_dict[columnName][h] = df_columns['P3'].to_numpy()
@@ -218,17 +218,27 @@ def Read_VarTmatrixClotilde(path_table,band,schema_micro,table_ind,h):
 def perform_nD_interpolation(tableDict:dict, which_columns:list, hydrometeor:str, colName:str,
                  colMin:float, colStep:float, colMax:float,
                  el_temp:np.ndarray, Tc_temp:np.ndarray, colTable:np.ndarray,
-                 M_temp:np.ndarray):    
-    """Extract scattering coefficients for each class of hydrometeor
-    
-    Input:
-    - full table of scattering coef for type t (S11carre_h[h] ...)
-    - parameters of each column of the table (min, max, step): ELEVmin...
-    - value of table columns in 3d arrays (el_temp, Tc_temp, colTable, M_temp)
-    
-    Ouput :
-    - scattering coef for type t within mask
+                 M_temp:np.ndarray) -> dict :
+    """Construct 3D fields of scattering coefficients, based on the tables. The interpolation is
+    currently performed with 4 fields (elevation, temperature, P3 (=Fw or Nc), and content).
+
+    Args:
+        tableDict (dict): dictionnary containing the necessary columns of the table
+        which_columns (list): list of the columns name on which to perform the interpolation
+        hydrometeor (str): hydrometeor type
+        colName (str): P3 name (either Fw or Nc)
+        colMin (float): P3 min (either Fwmin or Ncmin)
+        colStep (float): P3 step (either Fwstep or Ncstep)
+        colMax (float): P3 min (either Fwmax or Ncmax)
+        el_temp (np.ndarray): elevation 3D field
+        Tc_temp (np.ndarray): temperature 3D field
+        colTable (np.ndarray): P3 (=Fw or Nc) 3D field
+        M_temp (np.ndarray): content 3D field
+
+    Returns:
+        scatCoefsDict (dict): dictionnary containing fields of interpolated scattering coefficients over the grid
     """
+
     columns_2use_for_interpolation = 4 # elevation, temperature, P3 (=Fw or Nc), and content 
                                       
     # Find position in the table
@@ -257,11 +267,11 @@ def perform_nD_interpolation(tableDict:dict, which_columns:list, hydrometeor:str
     MatCoef = {}
     idx_key_pair = []
     
-    for ind in range((2**columns_2use_for_interpolation)): #list(...)
-        for idx,key in enumerate(which_columns) :
-            idx_key_pair += [(idx,key)]
+    for idx,key in enumerate(which_columns) :
+        idx_key_pair += [(idx,key)] 
+        for ind in range((2**columns_2use_for_interpolation)):
             MatCoef[idx, ind] = tableDict[key][hydrometeor][kTmat[ind]]
-            
+    
     # Interpol scat coef values
     scatCoefsDict = INTERPOL(ELEVred, Tcred, P3red, Mred, MatCoef,which_columns,idx_key_pair)   
 
@@ -280,7 +290,7 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray,
        
     Args:
         ELEV (float) : elevation in radians
-        Tc (np.ndarray) : temeprature in Celsius degree
+        Tc (np.ndarray) : temperature in Celsius degree
         P3r : liquid water fraction (1-moment) or concentration (2-moment)
         M (np.ndarray) : contents in kg/m3
         ELEVmin,max,step (float) : degrees
@@ -472,15 +482,16 @@ def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray,
 
 
 
-def  INTERPOL(ELEVred,Tcred,Fwred,Mred,MatCoef,which_columns,idx_key_pair):
+def  INTERPOL(ELEVred:np.ndarray, Tcred:np.ndarray, Fwred:np.ndarray, Mred:np.ndarray,
+              MatCoef:dict, which_columns:list, idx_key_pair:list )-> dict :
     """Multidimensional interpolation with outputs from CALC_KTMAT function
 
     Args:
-        ELEVred (_type_): elevation
-        Tcred (_type_): temperature
-        Fwred (_type_): liquid water fraction
-        Mred (_type_): content
-        MatCoef (_type_): ncoefx2**4 matrix with max ncoef=7 table's coefficient columns to interpolate over the 2**4 bounds. 
+        ELEVred (np.ndarray): elevation
+        Tcred (np.ndarray): temperature
+        Fwred (np.ndarray): liquid water fraction
+        Mred (np.ndarray): content
+        MatCoef (np.ndarray): ncoefx2**4 matrix with max ncoef=7 table's coefficient columns to interpolate over the 2**4 bounds. 
     
     Returns:
         interpolated_fields (dict): dict containing the interpolated values
@@ -519,7 +530,7 @@ def  INTERPOL(ELEVred,Tcred,Fwred,Mred,MatCoef,which_columns,idx_key_pair):
                         (1-Mred)*MatCoef[indcoef,14] + Mred*MatCoef[indcoef,15] )
                 )))
         #print indcoef,np.count_nonzero(~np.isnan(VectCoef[indcoef]))
-
+    
     interpolated_fields = {key:np.copy(VectCoef[idx]) for (idx,key) in idx_key_pair}
               
     del VectCoef
