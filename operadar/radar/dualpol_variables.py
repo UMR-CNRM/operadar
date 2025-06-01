@@ -162,7 +162,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                    M_temp=content_temp,
                                    )
     # Compute dualpol variables from scattering coefficients
-    dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM'][hydrometeor]/1000.,
+    dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM'][hydrometeor],
                                          interpolated_from_table=fields3D_from_table,
                                          )
     del fields3D_from_table
@@ -176,14 +176,14 @@ def dpol_var_from_scatcoefs(wavelength:float,
                             interpolated_from_table:dict,
                             ) -> dict[np.ndarray]:
     """Compute linear polarimetric variables."""
-    
+    wavelength=wavelength/1000
     temp_dict = {}
     if "Zh" in dpol2add or "Zdr" in dpol2add :
-        temp_dict["Zhhlin"]= 1e18*wavelength**4./(math.pi**5.*0.93)*interpolated_from_table['sighh']
+        temp_dict["Zhhlin"]= ((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sighh']
     if "Zdr" in dpol2add :
-        temp_dict["Zvvlin"]= 1e18*wavelength**4./(math.pi**5.*0.93)*interpolated_from_table['sigvv']
+        temp_dict["Zvvlin"]=((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sigvv']
     if "Kdp" in dpol2add :
-        temp_dict["Kdp"] = 180.*1e3/math.pi*wavelength*interpolated_from_table['kdp']
+        temp_dict["Kdp"] = interpolated_from_table['kdp']
     if "Rhohv" in dpol2add :
         temp_dict["numerator"] = interpolated_from_table['REdeltaco']**2+interpolated_from_table['IMdeltaco']**2
         temp_dict["denominator"] = interpolated_from_table['sigvv'] * interpolated_from_table['sighh']
@@ -197,14 +197,14 @@ def dpol_var_from_scatcoefs(wavelength:float,
 
 def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
     """Compute polarimetric variables."""
-    finalDict = {}
+    finalDict = {} ; print(dpolDict.keys())
     if 'Zh' in dpol2add :
         finalDict["Zh"] = np.copy(dpolDict["Zhhlin"])
-        finalDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(dpolDict["Zhhlin"][dpolDict["Zhhlin"]>0])
+        finalDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(finalDict["Zh"][dpolDict["Zhhlin"]>0])
     if 'Zdr' in dpol2add :
-        finalDict["Zdr"] = np.copy(dpolDict["Zhhlin"])
+        finalDict["Zdr"] = dpolDict["Zhhlin"]/dpolDict["Zvvlin"]
         mask_Zdr = (dpolDict["Zhhlin"]>0) & (dpolDict["Zvvlin"]>0)
-        finalDict["Zdr"][mask_Zdr] = linear_to_dBZ((dpolDict["Zhhlin"]/dpolDict["Zvvlin"])[mask_Zdr])
+        finalDict["Zdr"][mask_Zdr] = linear_to_dBZ(finalDict["Zdr"][mask_Zdr])
     if "Kdp" in dpol2add :
         finalDict["Kdp"] = np.copy(dpolDict["Kdp"])
     if 'Rhohv' in dpol2add :
@@ -221,7 +221,7 @@ def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
 def linear_to_dBZ(Z:np.ndarray) -> np.ndarray:
     """Linear to dBZ conversion.""" 
     Ztemp = np.copy(Z)
-    Ztemp[Z > 0.] = 10.*np.log10(Z[Z > 0.])
+    Ztemp[Z > 0.] = 10.*np.log10(Ztemp[Z > 0.])
     Ztemp[Z == 0.] = -999.
     Ztemp[Z < 0.] = -9999.
     return Ztemp
