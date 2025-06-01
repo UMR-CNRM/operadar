@@ -37,7 +37,7 @@ def main(h:str,band:str,method:str,axe:str,dictParam:dict,add_ref:bool,combine:l
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="---------------- LOOKUP TABLES PLOT TOOL ----------------")
     parser.add_argument("--hydro", type=str, default='rr',
-                        help='Hydrometeor type : rr, ss, gg, wg, wh, hh, tt, ii')
+                        help='Hydrometeor type : rr, ss, gg, wg, wh, hh, cc, ii')
     parser.add_argument("--band", type=str, default='C',
                         help='Band type : C, S, X, W, K')
     parser.add_argument("--method", type=str, default='Both',
