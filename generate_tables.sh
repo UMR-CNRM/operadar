@@ -172,7 +172,7 @@ generate_tables() {
 
         echo -e "Currently running for ${H}"
 
-        (
+        ({
         if [[ "$output_subfolder" == "default" ]]; then
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
         else
@@ -193,10 +193,13 @@ generate_tables() {
             DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
             if [[ ! -f "$DIAMETER_TABLE" ]]; then
                 echo "Launching the creation of the tables for a range of diameters."
-                if ! "$TMAT_DIR/Tmat"; then
+                pushd "$SCRIPT_DIR/tmatrix_generator/src" > /dev/null
+                ./Tmat
+                if [[ $? -ne 0 ]]; then
                     echo "Error: Creation failed for $H."
                     exit 1
                 fi
+                popd > /dev/null
             else
                 echo "Table for the range of diameters already exists."
             fi
@@ -221,9 +224,12 @@ generate_tables() {
             echo "Missing or unknown file: $PARAM_FILE"
             exit 2
         fi
-        ) > "$OUT_LOG" 2>&1 &
         
-        echo -e "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
+        } > "$OUT_LOG" 2>&1
+        
+        echo "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
+        
+        ) &
 
         ((JOB_COUNT++))
         if (( JOB_COUNT >= JOB_LIMIT )); then
