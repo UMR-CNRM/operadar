@@ -183,48 +183,49 @@ generate_tables() {
 
         if [[ -f "$OUT_FILE_ICE3" && -f "$OUT_FILE_LIMA" ]]; then
             echo "$OUT_FILE_ICE3 and $OUT_FILE_LIMA already exist."
-            exit 0
-        fi
-
-        mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
-        if [[ -f "$PARAM_FILE" ]]; then
-            cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
-
-            DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
-            if [[ ! -f "$DIAMETER_TABLE" ]]; then
-                echo "Launching the creation of the tables for a range of diameters."
-                pushd "$SCRIPT_DIR/tmatrix_generator/src" > /dev/null
-                ./Tmat
-                if [[ $? -ne 0 ]]; then
-                    echo "Error: Creation failed for $H."
-                    exit 1
-                fi
-                popd > /dev/null
-            else
-                echo "Table for the range of diameters already exists."
-            fi
-
-            for MICRO in "${MICRO_LIST[@]}"; do
-                INTEGRATED_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${BAND}${H}"
-                USUAL_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
-
-                if [[ -f "$INTEGRATED_TABLE" ]]; then
-                    echo "$INTEGRATED_TABLE already exists."
-                else
-                    echo "Integrating over the ${H} PSD for ${MICRO} microphysics"
-                    if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO"; then
-                        echo "Tables generated for $H with $MICRO microphysics."
-                        mv "$USUAL_PATH" "$INTEGRATED_TABLE"
-                    else
-                        echo "Error: Failed integration for $H with $MICRO microphysics."
-                    fi
-                fi
-            done
+            
         else
-            echo "Missing or unknown file: $PARAM_FILE"
-            exit 2
+            mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+            if [[ -f "$PARAM_FILE" ]]; then
+                DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
+                if [[ ! -f "$DIAMETER_TABLE" ]]; then
+                    cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
+                    echo "Launching the creation of the tables for a range of diameters."
+                    pushd "$SCRIPT_DIR/tmatrix_generator/src" > /dev/null
+                    ./Tmat
+                    if [[ $? -ne 0 ]]; then
+                        echo "Error: Table creation failed for $H."
+                        continue
+                    fi
+                    popd > /dev/null
+                else
+                    echo "Table for the range of diameters already exists."
+                fi
+
+                for MICRO in "${MICRO_LIST[@]}"; do
+                    INTEGRATED_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${BAND}${H}"
+                    USUAL_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
+
+                    if [[ -f "$INTEGRATED_TABLE" ]]; then
+                        echo "$INTEGRATED_TABLE already exists."
+                    else
+                        echo "Integrating over the ${H} PSD for ${MICRO} microphysics"
+                        if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO"; then
+                            mv "$USUAL_PATH" "$INTEGRATED_TABLE"
+                            echo "Tables generated for $H with $MICRO microphysics."
+                        else
+                            echo "Error: Failed integration for $H with $MICRO microphysics."
+                        fi
+                    fi
+                done
+            else
+                echo "Missing or unknown file: $PARAM_FILE"
+                continue
+            fi
         fi
-        
+
+        echo -e "\n====== END OF THE PROGRAM FOR ${H} ======"
+
         } > "$OUT_LOG" 2>&1
         
         echo "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
@@ -273,11 +274,11 @@ generate_tables() {
 
 
 # Mode 1 : default
-if [[ "$MODE" == "default" ]]; then
+if [[ "$MODE" == "default" ]] ; then
     generate_tables "default"
 
 # Mode 2 : newConf
-elif [[ "$MODE" == "newConf" ]]; then
+elif [[ "$MODE" == "newConf" ]] ; then
     generate_tables "$NEW_CONF"
 fi
 
@@ -314,27 +315,3 @@ if [[ "$MODE" == "edit" ]]; then
     echo "config.txt généré avec modifications personnalisées."
     exit 0
 fi
-
-
-
-# echo -e "\n===== ERRORS SUMMARY ====="
-
-# if (( ${#MISSING_FILES[@]} > 0 )); then
-#     echo -e "\nFile errors :"
-#     for err in "${MISSING_FILES[@]}"; do
-#         echo "  - $err"
-#     done
-# fi
-
-# if (( ${#LAUNCH_ERRORS[@]} > 0 )); then
-#     echo -e "\nLaunch errors :"
-#     for err in "${LAUNCH_ERRORS[@]}"; do
-#         echo "  - $err"
-#     done
-# fi
-
-# if (( ${#MISSING_FILES[@]} == 0 && ${#LAUNCH_ERRORS[@]} == 0 )); then
-#     echo "Aucune erreur détectée."
-# fi
-# exit 0
-
