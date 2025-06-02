@@ -116,7 +116,6 @@
 
 PROGRAM MakeTmatInt
 
-!use, intrinsic :: iso_c_binding
 use iso_fortran_env
 IMPLICIT NONE
 
@@ -140,7 +139,7 @@ REAL :: Drecsup,Dmrecsup,Deqrecsup,Deqmrecsup,Deqrrecsup,Deqrmrecsup
 REAL :: Drecinf,Dmrecinf,Deqrecinf,Deqmrecinf,Deqrrecinf,Deqrmrecinf
 
 ! Indexes for lookup table
-INTEGER :: idELEV,idTc,idD,idM,iLine,idP3,idFw,pos !,ispecies
+INTEGER :: idELEV,idTc,idD,idM,iLine,idP3,idFw !,ispecies
 INTEGER:: nELEV,nTc,nD,nM,nFw,nLines
 INTEGER :: nP3 !nCC,
 INTEGER :: nELEVloop, nTcloop, nP3loop, nMloop
@@ -180,7 +179,7 @@ REAL, DIMENSION(:),ALLOCATABLE :: AhRtab,AvRtab
 
 
 ! Variables needed for integrated scattering coef and dpol variables          
-INTEGER :: kTmat, idCCLOUD,Nmoments
+INTEGER :: kTmat,Nmoments
 REAL :: expMmin, expMstep, expMmax, expM, M
 REAL :: expCCmin, expCCstep, expCCmax !,CC ! rain and ice concentration for LIMA
 REAL :: aj,bj,nuj,alphaj,Cj,Xj,ccj,ddj ! ICE3 param
@@ -206,7 +205,7 @@ LOGICAL:: testMode
 
 
 !**************************************************
-!              Constants 
+!                    Constants
 !**************************************************
 REAL :: P=DACOS(-1D0) !Pi
 REAL :: LIGHTSPEED = 299792458.
@@ -214,21 +213,16 @@ RHOLW=1000.
 
 
 !**************************************************
-!              Handle the paths 
+!              Handle input arguments 
 !**************************************************
 call get_command_argument(1, exec_dir)
 call get_command_argument(2, typeh)
 call get_command_argument(3, bande)
 call get_command_argument(4, CCLOUD)
 
-! Affichage pour contrôle
-!print *, "Bande       :", trim(bande)
-!print *, "Hydrométéore:", trim(typeh)
-
-
 
 !**************************************************
-!              Parameters 
+!                    Parameters 
 !**************************************************
 
 mumax=15.0 !6.0
@@ -246,7 +240,7 @@ expCCstep=0.1
 
 
 !*****************************************************
-! =============  BEGINNING OF THE PROGRAM ============
+!               BEGINNING OF THE PROGRAM             !
 !*****************************************************
 
 WRITE(0,*) ' -----------------------------------------------------------'
@@ -287,7 +281,7 @@ close(333)
 
 !---- Input Files
 nomfileCoef  = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh
-nomfileCoef_rr = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefDiff_'//bande//'rr'
+nomfileCoef_rr = trim(exec_dir)//'/../tables/rr/TmatCoefDiff_'//bande//'rr'
 
 WRITE(0,*) ' Reading ',trim(nomfileCoef)
 
@@ -393,7 +387,6 @@ ENDIF
 !=================================
 !Output file
 nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//bande//typeh
-!nomfileCoefInt='../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//bande//typeh !//numtable
 PRINT *,' Creation of ',trim(nomfileCoefInt)
 
 OPEN (6,FILE=trim(nomfileCoefInt))
@@ -966,21 +959,7 @@ DO idTc=0,nTcloop
           deltaco=cmplx(REdeltaco,IMdeltaco)
           deltacoint=deltacoint+deltaco*N2*(Deqrmrecsup-Deqrmrecinf)/2
           deltacoR=cmplx(REdeltacoR,IMdeltacoR)
-          deltacoRint=deltacoRint+deltacoR*N2*(Deqrmrecsup-Deqrmrecinf)/2
-
-!             !Conversion to m (from mm)
-!             RES11=RES11*1E-3
-!             RES22=RES22*1E-3
-!             RES11f=RES11f*1E-3
-!             RES22f=RES22f*1E-3
-!             IMS11=IMS11*1E-3
-!             IMS22=IMS22*1E-3
-!             IMS11f=IMS11f*1E-3
-!             IMS22f=IMS22f*1E-3        
-!             S11=cmplx(RES11,IMS11)
-!             S22=cmplx(RES22,IMS22)
-!             S11f=cmplx(RES11f,IMS11f)
-!             S22f=cmplx(RES22f,IMS22f)!             
+          deltacoRint=deltacoRint+deltacoR*N2*(Deqrmrecsup-Deqrmrecinf)/2           
   
           !WRITE(0,*) Fw,N*((Dmrecsup+Dmrec)/2-(Dmrec+Dmrecinf)/2),M,M_liq,Mint,Mint2,M/Mint,M/Mint2
 
