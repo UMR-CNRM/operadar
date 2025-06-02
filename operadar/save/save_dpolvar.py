@@ -94,10 +94,12 @@ def create_tree_structure_outFiles(output_dir:Path):
 
 
 def add_dualPol_variables(ds_variables:dict,dpolDict:dict,dpolvar2add:list):
-    units = {'Zh' : {"units": "dBZ"},
-             'Zdr' : {"units": "dB"},
-             'Kdp' : {"units": "°/km"},
-             'Rhohv' :{"units": "1"},
+    units = {'Zh'    : {"units": "dBZ"  },
+             'Zdr'   : {"units": "dB"   },
+             'Kdp'   : {"units": "°/km" },
+             'Rhohv' : {"units": "1"    },
+             'Ah'    : {"units": "dB/km"},
+             'Av'    : {"units": "dB/km"},
              }
     for var in dpolvar2add :
         ds_variables[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
