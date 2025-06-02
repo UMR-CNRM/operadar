@@ -129,7 +129,7 @@ CHARACTER*4::DSTYfunc
 REAL:: SIGBETA,ARcnst
 REAL :: LAM,FREQ 
 REAL :: ELEV,ELEVmin,ELEVmax,ELEVstep !,ELEVrecinf,ELEVrecsup
-REAL  :: Tc,Tcmin,Tcmax,Tcstep,Tk !,Tcrecinf,Tcrecsup
+REAL :: Tc,Tcmin,Tcmax,Tcstep,Tk !,Tcrecinf,Tcrecsup
 REAL :: Fwmin, Fwstep, Fwmax,Fw !,Fwrecinf,Fwrecsup
 REAL :: D,expD,expDmin,expDmax,expDstep
 REAL :: Frim ! degree of riming factor
@@ -140,10 +140,10 @@ REAL :: Drecinf,Dmrecinf,Deqrecinf,Deqmrecinf,Deqrrecinf,Deqrmrecinf
 
 ! Indexes for lookup table
 INTEGER :: idELEV,idTc,idD,idM,iLine,idP3,idFw !,ispecies
-INTEGER:: nELEV,nTc,nD,nM,nFw,nLines
+INTEGER :: nELEV,nTc,nD,nM,nFw,nLines
 INTEGER :: nP3 !nCC,
 INTEGER :: nELEVloop, nTcloop, nP3loop, nMloop
-INTEGER :: record !,recordinf, recordsup, ios!pour lecture table
+INTEGER :: record !,recordinf, recordsup, pour lecture table
 
 ! Density and dielectric constants
 REAL :: RHOLW,QMW !RHOX,Vpart,Mpart,
