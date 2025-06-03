@@ -65,7 +65,9 @@ dpol2add = ['Zh','Zdr','Kdp']
 radar_band = 'C'                    # radar band (C, X, S, W or K)
 distmax_rad = 255.*1000             # maximum radius of the radar data to compute pseudo-observations
 #alt_max = 15000.      NOT USED ?   # maximum height of the radar data used in the computation of the pseudo-observations
-radarloc="center"                   # radar location: 'center' or [lat_radar,lon_radar] or None
+radarloc=None                       # radar location: 'center' or [lat_radar,lon_radar] or None (None will not simulate radar beams)
+cnst_angle=90                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
+                                    #  or a vertical (cnst_angle=90°) pointing radar at each grid point
 
 
 # ===== WILL BE REMOVED LATER ===== #
