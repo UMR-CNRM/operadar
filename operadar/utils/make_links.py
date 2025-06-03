@@ -45,7 +45,7 @@ def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
     if datatype == 'model' :
         list_to_compare = ['vv','cc','rr','ss','gg','ii','hh']
     elif datatype == 'tables':
-        list_to_compare = ['rr','ss','ws','ii','gg','wg','hh','wh']
+        list_to_compare = ['cc','rr','ss','ws','gg','wg','ii','hh','wh']
     else :
         print(datatype,'is not a valid datatype. Can be "model" or "tables".')
     
