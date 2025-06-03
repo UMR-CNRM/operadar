@@ -5,10 +5,10 @@ Creation 03 March 2025
 """
 
 import argparse
-from tmatrix_generator.plotTables.utils.sensitivity_test import *
+from tables_generator.plotTables.utils.sensitivity_test import *
 
 
-Path_tables = "/home/davidcl/Programmation/operadar/tmatrix_generator/tables/"
+Path_tables = "/home/davidcl/Programmation/operadar/tables_generator/tables/"
 dir_fig="IMG/"
 
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']

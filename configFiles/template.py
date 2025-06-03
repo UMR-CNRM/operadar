@@ -17,7 +17,7 @@ input_filePath  = "home/my_input_folder/"
 outPath = f"/home/my_output_folder/"
 
 # ----- Lookup tables directory path
-path_tables = "./tmatrix_generator/tables/default/"
+path_tables = "./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
