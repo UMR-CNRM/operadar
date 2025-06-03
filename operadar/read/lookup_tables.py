@@ -1,23 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 11 09:55:15 2023
-
-@author: augros & davidcl
-
-Contains routines to :
-* read lookup tables: 
-  - Read_TmatrixClotilde
-  - Read_VarTmatrixClotilde
-* extract the scattering coefficient 
-  - perform_nD_interpolation
-  - CALC_KTMAT
-  - INTERPOL
-        
+@author: augros & davidcl        
 """
 
 import sys
-import math
 import time as tm
 import numpy as np
 import pandas as pd
@@ -153,65 +140,6 @@ def read_and_extract_tables_content(band:str,
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     return table_dict
-
-
-
-def Read_VarTmatrixClotilde(path_table,band,schema_micro,table_ind,h):
-        
-    # Dictionnaries initialization
-    LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax = {}, {}, {}, {}, {}, {}
-    Tcmin, Tcstep, Tcmax = {}, {}, {}
-    Fwmin, Fwstep, Fwmax = {}, {}, {}
-
-    Tc_h, ELEV_h, Fw_h, M_h = {}, {}, {}, {}
-    Zhh, Zdr, Rhv, Kdp = {}, {}, {}, {}
-    
-    nomfileVarInt = path_table+'TmatVarInt_'+schema_micro+'_'+band+'_'+h+table_ind  
-
-    print("reading min/step/max in : ", nomfileVarInt)
-    df = pd.read_csv(nomfileVarInt, sep=";",nrows = 1)
-    LAMmin[h]= np.copy(df["LAMmin"])[0]
-    LAMstep[h]= np.copy(df["LAMmin"])[0]
-    LAMmax[h]= np.copy(df["LAMmin"])[0]
-    ELEVmin[h]= np.copy(df["ELEVmin"])[0]
-    ELEVstep[h]= np.copy(df["ELEVstep"])[0]
-    ELEVmax[h]= np.copy(df["ELEVmax"])[0]
-    Tcmin[h]= np.copy(df["Tcmin"])[0]
-    Tcstep[h]= np.copy(df["Tcstep"])[0]
-    Tcmax[h]= np.copy(df["Tcmax"])[0]
-    Fwmin[h]= np.copy(df["Fwmin"])[0]
-    Fwstep[h]= np.copy(df["Fwstep"])[0]
-    Fwmax[h]= np.copy(df["Fwmax"])[0]
-
-    # For M and CC: same min/step/max for all types
-    expMmin= np.copy(df["expMmin"])[0]
-    expMstep= np.copy(df["expMstep"])[0]
-    expMmax= np.copy(df["expMmax"])[0]
-    expCCmin= np.copy(df["expCCmin"])[0]
-    expCCstep= np.copy(df["expCCstep"])[0]
-    expCCmax= np.copy(df["expCCmax"])[0]
-    
-    del df        
-    
-    print("reading dpol variables in : ", nomfileVarInt)
-    df = pd.read_csv(nomfileVarInt, sep=";",skiprows = [0, 1])
-    #df = pandas.read_csv(nomfileCoefInt, sep=";",names=["Tc_t", "ELEV_t", "Fw_t", "M_t", "S11carre_t", "S22carre_t", "ReS22S11_t", "ImS22S11_t", "ReS22fmS11f_t", "ImS22ft_t", "ImS11ft_t", "RRint_t"])
-    Tc_h[h] = np.copy(df['Tc'])
-    ELEV_h[h] = np.copy(df['ELEV'])
-    Fw_h[h] = np.copy(df['P3'])
-    M_h[h] = np.copy(df['M'])
-    Zhh[h] = np.copy(df['Zhhlg'])
-    Zdr[h] = np.copy(df['Zdrlg'])
-    Rhv[h] = np.copy(df['Rhv'])
-    Kdp[h] = np.copy(df['KDP'])
-
-    del df
-    # End loop over hydromet types    
-   
-    return LAMmin, LAMstep, LAMmax, ELEVmin, ELEVstep, ELEVmax, \
-    Tcmin, Tcstep, Tcmax, Fwmin, Fwstep, \
-    Fwmax,expMmin, expMstep, expMmax, expCCmin, expCCstep, expCCmax, \
-    Tc_h, ELEV_h, Fw_h, M_h, Zhh, Zdr, Kdp, Rhv
 
     
 

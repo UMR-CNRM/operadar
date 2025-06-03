@@ -188,16 +188,16 @@ def dpol_var_from_scatcoefs(wavelength:float,
         temp_dict["numerator"] = interpolated_from_table['REdeltaco']**2+interpolated_from_table['IMdeltaco']**2
         temp_dict["denominator"] = interpolated_from_table['sigvv'] * interpolated_from_table['sighh']
     if "Ah" in dpol2add :
-        temp_dict["Ah"] += ['Ah']
+        temp_dict["Ah"] = interpolated_from_table['Ah']
     if "Av" in dpol2add :
-        temp_dict["Av"] += ['Av']
+        temp_dict["Av"] = interpolated_from_table['Av']
     return temp_dict
 
 
 
 def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
     """Compute polarimetric variables."""
-    finalDict = {} ; print(dpolDict.keys())
+    finalDict = {}
     if 'Zh' in dpol2add :
         finalDict["Zh"] = np.copy(dpolDict["Zhhlin"])
         finalDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(finalDict["Zh"][dpolDict["Zhhlin"]>0])
