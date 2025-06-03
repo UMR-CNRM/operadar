@@ -4,10 +4,6 @@ __pycache__/
 .eggs/
 .vscode
 *.egg-info/
-configFiles/conf_*
 operadar/operadar_conf.py
-tmatrix_generator/tables/
-!tmatrix_generator/tables/.gitkeep
-tmatrix_generator/src/Tmat
-tmatrix_generator/plotTables/IMG/**
-tmatrix_generator/plotTables/IMG/.gitkeep
+tables_generator/tables/
+!tables_generator/tables/.gitkeep
