@@ -9,8 +9,7 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import (LIMToption,
-                                    radar_band,
+from operadar.operadar_conf import (radar_band,
                                     dpol2add,
                                     hydrometeors_moments,
                                     micro_scheme,
@@ -83,7 +82,7 @@ def get_scheme_to_fetch_table(microphysics:str) -> str :
 
     if microphysics[0:3] == "ICE" :
         return "ICE3"
-    elif microphysics[0:3] == "LIM" or (microphysics=="LIMT" and LIMToption=="cstmu") :
+    elif microphysics[0:3] == "LIM" :
         return "LIMA"
     else :
         print('_____________')
