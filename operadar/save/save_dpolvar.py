@@ -66,7 +66,8 @@ def save_netcdf(X:np.ndarray,
                               microphysics = cf.micro_scheme,
                               radar_band = cf.radar_band,
                               mixed_phase_type = cf.MixedPhase,
-                              radar_location = str(cf.radarloc)
+                              radar_location = str(cf.radarloc),
+                              scattering_method = cf.scattering_method,
                               )
     dataset_attributes.update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
         
