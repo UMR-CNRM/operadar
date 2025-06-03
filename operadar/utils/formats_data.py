@@ -43,13 +43,13 @@ def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float,float,float,flo
 
 
 
-def select_Tmatrix_column(momentsDict:dict[int],
+def Fw_or_Nc(momentsDict:dict[int],
                           hydrometeor:str,
                           concentration:ndarray,
                           Fw:ndarray,
-                          tmatrix_param:dict):
-    """ Compute 3d parameter in Tmatrix table 
-    TODO : change the reading of Tmatrix table so that the parameters are kept the same !
+                          tables_dict:dict):
+    """ Select the right column in the lookup table depending of the number of moment for the hydrometeor.
+    TODO : change the reading of the table so that the parameters are kept the same !
 
     * pristine ice (treated as 2-moment => the concentration can vary in MesoNH and is registered)
     * rainwater : 2-moment for all LIMA versions / 1-moment for ICE3
@@ -65,9 +65,9 @@ def select_Tmatrix_column(momentsDict:dict[int],
         col_name = "Fw"
         field_temp = Fw
         col = 'Fw'
-    col_min = tmatrix_param[f'{col}min'][hydrometeor]
-    col_step = tmatrix_param[f'{col}step'][hydrometeor]
-    col_max = tmatrix_param[f'{col}max'][hydrometeor]
+    col_min = tables_dict[f'{col}min'][hydrometeor]
+    col_step = tables_dict[f'{col}step'][hydrometeor]
+    col_max = tables_dict[f'{col}max'][hydrometeor]
     return field_temp, col_min, col_max, col_step, col_name
 
         

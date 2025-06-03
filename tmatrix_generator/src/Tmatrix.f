@@ -1,8 +1,3 @@
-C   New release including the LAPACK matrix inversion procedure.
-C   We thank Cory Davis (University of Edinburgh) for pointing
-C   out the possibility of replacing the proprietary NAG matrix
-C   inversion routine by the public-domain LAPACK equivalent.
-
 C   CALCULATION OF THE AMPLITUDE AND PHASE MATRICES FOR                 
 C   A PARTICLE WITH AN AXIALLY SYMMETRIC SHAPE                   
                                                                        
@@ -253,6 +248,8 @@ C   VALUES FOR WHICH RESULTS ARE COMPUTED ACCURATELY. FOR THIS REASON,
 C   THE AUTHORS AND THEIR ORGANIZATION DISCLAIM ALL LIABILITY FOR
 C   ANY DAMAGES THAT MAY RESULT FROM THE USE OF THE PROGRAM. 
 C    ***********************************************************************
+
+
 C    2012/06/05 Modifications C. Augros, Version V0
 C    Adaptation du programme : fusion des programmes integre dans MNH : 
 C    mode_tmat.f90 (O. Caumont, MICADO)  
@@ -422,24 +419,16 @@ C     ***********************************************************************
       REAL*8 LAM
       REAL*8 ELEV,ELEVmin,ELEVmax,ELEVstep
       REAL*8 Tc,Tcmin,Tcmax,Tcstep
-      REAL*8 D,Dm,Deq,Deqr,Deqrm,expDmin,expDmax,expDstep,DAPPMAX
+      REAL*8 D,Dm,Deq,Deqr,Deqrm,expDmin,expDmax,expDstep
       REAL*8 radar_cnst,K2,LIGHTSPEED !K2=diel factor computed from EPSW
-      REAL*8 alpha, e, L,M,V 
-      REAL*8 A,B,Am
-      INTEGER NELEV,NTc,ND,idELEV,idTc,idtype,idD
-      REAL*8 SIGBETA, SIGBETAdg,SIGBETAr,SIGBETAwg ! canting angle width
-      REAL*8 Fwmin, Fwstep, Fwmax,Fw,Fw_lim,Fv
-      REAL*8 Vc,Vi,Vw,BETA
+      INTEGER NELEV,NTc,ND,idELEV,idTc,idD
+      REAL*8 SIGBETA,SIGBETAr,SIGBETAwg ! canting angle width
+      REAL*8 Fwmin, Fwstep, Fwmax,Fw,Fw_lim
 
-      REAL*8 FREQ,Tk,THETA,EZ,EINF
-      REAL*8 ZFRAC_ICE,ZDMELTFACT,xa,xb !facteurs aj et bj (thèse O. Caumont p 24)
-      REAL*8 RHOIi,RHOI,RHOSi,RHOS,RHOSt,RHOP,RHOTEMP
-      REAL*8 RHOGi,RHOG,RHOGt,RHOLW,RHOX,RHOmin,RHOout
-      REAL*8 ARcnst,AR, ARdg, ARwg, ARds, ARws, ARwi, ARr !axis ratio graupel, snow, rain
-      COMPLEX*16 EPSX,EPSXd,EPSW,EPSI,EPSA,QMX,QMW,QMI,QB,QB1,NUM,DEN
-      COMPLEX*16 EPSSHELL,EPSSHELL1,EPSSHELL2
-      COMPLEX*16 EPSCORE,EPSCORE1,EPSCORE2
-      COMPLEX*16 D1, D2, EPSXws, NUMws, DENws, EPSXsw, NUMsw, DENsw
+      REAL*8 FREQ,Tk,expD,Deqm
+      REAL*8 RHOI,RHOLW,RHOP
+      REAL*8 ARcnst,AR, ARdg, ARwg, ARr ! axis ratios
+      COMPLEX*16 EPSX,EPSXd,EPSW,EPSI,EPSA,QMW
       REAL*8 FVW, Frim ! Frim degree of riming factor
       CHARACTER*2 typeh
       CHARACTER*6 canting
@@ -447,10 +436,9 @@ C     ***********************************************************************
       CHARACTER*4 ARfunc
       CHARACTER*4 DSTYfunc
       CHARACTER*7 DIEL
-      CHARACTER*29 nomfileCoef 
-      CHARACTER*25 nomfileVar
+      CHARACTER*29 nomfileCoef
       CHARACTER*25 nomfileResu
-      CHARACTER*23 nomfileParam  
+      CHARACTER*26 nomfileParam  
 
       REAL*8 zhh,zvv,zdr,kdp,rhohv,sighh,sigvv,Ah,Av ! Tmatrix
       REAL*8 zhhR,zvvR,zdrR,kdpR,rhohvR,sighhR,sigvvR ! Rayleigh spheroids
@@ -472,61 +460,27 @@ C     ***********************************************************************
       RHOLW=1000. ! liquid water density (kg/m3) => 1 g/cm3
       RHOI=916 ! solid ice density (kg/m3) => 0.916 g/cm3
       EPSA=(1.,0)
-      !RHOS=100 ! snow density (kg/m3) => 0.1 g/cm3 
-      
       SIGBETAr=10 ! width of canting angle for rain
                   !(to be used for wet graupel canting angle)
 
       !==================================================== 
       !====               Program start               =====
       !==================================================== 
-       
-      !=======  Loop over radar frequency bands
-      DO idbande=2,2
-          IF (idbande .EQ. 1) bande='S'
-          IF (idbande .EQ. 2) bande='C'
-          IF (idbande .EQ. 3) bande='X' ! LAM=31.9 mm
-          IF (idbande .EQ. 4) bande='W' ! LAM=3.15 mm (Rasta) 
-	      IF (idbande .EQ. 5) bande='K' ! LAM=8.40 mm Ka (C3IEL)
       
-      !======= Loop over hydrometeor types
-      DO idtype=8,8
-      IF (idtype .EQ. 1) typeh='rr'
-      IF (idtype .EQ. 2) typeh='ss'
-      IF (idtype .EQ. 3) typeh='ii'
-      IF (idtype .EQ. 4) typeh='gg'
-      IF (idtype .EQ. 5) typeh='wg' !wet graupel
-      IF (idtype .EQ. 6) typeh='tt' ! MARY: cloud water over land
-      IF (idtype .EQ. 7) typeh='mm' ! MARY: cloud water over sea
-      IF (idtype .EQ. 8) typeh='hh' ! hail
-      IF (idtype .EQ. 9) typeh='wh' ! wet hail
-      IF (idtype .EQ. 10) typeh='ws' !wet snow
 
-      WRITE(0,*) '**********************'
-      WRITE(0,*) 'Hydrometeor type: ',typeh 
-
+      WRITE(0,*) '---------------------------------------'
+      
       !-- Input files
-      Hydromet_const_file = '../param/ICE3_constants.txt'
-      nomfileParam='../param/TmatParam_'//bande//typeh !//numtable
-      WRITE(0,*) nomfileParam,'ok'
+      nomfileParam='../param/tmp_config' 
+      WRITE(0,*) 'Reading :',nomfileParam
       
-      OPEN (5,FILE=nomfileParam)
-                
       
-      !-- Reading of hydrometeor constants file
-      WRITE(0,*) "Hydromet_const_file : ",Hydromet_const_file
-      OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
-      READ(333,*) ! Read the first line of the file
-      DO WHILE (espece /= typeh) 
-        READ(333,*) espece,aj,bj
-      ENDDO
-        print*,espece,aj,bj
-      close(333)
-
-  
       !-----Reading of parameters
+      OPEN (5,FILE=nomfileParam)
       READ (5,1)typeh
     1 FORMAT (5X,A2)
+      READ (5,22)bande
+   22 FORMAT (5X,A1)
       READ (5,2) canting    
     2 FORMAT (8X,A6)
       READ (5,3) SIGBETA
@@ -543,17 +497,20 @@ C     ***********************************************************************
     8 FORMAT (5X,F5.1)  
       READ (5,13) LAM
    13 FORMAT (4X,F5.1)   
-      READ (5,14) ELEVmin
+      READ (5,23) ELEVmin
+   23 FORMAT (8X,F4.1)
       READ (5,14) ELEVmax
    14 FORMAT (8X,F4.1)  
       READ (5,64) ELEVstep
    64 FORMAT (9X,F4.1)      
-      READ (5,15) Tcmin
+      READ (5,24) Tcmin
+   24 FORMAT (6X,F5.1)
       READ (5,15) Tcmax
    15 FORMAT (6X,F5.1)   
       READ (5,16) Tcstep 
    16 FORMAT (7X,F5.1)   
-      READ (5,17) expDmin
+      READ (5,25) expDmin
+   25 FORMAT (8X,F5.4)
       READ (5,17) expDmax
    17 FORMAT (8X,F5.4)
       READ (5,18) expDstep
@@ -568,33 +525,49 @@ C     ***********************************************************************
       CLOSE(5)
 
       !============ Verification of the parameters
-      WRITE (0,*) 'type=',typeh
-      WRITE (0,*) 'canting=',canting !,"ok"
-      WRITE (0,*) 'SIGBETA=',SIGBETA !,"ok"
-      WRITE (0,*) 'DIEL=',DIEL !,"ok" options: 
-      WRITE (0,*) 'ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
-      WRITE (0,*) 'ARcnst=',ARcnst !,"ok" options: -1 (if ARfunc=CNST), 0.8,0.2,0.6  
-      WRITE (0,*) 'DSTYfunc=',DSTYfunc !,"ok"  options: BR07, RHOX, ZA05, LS15
-      WRITE (0,*) 'Frim=',Frim !,"ok"  used only in ZA05 and LS15
+      WRITE (0,*) '   type=',typeh
+      WRITE (0,*) '   band=',bande
+      WRITE (0,*) '   canting=',canting !,"ok"
+      WRITE (0,*) '   SIGBETA=',SIGBETA !,"ok"
+      WRITE (0,*) '   DIEL=',DIEL !,"ok" options: 
+      WRITE (0,*) '   ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
+      WRITE (0,*) '   ARcnst=',ARcnst !,"ok" options: -1 (if ARfunc=CNST), 0.8,0.2,0.6  
+      WRITE (0,*) '   DSTYfunc=',DSTYfunc !,"ok"  options: BR07, RHOX, ZA05, LS15
+      WRITE (0,*) '   Frim=',Frim !,"ok"  used only in ZA05 and LS15
       WRITE (0,50) LAM
-   50 FORMAT ('LAM=',F5.1)
+   50 FORMAT ('    LAM=',F5.1)
       WRITE (0,51) ELEVmin, ELEVmax, ELEVstep
-   51 FORMAT ('ELEVmin, ELEVmax, ELEVstep:',F5.1,X,F5.1,X,F4.1)
+   51 FORMAT ('    ELEVmin, ELEVmax, ELEVstep:',F5.1,X,F5.1,X,F4.1)
       WRITE (0,52) Tcmin, Tcmax, Tcstep
-   52 FORMAT ('Tcmin, Tcmax, Tcstep:',F5.1,X,F5.1,X,F5.1)
+   52 FORMAT ('    Tcmin, Tcmax, Tcstep:',F5.1,X,F5.1,X,F5.1)
       WRITE (0,53) expDmin, expDmax, expDstep   
-   53 FORMAT ('expDmin, expDmax, expDstep:',F5.2,X,F5.2,X,F5.2)
+   53 FORMAT ('    expDmin, expDmax, expDstep:',F6.2,X,F6.2,X,F6.2)
       WRITE (0,54) Fwmin, Fwmax, Fwstep   
-   54 FORMAT ('Fwmin, Fwmax, Fwstep:',F4.2,X,F4.2,X,F4.2)
+   54 FORMAT ('    Fwmin, Fwmax, Fwstep:',F4.2,X,F4.2,X,F4.2)
    
    
+      !-- Reading of hydrometeor constants file
+      Hydromet_const_file = '../param/ICE3_constants.txt'
+      WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
+      OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
+      READ(333,*) ! Read the first line of the file
+      DO WHILE (espece /= typeh) 
+            READ(333,*) espece,aj,bj
+      ENDDO
+      WRITE (0,*) '   espece=',espece
+      WRITE (0,*) '   aj=',aj
+      WRITE (0,*) '   bj=',bj
+      close(333)
+
+
       !-- Output files
+      WRITE(0,*) 'Output files :'
       nomfileResu='../tables/'//typeh//'/TmatResu_'//bande//typeh
       nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh
 
 
-      WRITE(0,*) nomfileCoef,'ok'
-      WRITE(0,*) nomfileResu,'ok'
+      WRITE(0,*) '   ',nomfileCoef
+      WRITE(0,*) '   ',nomfileResu
 
       OPEN (4,FILE=nomfileResu) 
       OPEN (7,FILE=nomfileCoef) 
@@ -896,9 +869,9 @@ C ========================================================================
  
       CLOSE(7)
       CLOSE(8)
-
-      ENDDO !fin boucle sur les types
-      ENDDO !fin boucle sur les bandes
+      
+      WRITE(0,*) 'SAVED !'
+      WRITE(0,*) '---------------------------------------'
 
       END !end programm
 
@@ -1173,10 +1146,8 @@ C     =============================================================
       A1 = 0.25*(1+r)**2
       A2 = 0.25*(1-r**2)
       A3 = (3./8 + 0.5*r +1./8*r**4)**2
-      A4 = (3./8 - 0.5*r +1./8*r**4)
-     &    *(3./8 + 0.5*r +1./8*r**4)
-      A5 = 1./8*(3./8 +0.5*r +1./8*r**4)
-     &    *(1-r**4)
+      A4 = (3./8 - 0.5*r +1./8*r**4) * (3./8 + 0.5*r +1./8*r**4)
+      A5 = 1./8*(3./8 +0.5*r +1./8*r**4) * (1-r**4)
       A7 = 0.5*r*(1.+r)
 
       RETURN
@@ -1773,23 +1744,17 @@ C    DECLARATION OF VARIABLES *******************************************
       REAL*8  LAM,ELEV,Deq,AR
       REAL*8  AXI,MRR,MRI
       REAL*8  X(NPNG2),W(NPNG2),S(NPNG2),SS(NPNG2),
-     *        AN(NPN1),R(NPNG2),DR(NPNG2),ALPHA,BETA,THET,THET0
-     *        THETRAD,DDR(NPNG2),DRR(NPNG2),DRI(NPNG2),ANN(NPN1,NPN1)
-      REAL*8 TR1(NPN2,NPN2),TI1(NPN2,NPN2),EPS,INVEPS1,INVEPS2
-
-
+     *        AN(NPN1),R(NPNG2),DR(NPNG2),ALPHA,BETA,THET,THET0,
+     *        DDR(NPNG2),DRR(NPNG2),DRI(NPNG2),ANN(NPN1,NPN1)
+      REAL*8 TR1(NPN2,NPN2),TI1(NPN2,NPN2),EPS
       REAL*4
      &     RT11(NPN6,NPN4,NPN4),RT12(NPN6,NPN4,NPN4),
      &     RT21(NPN6,NPN4,NPN4),RT22(NPN6,NPN4,NPN4),
      &     IT11(NPN6,NPN4,NPN4),IT12(NPN6,NPN4,NPN4),
      &     IT21(NPN6,NPN4,NPN4),IT22(NPN6,NPN4,NPN4)
-     
-      INTEGER IK
-      REAL*8 SIGBETA
-      COMPLEX*16 Saa,Sab,Sba,Sbb,Saaf,Sabf,Sbaf,Sbbf
 
-      REAL*8 FREQ,Tc,Tk,EINF,F !,THETA
-      COMPLEX*16 EPSX,QMX  !QMW, QMI,   
+      COMPLEX*16 Saa,Sab,Sba,Sbb,Saaf,Sabf,Sbaf,Sbbf
+      COMPLEX*16 EPSX,QMX  
  
       COMMON /CT/ TR1,TI1
       COMMON /TMAT/ RT11,RT12,RT21,RT22,IT11,IT12,IT21,IT22
@@ -1819,9 +1784,7 @@ C  INPUT DATA ********************************************************
 C    TEST CONVERGENCE DU PROGRAMME *************************************      
       NCHECK=0
       IF (NP.EQ.-1.OR.NP.EQ.-2) NCHECK=1
-      IF (NP.GT.0.AND.(-1)**NP.EQ.1) NCHECK=1   
-      !WRITE (6,5454) NCHECK
- 5454 FORMAT ('NCHECK=',I1)
+      IF (NP.GT.0.AND.(-1)**NP.EQ.1) NCHECK=1
       IF (DABS(RAT-1D0).GT.1D-8.AND.NP.EQ.-1) CALL SAREA (EPS,RAT)
       IF (DABS(RAT-1D0).GT.1D-8.AND.NP.GE.0) CALL SURFCH(NP,EPS,RAT)
       IF (DABS(RAT-1D0).GT.1D-8.AND.NP.EQ.-2) CALL SAREAC (EPS,RAT)
@@ -1835,20 +1798,20 @@ c      IF(NP.EQ.-2.AND.EPS.LT.1D0) PRINT 7151,EPS
 c      IF(NP.EQ.-3) PRINT 7160
 !      WRITE(0,7400) LAM,MRR,MRI
 !      WRITE(0,7200)DDELT
- 7000 FORMAT('OBLATE SPHEROIDS, A/B=',F11.7)
- 7001 FORMAT('PROLATE SPHEROIDS, A/B=',F11.7)
- 7100 FORMAT('CHEBYSHEV PARTICLES, T',
-     &       I1,'(',F5.2,')')
- 7150 FORMAT('OBLATE CYLINDERS, D/L=',F11.7)
- 7151 FORMAT('PROLATE CYLINDERS, D/L=',F11.7)
- 7160 FORMAT('GENERALIZED CHEBYSHEV PARTICLES')
- 7200 FORMAT ('ACCURACY OF COMPUTATIONS DDELT = ',D8.2)
- 7400 FORMAT('LAM=',F10.6,3X,'MRR=',D10.4,3X,'MRI=',D10.4)
+! 7000 FORMAT('OBLATE SPHEROIDS, A/B=',F11.7)
+! 7001 FORMAT('PROLATE SPHEROIDS, A/B=',F11.7)
+! 7100 FORMAT('CHEBYSHEV PARTICLES, T',
+!     &       I1,'(',F5.2,')')
+! 7150 FORMAT('OBLATE CYLINDERS, D/L=',F11.7)
+! 7151 FORMAT('PROLATE CYLINDERS, D/L=',F11.7)
+! 7160 FORMAT('GENERALIZED CHEBYSHEV PARTICLES')
+! 7200 FORMAT ('ACCURACY OF COMPUTATIONS DDELT = ',D8.2)
+! 7400 FORMAT('LAM=',F10.6,3X,'MRR=',D10.4,3X,'MRI=',D10.4)
       !DDELT=0.1D0*DDELT
 !      IF (DABS(RAT-1D0).LE.1D-6) WRITE(0,8003) AXI
 !      IF (DABS(RAT-1D0).GT.1D-6) WRITE(0,8004) AXI
- 8003 FORMAT('EQUAL-VOLUME-SPHERE RADIUS=',F8.4)
- 8004 FORMAT('EQUAL-SURFACE-AREA-SPHERE RADIUS=',F8.4)
+! 8003 FORMAT('EQUAL-VOLUME-SPHERE RADIUS=',F8.4)
+! 8004 FORMAT('EQUAL-SURFACE-AREA-SPHERE RADIUS=',F8.4)
       A=RAT*AXI
       XEV=2D0*P*A/LAM
       IXXX=XEV+4.05D0*XEV**0.333333D0
@@ -1867,8 +1830,8 @@ c      IF(NP.EQ.-3) PRINT 7160
          IF (NGAUSS.GT.NPNG1) STOP
  7340    FORMAT('NGAUSS =',I3,' I.E. IS GREATER THAN NPNG1.',
      &          '  EXECUTION TERMINATED')
- 7334    FORMAT(' NMAX =', I3,'  DC2=',D8.2,'   DC1=',D8.2)
-         CALL CONST(NGAUSS,NMAX,MMAX,P,X,W,AN,ANN,S,SS,NP,EPS)
+ !7334    FORMAT(' NMAX =', I3,'  DC2=',D8.2,'   DC1=',D8.2)
+         CALL CONST(NGAUSS,NMAX,X,W,AN,ANN,S,SS,NP,EPS)
          CALL VARY(LAM,MRR,MRI,A,EPS,NP,NGAUSS,X,P,PPI,PIR,PII,R,
      &              DR,DDR,DRR,DRI,NMAX)
          CALL TMATR0 (NGAUSS,X,W,AN,ANN,S,SS,PPI,PIR,PII,R,DR,
@@ -1903,8 +1866,8 @@ c        PRINT 7334, NMAX,DSCA,DEXT
          NGAUSS=NGAUS
          NGGG=2*NGAUSS
  7336    FORMAT('WARNING: NGAUSS=NPNG1')
- 7337    FORMAT(' NG=',I3,'  DC2=',D8.2,'   DC1=',D8.2)
-         CALL CONST(NGAUSS,NMAX,MMAX,P,X,W,AN,ANN,S,SS,NP,EPS)
+ !7337    FORMAT(' NG=',I3,'  DC2=',D8.2,'   DC1=',D8.2)
+         CALL CONST(NGAUSS,NMAX,X,W,AN,ANN,S,SS,NP,EPS)
          CALL VARY(LAM,MRR,MRI,A,EPS,NP,NGAUSS,X,P,PPI,PIR,PII,R,
      &              DR,DDR,DRR,DRI,NMAX)
          CALL TMATR0 (NGAUSS,X,W,AN,ANN,S,SS,PPI,PIR,PII,R,DR,
@@ -2000,8 +1963,8 @@ c     PRINT 7800,0,DABS(QEXT),QSCA,NMAX
          QSCA=QSCA+QSC
          QEXT=QEXT+QXT
 c        PRINT 7800,M,DABS(QXT),QSC,NMAX
- 7800    FORMAT(' m=',I3,'  qxt=',D12.6,'  qsc=',D12.6,
-     &          '  nmax=',I3)
+ !7800    FORMAT(' m=',I3,'  qxt=',D12.6,'  qsc=',D12.6,
+ !    &          '  nmax=',I3)
   220 CONTINUE
       WALB=-QSCA/QEXT
       IF (WALB.GT.1D0+DDELT) WRITE(0,9111)
@@ -2313,13 +2276,13 @@ C____________COMPUTE MATRICES R AND R^(-1), EQ. (13)
 !      PRINT 1102, VH
 !      PRINT 1103, HV
 !      PRINT 1104, HH
- 1101 FORMAT ('Saa=',D11.5,' + i*',D11.5)
- 1102 FORMAT ('Sab=',D11.5,' + i*',D11.5)
- 1103 FORMAT ('Sba=',D11.5,' + i*',D11.5)
- 1104 FORMAT ('Sbb=',D11.5,' + i*',D11.5)
- 1005 FORMAT ('thet0=',F6.2,'  thet=',F6.2,'  phi0=',F6.2,
-     &        '  phi=',F6.2,'  alpha=',F6.2,'  beta=',F6.2)
- 1006 FORMAT ('AMPLITUDE MATRIX')
+! 1101 FORMAT ('Saa=',D11.5,' + i*',D11.5)
+! 1102 FORMAT ('Sab=',D11.5,' + i*',D11.5)
+! 1103 FORMAT ('Sba=',D11.5,' + i*',D11.5)
+! 1104 FORMAT ('Sbb=',D11.5,' + i*',D11.5)
+! 1005 FORMAT ('thet0=',F6.2,'  thet=',F6.2,'  phi0=',F6.2,
+!     &        '  phi=',F6.2,'  alpha=',F6.2,'  beta=',F6.2)
+! 1006 FORMAT ('AMPLITUDE MATRIX')
       RETURN
       END
 C================  END SUBROUTINE AMPL ==========================
@@ -2396,8 +2359,7 @@ C     0.LE.X.LE.1
       END 
 
 C**********************************************************************
-
-      SUBROUTINE CONST (NGAUSS,NMAX,MMAX,P,X,W,AN,ANN,S,SS,NP,EPS)
+      SUBROUTINE CONST (NGAUSS,NMAX,X,W,AN,ANN,S,SS,NP,EPS)
       IMPLICIT REAL*8 (A-H,O-Z)
       INCLUDE 'ampld.par.f'
       REAL*8 X(NPNG2),W(NPNG2),X1(NPNG1),W1(NPNG1),
@@ -2464,7 +2426,7 @@ C**********************************************************************
       COMMON /CBESS/ J,Y,JR,JI,DJ,DY,DJR,DJI
       NG=NGAUSS*2
       IF (NP.GT.0) CALL RSP2(X,NG,A,EPS,NP,R,DR)
-      IF (NP.EQ.-1) CALL RSP1(X,NG,NGAUSS,A,EPS,NP,R,DR)
+      IF (NP.EQ.-1) CALL RSP1(X,NG,NGAUSS,A,EPS,R,DR)
       IF (NP.EQ.-2) CALL RSP3(X,NG,NGAUSS,A,EPS,R,DR)
       IF (NP.EQ.-3) CALL RSP4(X,NG,A,R,DR)
       PI=P*2D0/LAM
@@ -2503,7 +2465,7 @@ C**********************************************************************
  
 C**********************************************************************
  
-      SUBROUTINE RSP1 (X,NG,NGAUSS,REV,EPS,NP,R,DR)
+      SUBROUTINE RSP1 (X,NG,NGAUSS,REV,EPS,R,DR)
       IMPLICIT REAL*8 (A-H,O-Z)
       REAL*8 X(NG),R(NG),DR(NG)
       A=REV*EPS**(1D0/3D0)

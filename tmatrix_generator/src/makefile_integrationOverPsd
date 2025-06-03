@@ -1,0 +1,22 @@
+# This is the Makefile for T-matrix Integration program
+
+# Compiler settings are here
+#include ./makefile_include
+
+# Objects to compile
+OBJECTS = ./TmatrixIntegration.f90
+
+CF = gfortran
+
+# Local (ubuntu)
+# Should be something like : LIBS = -L ./my_lapack_path -llapack -lrefblas
+LIBS = -L ./libFortran/lapack -llapack -lrefblas
+CFLAGS = -pipe -Wall 
+
+all: TmatInt
+
+TmatInt : $(OBJECTS) 
+	$(CF) $(CFLAGS) $(OBJECTS) $(LIBS) -o ./TmatInt 
+
+clean:
+	rm -f *.o TmatInt

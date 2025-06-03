@@ -5,6 +5,7 @@ import math
 import time as tm
 import numpy as np
 
+from operadar.operadar_conf import cnst_angle
 
 
 def compute_radar_geometry(X:np.ndarray,
@@ -34,15 +35,14 @@ def compute_radar_geometry(X:np.ndarray,
     """
 
     print("Compute radar geometry") ; deb_timer = tm.time()
-    np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
+    #np.seterr(invalid='ignore') # silence warning of invalid division 0 by 0 (result in a nan)
     
-    if model=="Arome" or radarloc == None:
-        if model=="Arome": print('\tNo radar geometry computation implemented yet in Arome.')
+    if radarloc == None or model=="Arome" :
         print('\tNot computing radar geometry : radarloc =',radarloc)
-        elev = np.zeros(Tc.shape)
+        elev = np.full(Tc.shape,cnst_angle) 
         distance_mask = (elev >= 0.)
-        
-    elif (model=="MesoNH"):
+    
+    else :
         if type(radarloc)==str and radarloc=="center" :
             print('\tComputing radar geometry at the center of the domain.')
             X0, Y0, Z0 = np.nanmean(X), np.nanmean(Y), 0.
@@ -50,7 +50,6 @@ def compute_radar_geometry(X:np.ndarray,
             radar_lat = radarloc[0]
             radar_lon = radarloc[1]
             print(f'\tComputing radar geometry at latitude {radar_lat}° and longitude {radar_lon}°.')
-            
         distance_mask, radar_dist_3D = compute_distance_mask(X, Y, Z, X0, Y0, Z0, distmax_rad)
         elev = compute_radar_elevation(radar_dist_3D, Z, elev_max)
         

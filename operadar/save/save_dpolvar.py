@@ -66,7 +66,8 @@ def save_netcdf(X:np.ndarray,
                               microphysics = cf.micro_scheme,
                               radar_band = cf.radar_band,
                               mixed_phase_type = cf.MixedPhase,
-                              radar_location = str(cf.radarloc)
+                              radar_location = str(cf.radarloc),
+                              scattering_method = cf.scattering_method,
                               )
     dataset_attributes.update({f'{key}_moment':value for key,value in cf.hydrometeors_moments.items()})
         
@@ -94,10 +95,12 @@ def create_tree_structure_outFiles(output_dir:Path):
 
 
 def add_dualPol_variables(ds_variables:dict,dpolDict:dict,dpolvar2add:list):
-    units = {'Zh' : {"units": "dBZ"},
-             'Zdr' : {"units": "dB"},
-             'Kdp' : {"units": "°/km"},
-             'Rhohv' :{"units": "1"},
+    units = {'Zh'    : {"units": "dBZ"  },
+             'Zdr'   : {"units": "dB"   },
+             'Kdp'   : {"units": "°/km" },
+             'Rhohv' : {"units": "1"    },
+             'Ah'    : {"units": "dB/km"},
+             'Av'    : {"units": "dB/km"},
              }
     for var in dpolvar2add :
         ds_variables[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])

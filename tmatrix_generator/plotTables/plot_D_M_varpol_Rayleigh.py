@@ -3,7 +3,7 @@
 Created on Tue Dec  1 09:23:04 2020
 
 @author: borderiesm and augrosc 
-Trace distributions D-Zhh et M-Zhh (ou Zdr, Kdp, Rhv)
+Trace distributions D-Zhh et M-Zhh (ou Zdr, Kdp, Rhohv)
 pour bandes de frequence specifiee dans band_list
 """
 import numpy as np
@@ -14,20 +14,20 @@ import math
 
 
 micro="ICE3"
-plotR=True #True #Pb a corriger avec Rayleigh
+plotR=True #True 
 
-Path_tables = "../OUTPUT/"
+Path_tables = "../tables/"
     
 dir_fig="IMG/"
 
-#band_list,typeh_list =['S','C','X','K','W'],['rr','ss','gg','hh','tt','ii','wg','wh']
-band_list,typeh_list =['C'],['rr'] #,'ss','gg','hh','tt','ii','wg','wh'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','tt','ii']
+#band_list,typeh_list =['S','C','X','K','W'],['rr','ss','gg','hh','cc','ii','wg','wh']
+band_list,typeh_list =['K'],['rr','ss','gg','ii','wg'] #,'cc','ii','wg'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','cc','ii']
 
 
 color={'S':'k','C':'blue','X':'green','K':'gray','W':'lightgray'}
 style={'S':'-','C':'-','X':'-','K':'-','W':'-'}
 
-listplot=['D'] #,'M']
+listplot=['M'] #,'M']
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh','Zdr','Kdp','Rhohv']
@@ -42,33 +42,33 @@ pol_suptitle=30
 lw=3
 
 
-typeName = {'ii':'Pristine ice','ss':'Dry Snow','gg':'Dry Graupel','tt':'Cloud Water','rr':'Rain','wg':'Wet Graupel','hh':'Dry Hail','wh':'Wet Hail'}
+typeName = {'ii':'Pristine ice','ss':'Dry Snow','gg':'Dry Graupel','cc':'Cloud Water','rr':'Rain','wg':'Wet Graupel','hh':'Dry Hail','wh':'Wet Hail'}
 ymin_dict,ymax_dict={},{}
 for var in ['Zh','Zdr','Kdp','Rhohv']:
     ymin_dict[var],ymax_dict[var]={},{}
 
-ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'tt':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
-ymax_dict["Zh"] = {'ii':30,'ss':30,'gg':80,'tt':20,'rr':70,'wg':80,'hh':100,'wh':100}
+ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
+ymax_dict["Zh"] = {'ii':30,'ss':30,'gg':80,'cc':20,'rr':70,'wg':80,'hh':100,'wh':100}
 
-ymin_dict["Zdr"] = {'ii':0,'ss':-2,'gg':-2,'tt':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'tt':1,'rr':10,'wg':10,'hh':2,'wh':10}
+ymin_dict["Zdr"] = {'ii':0,'ss':-2,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
+ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
 
-ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'tt':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'tt':1,'rr':5,'wg':4,'hh':20,'wh':20}
+ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
+ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
 
 for typeh in typeh_list:
     ymin_dict["Rhohv"][typeh]=0.9
     ymax_dict["Rhohv"][typeh]=1.0
 
 
-dmax_dict={'ii':10,'ss':20,'gg':50,'tt':2,'rr':10,'wg':50,'hh':100,'wh':100}
+dmax_dict={'ii':10,'ss':20,'gg':50,'cc':2,'rr':10,'wg':50,'hh':100,'wh':100}
 
 Fwchoix=0
-ELEVchoix=0 #0 pour radars sol, 90 pour rasta
+ELEVchoix=90 #0 pour radars sol, 90 pour rasta
 Nii=800 #selected number concentration for primary ice
-T_dict = {'ii':-30,'ss':-10,'gg':0,'tt':5,'rr':10,'wg':10,'hh':1,'wh':10}
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cc':5,'rr':10,'wg':10,'hh':1,'wh':10}
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
-#T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'tt':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
+#T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'cc':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
 begtable={'D':'TmatCoefDiff_','M':'TmatCoefInt_'+micro+'_'}
 delim={'D':r"\s+",'M':';'}
@@ -84,7 +84,7 @@ for var in listvar:
             
             for iband,band in enumerate(band_list): 
                 print("band : "+band)
-                table=Path_tables+begtable[plot]+band+typeh
+                table=Path_tables+"/"+typeh+"/"+begtable[plot]+band+typeh
                 
                 # reading table options (from config file)
                 df_param=pd.read_csv(table, sep=delim[plot],nrows=1,engine='python')
@@ -128,7 +128,7 @@ for var in listvar:
             # end loop over bands
             title1= typeName[typeh]+" T="+str(int(T_dict[typeh]))+u'\u00B0C'+'\n'
             title2= r'$\sigma_{\beta}=$'+str(SIGBETA)+u'\u00B0'
-            title3=" AR="+str(ARcnst)
+            title3=" AR="+str(ARcnst)+" elev="+str(ELEVchoix)
             if (typeh=="rr"):
                 title3=" AR="+ARfunc
             ax[itypeh].set_title(title1+title2+title3,fontsize=pol_title)

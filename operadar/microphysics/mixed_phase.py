@@ -20,7 +20,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
         contents (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor).
         concentrations (dict[np.ndarray]): dict of 3D arrays (one per hydrometeor).
         hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme.
-        expMmin (float): Tmatrix table output value.
+        expMmin (float): value stored in the table dict.
         parametrization (str): Mixed phase parametrization (either T_pos, Fw_pos or Fw_posg).
 
     Returns:
@@ -34,7 +34,7 @@ def compute_mixed_phase(contents:dict[np.ndarray],
     mask_BB = mask_bright_band(contents, hydrometeorMoments, expMmin)
     
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
-                                                         datatype='tmatrix',
+                                                         datatype='tables',
                                                          )
     wet_species = [key for key in hydrometeors if (key[0:1]=="w") and (key[1:2]*2 in hydrometeors)]
     

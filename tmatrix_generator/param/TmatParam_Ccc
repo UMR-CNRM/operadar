@@ -1,9 +1,9 @@
-type:rr
+type:cc
 band:C
 canting:nocant
 sigbeta:0.0
 DIEL:Liebe91
-ARfunc:BR02
+ARfunc:CNST
 ARcnst:1.0
 DSTYfunc:RHOX
 Frim:1.0
@@ -15,7 +15,7 @@ Tcmin:-20.0
 Tcmax:40.0
 Tcstep:1.0
 expDmin:-2.0
-expDmax:1.0
+expDmax:0.3
 expDstep:0.02
 Fwmin:0.0
 Fwstep:0.1
