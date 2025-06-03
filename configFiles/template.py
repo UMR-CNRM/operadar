@@ -5,18 +5,19 @@
  *   ----------------------------------------------
  *
  *   You may want to adjust some parameters.
+ *   /!\ Possible options are displayed. Be careful and respect if quotes are needed or not.
  *   Please make a copy of this file before any changes
  *
 """
 
-# ----- INPUT file path (filename will be used to name the output file)
+# ----- INPUT file path (path to folder containing the files)
 input_filePath  = "home/my_input_folder/" 
 
 # ----- OUPUT file(s) directory
 outPath = f"/home/my_output_folder/"
 
-# ----- Tmatrix directory (TmatCoefInt_SCXW) path
-path_Tmatrix = "/my_path/TmatCoefInt_SCXW/"
+# ----- Lookup tables directory path
+path_tables = "./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
@@ -43,19 +44,26 @@ MixedPhase = 'Fw_posg'
 #                           and save the resultant netcdf (1 file/hydrometeor class)
 save_netcdf_single_hydrometeor = False
 
-# ----- Dual-pol variables to add in the output file : provide a list of at least one
-#                                                      element in ['Zh','Zdr','Kdp','Rhohv'] 
+# ----- Dual-pol variables to add in the output file : provide a list of at least one element 
+#                                                      in ['Zh','Zdr','Kdp','Rhohv', 'Ah', 'Av'] 
 dpol2add = ['Zh','Zdr','Kdp']
+
+# ----- Scattering method (TO COME)
+#       The user can specify if one method ('Tmatrix' or 'Rayleigh') or 'both' methods are employed to 
+#       compute the polarimetric variables, or, specify the method for each hydrometeor individually.
+#       See the examples below.
+#       * scattering_method = 'both' will create two output files instead of one, respectively named *_Tmatrix.nc and *_Rayleigh.nc
+#                                    + option --append --> will instead append fieldName_Tmatrix and fieldName_Rayleigh in the input file
+#       * scattering_method = 'Tmatrix' or 'Rayleigh' will create one output file named *_{scattering_method}.nc
+#                                                     + option --append --> will instead append fieldName_{scattering_method} in the input file
+#       * scattering_method = {'cc':'Rayleigh','rr':'Rayleigh','ss':'Tmatrix','gg':'Tmatrix','ii':'Tmatrix','wg':'Tmatrix'}
+#                             --> will create a unique file with the polarimetric fields resulting from the combinations
+#                                 of the chosen methods in this dictionnary
+scattering_method = "Tmatrix"
 
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)
 distmax_rad = 255.*1000             # maximum radius of the radar data to compute pseudo-observations
-#alt_max = 15000.      NOT USED ?   # maximum height of the radar data used in the computation of the pseudo-observations
-radarloc="center"                   # radar location: 'center' or [lat_radar,lon_radar] or None
-
-
-# ===== WILL BE REMOVED LATER ===== #
-n_interpol = 32 # nb bornes to interpol (2**5: min et max pour LAM, ELEV, T, M, Fw)
-RT = 6371.229*10**3 # Earth radius constant
-CCIconst=800. # Ice concentration constant for one moment
-LIMToption=""
+radarloc=None                       # radar location: 'center' or [lat_radar,lon_radar] or None (None will not simulate radar beams)
+cnst_angle=90                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
+                                    #  or a vertical (cnst_angle=90°) pointing radar at each grid point
