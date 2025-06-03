@@ -17,7 +17,7 @@ from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
 from operadar.save.append_dpolvar import append_in_input_file
-from operadar.read.tmatrix_tables import read_Tmatrix_Clotilde
+from operadar.read.lookup_tables import read_and_extract_tables_content
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
@@ -28,16 +28,16 @@ from operadar.utils.formats_data import format_temporal_variable,define_output_p
 
 def operadar(filename:str,
              modelname:str=cf.model,
-             read_tmatrix:bool=True,
+             read_tables:bool=True,
              in_dir_path:str=cf.input_filePath,
              out_dir_path:str=cf.outPath,
-             tmatrix_path:str=cf.path_Tmatrix,
+             tables_path:str=cf.path_tables,
              microphysics_scheme:str=cf.micro_scheme,
              hydrometeorMoments:dict[int]=cf.hydrometeors_moments,
              radar_band:str=cf.radar_band,
              radarloc:str|list=cf.radarloc,
              distmax_rad:float=cf.distmax_rad,
-             Tmatrix_params:dict={},
+             tables_content:dict={},
              mixed_phase_parametrization:str=cf.MixedPhase,
              subDomain:list[float]|None=cf.subDomain,
              get_more_details=False,
@@ -48,14 +48,14 @@ def operadar(filename:str,
     Args:
         filename (str): Only the name of the file.
         modelname (str): Defaults to cf.model.
-        read_tmatrix (bool, optional): Option to save computing time within a loop.
+        read_tables (bool, optional): Option to save computing time within a loop.
                 Need to be set to True at least for the first iteration.
                 Defaults to True.
         in_dir_path (str, optional): Path where the input files are stored.
                 Defaults to cf.input_filePath.
         out_dir_path (str, optional): Path to store the output files.
                 Defaults to cf.outPath.
-        tmatrix_path (str, optional) : Path where the Tmatrix lookup tables are stored.
+        tables_path (str, optional) : Path where the lookup tables are stored.
         microphysics_scheme (str, optional): name of the microphysics scheme.
                 Defaults to cf.micro_scheme.
         hydrometeorMoments (dict of form {str : int}), optional): dict containing the number of moments
@@ -67,7 +67,7 @@ def operadar(filename:str,
                 coordinate or None. Defaults to cf.radarloc.
         distmax_rad (float): Maximum radius of the radar data to compute pseudo-observations.
                 DEfaults to cf.distmax_rad.
-        Tmatrix_params (dict, optional): dictionary containing the Tmatrix tables parameters.
+        tables_content (dict, optional): dictionary containing the tables parameters and required columns.
                 Defaults to {}.
         mixed_phase_parametrization (str, optional): Defaults to cf.MixedPhase.
         subDomain (list[float] | None, optional): Defaults to cf.subDomain.
@@ -75,8 +75,8 @@ def operadar(filename:str,
         append_in_file (bool): Defaults to False.
 
     Returns:
-        read_tmatrix (bool): to update the boolean during a loop
-        Tmatrix_params (dict) : to keep in memory the Tmatrix parameters and values throughout multiple iterations over the same radar band
+        read_tables (bool): to update the boolean during a loop
+        tables_content (dict) : to keep in memory the tables parameters and values throughout multiple iterations over the same radar band
         
     """
     
@@ -102,17 +102,17 @@ def operadar(filename:str,
                                      ) 
     if not Path(outFilePath).with_suffix('.nc').exists() or append_in_file :
         
-        # Read Tmatrix tables (files from Clotilde)
-        if read_tmatrix :
-            Tmatrix_hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
-                                                                          datatype='tmatrix',
-                                                                          )
-            Tmatrix_params = read_Tmatrix_Clotilde(band=radar_band,
-                                                   scheme=microphysics_scheme,
-                                                   pathTmat=tmatrix_path,
-                                                   hydrometeors=Tmatrix_hydromet_list,
-                                                   verbose=get_more_details,
-                                                   )
+        # Read lookup tables
+        if read_tables :
+            hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
+                                                                  datatype='tables',
+                                                                  )
+            tables_content = read_and_extract_tables_content(band=radar_band,
+                                                             scheme=microphysics_scheme,
+                                                             path_table=tables_path,
+                                                             hydrometeors=hydromet_list,
+                                                             verbose=get_more_details,
+                                                            )
         # Read model variables
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                            modelname=modelname,
@@ -122,14 +122,14 @@ def operadar(filename:str,
                                                            )
         # Compute radar geometry
         mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
-                                                           elev_max=Tmatrix_params['ELEVmax']["rr"],
+                                                           elev_max=tables_content['ELEVmax']["rr"],
                                                            model=modelname,
                                                            distmax_rad=distmax_rad,
                                                            radarloc=radarloc,
                                                            )
         # Mask precipitations
         mask_precip = mask_precipitations(contents=M,
-                                          expMmin=Tmatrix_params['expMmin']["rr"],
+                                          expMmin=tables_content['expMmin']["rr"],
                                           hydrometeors_moments=hydrometeorMoments,
                                           )
         # Combine masks
@@ -139,7 +139,7 @@ def operadar(filename:str,
         [M, Nc,Fw] = compute_mixed_phase(contents=M,
                                          concentrations=Nc,
                                          hydrometeorMoments=hydrometeorMoments,
-                                         expMmin=Tmatrix_params['expMmin']["rr"],
+                                         expMmin=tables_content['expMmin']["rr"],
                                          parametrization=mixed_phase_parametrization,
                                          ) 
         # Compute dual-pol radar variables
@@ -148,7 +148,7 @@ def operadar(filename:str,
                                              elev=elevations, Fw=Fw,
                                              contents=M,
                                              concentrations=Nc,
-                                             tmatrix_param=Tmatrix_params,
+                                             tables_dict=tables_content,
                                              hydrometeorMoments=hydrometeorMoments,
                                              X=X, Y=Y, Z=Alt,
                                              lat=lat, lon=lon,
@@ -170,19 +170,19 @@ def operadar(filename:str,
                         contentsDict=M, concentrationsDict=Nc,
                         temperature=Tc, outfile=Path(outFilePath),
                         )
-        # For multiple iterations over different time but with the same settings, save time by not reading
-        # again Tmatrix tables and lat/lon fields (if available)
-        read_tmatrix = False
+        # For multiple iterations over different time but with the same settings, save time by
+        # not reading again lookup tables and lat/lon fields (if available)
+        read_tables = False
         elapsed_time = tm.time() - begin_program_timer
         print("Elapsed time :",int(elapsed_time//60),"minutes",int(elapsed_time%60),"seconds")
         print("-----------------------------------------------------------------------------")
-        return read_tmatrix, Tmatrix_params
+        return read_tables, tables_content
     
     else :
-        read_tmatrix = True
+        read_tables = True
         print("File exists at :",outFilePath+'.nc')
         print("-----------------------------------------------------------------------------")
-        return read_tmatrix, dict()
+        return read_tables, dict()
 
 
 

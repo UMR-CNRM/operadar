@@ -1,4 +1,4 @@
-iespece  aj      bj      alphaj  nuj     Xj      Cj      ccj     ddj
+espece  aj      bj      alphaj  nuj     Xj      Cj      ccj     ddj
 rr	524	3	1	2	-1	8e6	842	0.8	
 ii 	0.82	2.5	3 	3	0	800	800	1		
 ss	0.02	1.9	1	1	1	5	5.1	0.27
@@ -9,3 +9,4 @@ hh      470.    3.0 	1	8	-1.0	4e4	201	0.64
 wh      470.    3.0 	1	8	-1.0	4e4	201	0.64	
 tt	524	3	3 	1	0	1e8	2.98e7	2.0
 mm      524     3       3       1       0       1e8     2.98e7  2.0
+cc	524	3	3 	1	0	1e8	2.98e7	2.0
