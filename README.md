@@ -38,4 +38,5 @@ Before making changes to the project, you should create a new branch and check i
 To ask for integration of your modifications, please open a pull request following https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#making-a-pull-request.
 
 # License
-Coming soon
+This software is governed by the open-source CeCILL-C license under French law, cf. LICENSE.txt. Downloading and using this code means that you have had knowledge of the CeCILL-C license and that you accept its terms.
+

@@ -13,7 +13,7 @@ RIMING=""
 DIEL=""
 
 # List of (fixed) parameters
-HYDRO_LIST=("cc" "rr" "ii" "ss" "gg" "wg" "hh" "wh")
+HYDRO_LIST=("cc" "rr" "ii" "ss" "ws" "gg" "wg" "hh" "wh")
 BAND_LIST=("C" "S" "X" "K" "W")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
@@ -159,20 +159,10 @@ generate_tables() {
         echo ""
     fi
 
-    JOB_LIMIT=4
-    JOB_COUNT=0
-    OUTPUT_DISPLAY_DIR="${SCRIPT_DIR}/logs"
-    mkdir -p "$OUTPUT_DISPLAY_DIR"
-
-    declare -a TMP_FILES=()
-
     for H in "${HYDRO_LIST[@]}"; do
-        OUT_LOG="${OUTPUT_DISPLAY_DIR}/out_${BAND}_${H}.log"
-        TMP_FILES+=("$OUT_LOG")
 
-        echo -e "Currently running for ${H}"
-
-        ({
+        echo -e "\n====== START OF THE PROGRAM FOR ${H} ======"
+        
         if [[ "$output_subfolder" == "default" ]]; then
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
         else
@@ -196,7 +186,6 @@ generate_tables() {
                     ./Tmat
                     if [[ $? -ne 0 ]]; then
                         echo "Error: Table creation failed for $H."
-                        continue
                     fi
                     popd > /dev/null
                 else
@@ -221,54 +210,12 @@ generate_tables() {
                 done
             else
                 echo "Missing or unknown file: $PARAM_FILE"
-                continue
             fi
         fi
 
         echo -e "\n====== END OF THE PROGRAM FOR ${H} ======"
-
-        } > "$OUT_LOG" 2>&1
         
-        echo "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
-        
-        ) &
-
-        ((JOB_COUNT++))
-        if (( JOB_COUNT >= JOB_LIMIT )); then
-            wait -n
-            ((JOB_COUNT--))
-        fi
     done
-
-    wait
-
-    # Traitement des erreurs
-    for OUT_LOG in "${TMP_FILES[@]}"; do
-        if [[ -s "$OUT_LOG" ]]; then
-            while IFS= read -r line; do
-                if [[ "$line" == Missing* ]]; then
-                    MISSING_FILES+=("$line")
-                elif [[ "$line" == Error:* ]] ; then
-                    LAUNCH_ERRORS+=("$line")
-                fi
-            done < "$OUT_LOG"
-        fi
-    done
-
-    # Affichage des erreurs collectées
-    if (( ${#LAUNCH_ERRORS[@]} > 0 )); then
-        echo -e "\n======= LAUNCH ERRORS ======="
-        for err in "${LAUNCH_ERRORS[@]}"; do
-            echo "$err"
-        done
-    fi
-
-    if (( ${#MISSING_FILES[@]} > 0 )); then
-        echo -e "\n======= MISSING FILES ======="
-        for err in "${MISSING_FILES[@]}"; do
-            echo "$err"
-        done
-    fi
 
     echo " "
 }
