@@ -13,7 +13,7 @@ RIMING=""
 DIEL=""
 
 # List of (fixed) parameters
-HYDRO_LIST=("cc" "rr" "ii" "ss" "ws" "gg" "wg" "hh" "wh")
+HYDRO_LIST=("cc" "rr" "ii" "ss" "gg" "wg" "hh" "wh")
 BAND_LIST=("C" "S" "X" "K" "W")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
@@ -24,11 +24,11 @@ MICRO_LIST=("ICE3" "LIMA")
 MISSING_FILES=()
 
 # Paths
-PARAM_FOLDER="./tmatrix_generator/param"
-TABLE_FOLDER="./tmatrix_generator/tables"
+PARAM_FOLDER="./tables_generator/param"
+TABLE_FOLDER="./tables_generator/tables"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMAT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/Tmat)")"
-TMATINT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/TmatInt)")"
+TMAT_DIR="$(dirname "$(realpath ./tables_generator/src/Tmat)")"
+TMATINT_DIR="$(dirname "$(realpath ./tables_generator/src/TmatInt)")"
 
 
 # Help function
@@ -126,7 +126,7 @@ done
 
 # Checking arguments
 if [[ -z "$MODE" ]]; then
-    echo "/!\ Error: wrong use of the tmatrix_generator. Can only be :"
+    echo "/!\ Error: wrong use of the tables_generator. Can only be :"
     usage
 fi
 
@@ -143,7 +143,7 @@ generate_tables() {
         echo "=========================================="
         echo "               DEFAULT MODE               "
         echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_*_default files."
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_*_default files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
         echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
@@ -152,7 +152,7 @@ generate_tables() {
         echo "=========================================="
         echo "               NewConf MODE               "
         echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_* files."
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_* files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
         echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
@@ -186,12 +186,13 @@ generate_tables() {
             
         else
             mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+            mkdir -p "${TABLE_FOLDER}/${H}"
             if [[ -f "$PARAM_FILE" ]]; then
                 DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
                 if [[ ! -f "$DIAMETER_TABLE" ]]; then
                     cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
                     echo "Launching the creation of the tables for a range of diameters."
-                    pushd "$SCRIPT_DIR/tmatrix_generator/src" > /dev/null
+                    pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
                     ./Tmat
                     if [[ $? -ne 0 ]]; then
                         echo "Error: Table creation failed for $H."
