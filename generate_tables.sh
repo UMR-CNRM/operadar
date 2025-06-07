@@ -41,7 +41,7 @@ usage() {
     echo " "
     echo "Accepted values for :"
     echo "  --band    (radar band)          : C, K, S, W, X"
-    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, tt, wg, hh, wh "
+    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, cc, wg, hh, wh "
     echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
     echo "  --arv     (axis ratio value)    : any float value."
     echo "  --canting (canting angle)       : any float value."
