@@ -7,3 +7,5 @@ __pycache__/
 operadar/operadar_conf.py
 tables_generator/tables/
 !tables_generator/tables/.gitkeep
+tables_generator/src/Tmat
+tables_generator/src/TmatInt
