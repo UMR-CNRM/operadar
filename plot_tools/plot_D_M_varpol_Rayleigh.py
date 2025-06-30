@@ -11,27 +11,29 @@ import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
+import os
 
 
 micro="ICE3"
 plotR=True #True 
 
-Path_tables = "../tables/"
+Path_tables = "../tables_generator/tables"
     
 dir_fig="IMG/"
 
 #band_list,typeh_list =['S','C','X','K','W'],['rr','ss','gg','hh','cc','ii','wg','wh']
-band_list,typeh_list =['K'],['rr','ss','gg','ii','wg'] #,'cc','ii','wg'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','cc','ii']
+band_list,typeh_list =['C','K','W'],['rr','ss','gg','cc','ii','wg'] #,'cc','ii','wg'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','cc','ii']
 
-
-color={'S':'k','C':'blue','X':'green','K':'gray','W':'lightgray'}
+band_name={'S':'S','C':'C','X':'X','K':'Ka','W':'W'}
+color={'S':'k','C':'blue','X':'green','K':'gray','W':'green' }#'lightgray'}
 style={'S':'-','C':'-','X':'-','K':'-','W':'-'}
 
-listplot=['M'] #,'M']
+listplot=['D','M'] #,'M']
+TmatOption={'C':"elev90",'K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
-listvar=['Zh','Zdr','Kdp','Rhohv']
-unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/'}
+listvar=['Zh','Ah']
+unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/','Ah':'dB'+r' km$^{-1}$','Av':'dB'+r' km$^{-1}$'}
 vn={}
 vn_R={}
 
@@ -44,7 +46,7 @@ lw=3
 
 typeName = {'ii':'Pristine ice','ss':'Dry Snow','gg':'Dry Graupel','cc':'Cloud Water','rr':'Rain','wg':'Wet Graupel','hh':'Dry Hail','wh':'Wet Hail'}
 ymin_dict,ymax_dict={},{}
-for var in ['Zh','Zdr','Kdp','Rhohv']:
+for var in ['Zh','Zdr','Rhohv','Kdp','Ah','Av']:
     ymin_dict[var],ymax_dict[var]={},{}
 
 ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
@@ -55,6 +57,12 @@ ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
 
 ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
 ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
+
+ymin_dict["Ah"] = {'ii':0,'ss':0,'gg':0,'cc':0,'rr':0,'wg':0,'hh':0,'wh':0}
+ymax_dict["Ah"] = {'ii':10,'ss':10,'gg':10,'cc':10,'rr':10,'wg':10,'hh':10,'wh':10}
+
+ymin_dict["Av"] = {'ii':0,'ss':0,'gg':0,'cc':0,'rr':0,'wg':0,'hh':0,'wh':0}
+ymax_dict["Av"] = {'ii':10,'ss':10,'gg':10,'cc':10,'rr':10,'wg':10,'hh':10,'wh':10}
 
 for typeh in typeh_list:
     ymin_dict["Rhohv"][typeh]=0.9
@@ -76,7 +84,7 @@ delim={'D':r"\s+",'M':';'}
 for var in listvar:
     for plot in listplot:    
         print("Plotting "+var+"-"+plot)
-        fig,axes = plt.subplots(nrows= 2,ncols=4,figsize=(26,12))
+        fig,axes = plt.subplots(nrows= 2,ncols=3,figsize=(24,12))
         ax = axes.flat
         for itypeh,typeh in enumerate(typeh_list):
             print("type : "+typeh)          
@@ -84,7 +92,8 @@ for var in listvar:
             
             for iband,band in enumerate(band_list): 
                 print("band : "+band)
-                table=Path_tables+"/"+typeh+"/"+begtable[plot]+band+typeh
+                #table=Path_tables+"/"+typeh+"/"+begtable[plot]+band+typeh
+                table=Path_tables+"/"+TmatOption[band]+"/"+begtable[plot]+band+typeh
                 
                 # reading table options (from config file)
                 df_param=pd.read_csv(table, sep=delim[plot],nrows=1,engine='python')
@@ -102,8 +111,10 @@ for var in listvar:
                     Fwcol=df['Fw'].to_numpy()
                 vn['Zh'],vn['Zdr']=df['zhh'].to_numpy(),df['zdr'].to_numpy()
                 vn['Rhohv'],vn['Kdp']=df['rhohv'].to_numpy(),df['kdp'].to_numpy()
+                vn['Ah'],vn['Av']=df['Ah'].to_numpy(),df['Av'].to_numpy()
                 vn_R['Zh'],vn_R['Zdr']=df['zhhR'].to_numpy(),df['zdrR'].to_numpy()
                 vn_R['Rhohv'],vn_R['Kdp']=df['rhohvR'].to_numpy(),df['kdpR'].to_numpy()
+                vn_R['Ah'],vn_R['Av']=df['AhR'].to_numpy(),df['AvR'].to_numpy()
                 x=df[pltX[plot]].to_numpy()
                 
                 if (typeh=='wg' or typeh=='wh'):
@@ -122,7 +133,8 @@ for var in listvar:
                     else:
                         ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == Fwchoix))           
                         ax[itypeh].plot(x[ind],vn[var][ind],label = band,color=color[band],linewidth=lw)#,s=0.5)
-                        ax[itypeh].plot(x[ind],vn_R[var][ind],label = band+', Rayleigh',color=color[band],linewidth=lw,ls='--')
+                        if (plotR):
+                            ax[itypeh].plot(x[ind],vn_R[var][ind],label = band+', Rayleigh',color=color[band],linewidth=lw,ls='--')
                     
                 #end choice wg
             # end loop over bands
@@ -164,7 +176,9 @@ for var in listvar:
         nomfig=dir_fig +'DistTmat'+bandtit+micron+'_'+plot+var
         if (plotR):
             nomfig+="_R"
-            
+        
+        if not os.path.exists(dir_fig):
+            os.makedirs(dir_fig)    
         fig.savefig(nomfig+".png",dpi=200, bbox_inches='tight')
         plt.clf()
         plt.close('all')
