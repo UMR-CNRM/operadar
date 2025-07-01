@@ -10,7 +10,8 @@ It is adapted to read and manipulate AROME and MesoNH model files and currently 
 ### INPUT
 * Model file (`.fa` for AROME files or `.nc` for MesoNH)
 * Configuration file
-* Lookup tables (created beforehand with the table generator executable). For colleagues at the CNRM, the tables can be found on belenos at `/home/augros/TmatCoefInt_SCXW/`
+* Lookup tables (created beforehand with the table generator executable).
+* For colleagues at CNRM, the default configuration of the tables can be found on belenos at `/home/augros/TmatCoefInt_SCXKaW/`
 
 ### OUTPUT : netcdf file with
 * X/Y grid horizontal coordinates (1D)
