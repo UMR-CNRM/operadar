@@ -120,7 +120,7 @@ for var in listvar:
                 if (typeh=='wg' or typeh=='wh'):
                     for iFw,Fw in enumerate(Fw_list):
                         ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == Fw)) 
-                        label=band+" Fw="+str(Fw)
+                        label=band_name[band]+" Fw="+str(Fw)
                         ax[itypeh].plot(x[ind],vn[var][ind],label = label,color=color[band],ls=Fw_ls[iFw],linewidth=lw)#,s=0.5)
                     if (iband==0):
                         ax[itypeh].legend(loc = 'best',fontsize=pol_legend)   
@@ -129,12 +129,12 @@ for var in listvar:
                         id=np.argmin(np.abs(Fwcol-math.log10(Nii))) # position of closest concentration to Nii
                         P3choix=Fwcol[id]
                         ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == P3choix))           
-                        ax[itypeh].plot(x[ind],vn[var][ind],label = band,color=color[band],linewidth=lw)#,s=0.5)  
+                        ax[itypeh].plot(x[ind],vn[var][ind],label = band_name[band],color=color[band],linewidth=lw)#,s=0.5)  
                     else:
                         ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == Fwchoix))           
-                        ax[itypeh].plot(x[ind],vn[var][ind],label = band,color=color[band],linewidth=lw)#,s=0.5)
+                        ax[itypeh].plot(x[ind],vn[var][ind],label = band_name[band],color=color[band],linewidth=lw)#,s=0.5)
                         if (plotR):
-                            ax[itypeh].plot(x[ind],vn_R[var][ind],label = band+', Rayleigh',color=color[band],linewidth=lw,ls='--')
+                            ax[itypeh].plot(x[ind],vn_R[var][ind],label = band_name[band]+', Rayleigh',color=color[band],linewidth=lw,ls='--')
                     
                 #end choice wg
             # end loop over bands
