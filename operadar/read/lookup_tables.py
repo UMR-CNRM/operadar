@@ -41,9 +41,7 @@ def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix')->list
     """Depending on the variables the user wants to compute and the chosen scattering method,
     creating a list of the table's column names to extract."""
     
-    table_columnNames = ['Tc', 'ELEV', 'M']
-    if micro_scheme[0:3]=='ICE' : table_columnNames +=['Fw'] # to remove later ?
-    elif micro_scheme[0:3]=='LIM' : table_columnNames +=['N'] # to remove later ?
+    table_columnNames = ['Tc', 'ELEV', 'M', 'Fw', 'N']
     
     if scattering_method == 'Tmatrix' or scattering_method == 'both' :
         if 'Zh' in dpol2add :
@@ -127,12 +125,11 @@ def read_and_extract_tables_content(band:str,
         if verbose : print("\tRetrieving necessary columns in the table for",h)
         df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         for columnName in columns_to_retrieve :
-            if columnName == 'Fw' and hydrometeors_moments[h]==1 :
-                table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                #table_dict['N'][h] = df_columns['P3'].to_numpy()*0
-            elif columnName == 'N' and hydrometeors_moments[h]==2 :
-                table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                #table_dict['Fw'][h] = df_columns['P3'].to_numpy()*0
+            if columnName == 'Fw' or columnName == 'N' :
+                if hydrometeors_moments[h]==1 :
+                    table_dict['Fw'][h] = df_columns['P3'].to_numpy()
+                elif hydrometeors_moments[h]==2 :
+                    table_dict['N'][h] = df_columns['P3'].to_numpy()
             else :
                 table_dict[columnName][h] = df_columns[columnName].to_numpy()
         del df_columns
