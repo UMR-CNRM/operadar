@@ -116,6 +116,7 @@ def operadar(filename:str,
                                                              scheme=microphysics_scheme,
                                                              moments=hydrometeorMoments,
                                                              path_table=tables_path,
+                                                             dpol2add=dpol2add,
                                                              hydrometeors=hydromet_list,
                                                              verbose=get_more_details,
                                                             )
