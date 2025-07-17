@@ -37,7 +37,7 @@ hydrometeors_moments = {'cc':2,'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
 subDomain = None
 
 # ----- Mixed phase simulation : can be 'T_pos' or 'Fw_pos' or 'Fw_posg'.
-#                                Please, have a look at the README beforehand.
+#                                Please, have a look at the Wiki beforehand.
 MixedPhase = 'Fw_posg'
 
 # ----- Additional output : if True, compute the dual-pol variables for each hydrometeor class
