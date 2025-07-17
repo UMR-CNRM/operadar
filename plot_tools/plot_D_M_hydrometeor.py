@@ -5,11 +5,11 @@ Creation 03 March 2025
 """
 
 import argparse
-from tables_generator.plotTables.utils.sensitivity_test import *
+from plot_tools.utils.sensitivity_test import *
 
 
 Path_tables = "/home/davidcl/Programmation/operadar/tables_generator/tables/"
-dir_fig="IMG/"
+dir_fig="/home/davidcl/Programmation/operadar/plot_tools/sensitivity_study/"
 
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 
@@ -19,13 +19,14 @@ Nii=800 #selected number concentration for primary ice
 
 
 
-def main(h:str,band:str,method:str,axe:str,dictParam:dict,add_ref:bool,combine:list):
+def main(h:str,band:str,method:str,micro:str,axe:str,dictParam:dict,add_ref:bool,combine:list):
     
     sensitivity_test(hydrometeor=h,
                      axeX=axe,
                      dictParam=dictParam,
                      which_dpolVar=['Zh','Zdr','Kdp'],#,'Rhohv'],
                      method=method,
+                     microphysics=micro,
                      band=band,
                      folder_tables=Path_tables,
                      folder_figures=dir_fig,
@@ -36,12 +37,14 @@ def main(h:str,band:str,method:str,axe:str,dictParam:dict,add_ref:bool,combine:l
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="---------------- LOOKUP TABLES PLOT TOOL ----------------")
-    parser.add_argument("--hydro", type=str, default='rr',
+    parser.add_argument("hydro", type=str, default='rr',
                         help='Hydrometeor type : rr, ss, gg, wg, wh, hh, cc, ii')
-    parser.add_argument("--band", type=str, default='C',
+    parser.add_argument("band", type=str, default='C',
                         help='Band type : C, S, X, W, K')
     parser.add_argument("--method", type=str, default='Both',
                         help='Method : Tmatrix, Rayleigh, Both')
+    parser.add_argument("--micro", type=str, default='ICE3',
+                        help='Microphysics scheme : ICE3, LIMA')
     parser.add_argument("--axe", type=str, default='D',
                         help='Horizontal axis : D (diameter) or M (content)')
     parser.add_argument("--ref", action="store_true",default=False,
@@ -52,6 +55,8 @@ if __name__ == '__main__':
                         help='Axis ratio function : AUds, CNST, BR02, RYdg, RYwg')
     parser.add_argument("--Fw", type=float, nargs='*', default=[],
                         help='Liquid water fraction (only for wet hydrometeors) : provide as many values as wanted.')
+    parser.add_argument("--Nc", type=float, nargs='*', default=[],
+                        help='Number concentration (only if --axe M) : provide any number of particles per m3.')
     parser.add_argument("--DSTYfunc", type=str, nargs='*', default=[],
                         help='Density function : BR07, RHOX')
     parser.add_argument("--FRIM", type=float, nargs='*', default=[],
@@ -72,12 +77,13 @@ if __name__ == '__main__':
                     riming_fraction = parser_args.FRIM,
                     diel_func = parser_args.DIEL,
                     liquid_water_fraction = parser_args.Fw,
-                    
+                    number_concentration = parser_args.Nc,
                     )
     
     main(h=parser_args.hydro,
          band=parser_args.band,
          method=parser_args.method,
+         micro=parser_args.micro,
          axe=parser_args.axe,
          dictParam = dictArgs,
          add_ref=parser_args.ref,
