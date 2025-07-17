@@ -101,7 +101,6 @@ def read_arome(filePath:Path,
                             )
     if verbose : print('\t\tGot 3D concentrations in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    T=T-273.15
     X = X_res*np.arange(T.shape[2]).astype('i4')
     Y = Y_res*np.arange(T.shape[1]).astype('i4')
     Alt = get_altitude(hybrid_pressure_coefA=A,
@@ -112,6 +111,7 @@ def read_arome(filePath:Path,
                        surface_geopotential=geosurf,
                        specific_gas_constant=R,
                        )
+    T=T-273.15
     if verbose : print('\t\tComputed altitude 3D field in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
     loaded_epygram_file.close()

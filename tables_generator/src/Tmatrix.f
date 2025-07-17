@@ -894,7 +894,7 @@ C     =============================================================
       ! https://github.com/openradar/hydroscatt
       ! Consistent with eq 29 from Ryzhkov et al (2011)
       ! Specific attenuation Ah, Av from 5.42, 5.43 Ryzhkov et Zrnic (2019)
-      
+      !Ah, Av (dB/km)
       ! input: LAM, radar_cnst
       !        Saa,Sbb,Saaf,Sbbf (scattering amplitudes along a and b axis)
       !           b > a for oblate spheroids

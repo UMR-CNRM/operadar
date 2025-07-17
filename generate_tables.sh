@@ -24,11 +24,11 @@ MICRO_LIST=("ICE3" "LIMA")
 MISSING_FILES=()
 
 # Paths
-PARAM_FOLDER="./tmatrix_generator/param"
-TABLE_FOLDER="./tmatrix_generator/tables"
+PARAM_FOLDER="./tables_generator/param"
+TABLE_FOLDER="./tables_generator/tables"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMAT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/Tmat)")"
-TMATINT_DIR="$(dirname "$(realpath ./tmatrix_generator/src/TmatInt)")"
+TMAT_DIR="$(dirname "$(realpath ./tables_generator/src/Tmat)")"
+TMATINT_DIR="$(dirname "$(realpath ./tables_generator/src/TmatInt)")"
 
 
 # Help function
@@ -126,7 +126,7 @@ done
 
 # Checking arguments
 if [[ -z "$MODE" ]]; then
-    echo "/!\ Error: wrong use of the tmatrix_generator. Can only be :"
+    echo "/!\ Error: wrong use of the tables_generator. Can only be :"
     usage
 fi
 
@@ -143,7 +143,7 @@ generate_tables() {
         echo "=========================================="
         echo "               DEFAULT MODE               "
         echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_*_default files."
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_*_default files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
         echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
@@ -152,122 +152,76 @@ generate_tables() {
         echo "=========================================="
         echo "               NewConf MODE               "
         echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tmatrix_generator/param/TmatParam_* files."
+        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_* files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
         echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
         echo ""
     fi
 
-    JOB_LIMIT=4
-    JOB_COUNT=0
-    OUTPUT_DISPLAY_DIR="${SCRIPT_DIR}/logs"
-    mkdir -p "$OUTPUT_DISPLAY_DIR"
-
-    declare -a TMP_FILES=()
-
     for H in "${HYDRO_LIST[@]}"; do
-        OUT_LOG="${OUTPUT_DISPLAY_DIR}/out_${BAND}_${H}.log"
-        TMP_FILES+=("$OUT_LOG")
 
-        echo -e "Currently running for ${H}"
-
-        ({
+        echo -e "\n====== START OF THE PROGRAM FOR ${H} ======"
+        
         if [[ "$output_subfolder" == "default" ]]; then
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
         else
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}"
+            cp ${PARAM_FILE} "${PARAM_FILE}_${output_subfolder}"
         fi
         OUT_FILE_ICE3="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_ICE3_${BAND}${H}"
         OUT_FILE_LIMA="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_LIMA_${BAND}${H}"
 
-        if [[ -f "$OUT_FILE_ICE3" && -f "$OUT_FILE_LIMA" ]]; then
-            echo "$OUT_FILE_ICE3 and $OUT_FILE_LIMA already exist."
-            
-        else
+        # if [[ -f "$OUT_FILE_ICE3" && -f "$OUT_FILE_LIMA" ]]; then
+        #     echo "$OUT_FILE_ICE3 and $OUT_FILE_LIMA already exist."
+             
+        # else
             mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+            mkdir -p "${TABLE_FOLDER}/${H}"
             if [[ -f "$PARAM_FILE" ]]; then
                 DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
-                if [[ ! -f "$DIAMETER_TABLE" ]]; then
+                # if [[ ! -f "$DIAMETER_TABLE" ]]; then
                     cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
                     echo "Launching the creation of the tables for a range of diameters."
-                    pushd "$SCRIPT_DIR/tmatrix_generator/src" > /dev/null
+                    # Temporary mv into Tmat directory to execute the f77 Tmat binary
+                    pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
                     ./Tmat
                     if [[ $? -ne 0 ]]; then
-                        echo "Error: Table creation failed for $H."
-                        continue
+                        echo "Error: Table creation failed for $H."                        
                     fi
                     popd > /dev/null
-                else
-                    echo "Table for the range of diameters already exists."
-                fi
+                    # Back to the Launching directory
+                    if [ -f "$DIAMETER_TABLE" ]; then
+                    cp "${DIAMETER_TABLE}" "${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
+                    fi               
+                #  else
+                #     echo "Table for the range of diameters already exists."
+                # fi
 
                 for MICRO in "${MICRO_LIST[@]}"; do
                     INTEGRATED_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${BAND}${H}"
-                    USUAL_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
+                    HYDRO_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
 
-                    if [[ -f "$INTEGRATED_TABLE" ]]; then
+                    # if [[ -f "$INTEGRATED_TABLE" ]]; then
                         echo "$INTEGRATED_TABLE already exists."
-                    else
+                    # else
                         echo "Integrating over the ${H} PSD for ${MICRO} microphysics"
                         if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO"; then
-                            mv "$USUAL_PATH" "$INTEGRATED_TABLE"
+                            mv "$HYDRO_PATH" "$INTEGRATED_TABLE"
                             echo "Tables generated for $H with $MICRO microphysics."
                         else
                             echo "Error: Failed integration for $H with $MICRO microphysics."
                         fi
-                    fi
+                    # fi
                 done
             else
                 echo "Missing or unknown file: $PARAM_FILE"
-                continue
             fi
-        fi
+        # fi
 
         echo -e "\n====== END OF THE PROGRAM FOR ${H} ======"
-
-        } > "$OUT_LOG" 2>&1
-        
-        echo "--> Done for ${H} (see ./logs/${BAND}_${H}.log)"
-        
-        ) &
-
-        ((JOB_COUNT++))
-        if (( JOB_COUNT >= JOB_LIMIT )); then
-            wait -n
-            ((JOB_COUNT--))
-        fi
+                
     done
-
-    wait
-
-    # Traitement des erreurs
-    for OUT_LOG in "${TMP_FILES[@]}"; do
-        if [[ -s "$OUT_LOG" ]]; then
-            while IFS= read -r line; do
-                if [[ "$line" == Missing* ]]; then
-                    MISSING_FILES+=("$line")
-                elif [[ "$line" == Error:* ]] ; then
-                    LAUNCH_ERRORS+=("$line")
-                fi
-            done < "$OUT_LOG"
-        fi
-    done
-
-    # Affichage des erreurs collectées
-    if (( ${#LAUNCH_ERRORS[@]} > 0 )); then
-        echo -e "\n======= LAUNCH ERRORS ======="
-        for err in "${LAUNCH_ERRORS[@]}"; do
-            echo "$err"
-        done
-    fi
-
-    if (( ${#MISSING_FILES[@]} > 0 )); then
-        echo -e "\n======= MISSING FILES ======="
-        for err in "${MISSING_FILES[@]}"; do
-            echo "$err"
-        done
-    fi
 
     echo " "
 }

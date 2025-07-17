@@ -1,7 +1,7 @@
 type:wh
 band:C
-canting:analyt
-sigbeta:40.0
+canting:nocant
+sigbeta:0.0
 DIEL:LBwetgr
 ARfunc:RYwg
 ARcnst:0.80
@@ -9,8 +9,8 @@ DSTYfunc:RHOX
 Frim:1.0
 LAM:53.2
 ELEVmin:0.0
-ELEVmax:10.0
-ELEVstep:10.0
+ELEVmax:90.0
+ELEVstep:90.0
 Tcmin:-40.0
 Tcmax:10.0
 Tcstep:1.0
