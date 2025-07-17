@@ -7,7 +7,6 @@ import numpy as np
 from pathlib import Path
 from pandas import Timestamp
 
-from operadar.operadar_conf import save_netcdf_single_hydrometeor, dpol2add
 from operadar.save.save_dpolvar import save_netcdf
 from operadar.utils.masking import mask_hydrometeor
 from operadar.read.lookup_tables import perform_nD_interpolation
@@ -21,6 +20,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               elev:np.ndarray, Fw:np.ndarray,
                               contents:dict[np.ndarray],
                               concentrations:dict[np.ndarray],
+                              dpol2add:list,
                               tables_dict:dict,
                               hydrometeorMoments:dict[int],
                               X:np.ndarray,
@@ -31,6 +31,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               date_time:Timestamp,
                               output_file_path:Path,
                               append_in_fa:bool,
+                              save_netcdf_single_hydrometeor:bool,
                               )-> dict[np.ndarray] :
     """Compute synthetic radar dual-polarimetrization variables for a given wavelength,
     microphysics, and mixed phase parametrization.
@@ -74,6 +75,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         mask_tot = (mask_precip_dist & mask_content) 
 
         dpolDict = compute_scatcoeffs_single_hydrometeor(hydrometeor=h,
+                                                         dpol2add=dpol2add,
                                                          variables_for_interpolation=var2interpol,
                                                          mask_tot=mask_tot,
                                                          Tc=temperature,
@@ -97,7 +99,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
             for var in dpolDict.keys():
                 dpol_h[var][mask_tot]=dpolDict[var]
                 dpol_h[var][~mask_tot]= np.nan
-            dpol_h = compute_dpol_var(dpolDict=dpol_h)
+            dpol_h = compute_dpol_var(dpolDict=dpol_h,dpol2add=dpol2add)
             outFilePath = Path(f'{output_file_path}_{h}')
             save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon, 
                         datetime=date_time, dpolDict=dpol_h,
@@ -114,7 +116,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         fields2sum[var][~mask_precip_dist] = np.nan 
         
     # Dpol var calculation over the sum of scatering coefficients and linear Z
-    fields2sum = compute_dpol_var(dpolDict=fields2sum)
+    fields2sum = compute_dpol_var(dpolDict=fields2sum,dpol2add=dpol2add)
     
     print("\t--> Done in",round(tm.time() - deb_timer,2),"seconds")    
     return fields2sum  
@@ -122,6 +124,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
 
 
 def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
+                                          dpol2add:list,
                                           variables_for_interpolation:list,
                                           Tc:np.ndarray,
                                           el:np.ndarray,
@@ -164,6 +167,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
     # Compute dualpol variables from scattering coefficients
     dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM'][hydrometeor],
                                          interpolated_from_table=fields3D_from_table,
+                                         dpol2add=dpol2add,
                                          )
     del fields3D_from_table
     del elev_temp, Tc_temp, content_temp, Fw_temp, concentration_temp
@@ -174,6 +178,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
 
 def dpol_var_from_scatcoefs(wavelength:float,
                             interpolated_from_table:dict,
+                            dpol2add:list,
                             ) -> dict[np.ndarray]:
     """Compute linear polarimetric variables."""
     wavelength=wavelength/1000
@@ -195,7 +200,7 @@ def dpol_var_from_scatcoefs(wavelength:float,
 
 
 
-def compute_dpol_var(dpolDict:dict[np.ndarray]) -> dict[np.ndarray]:
+def compute_dpol_var(dpolDict:dict[np.ndarray],dpol2add:list) -> dict[np.ndarray]:
     """Compute polarimetric variables."""
     finalDict = {}
     if 'Zh' in dpol2add :

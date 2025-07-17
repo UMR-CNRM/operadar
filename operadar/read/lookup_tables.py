@@ -9,15 +9,9 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import (radar_band,
-                                    dpol2add,
-                                    hydrometeors_moments,
-                                    micro_scheme,
-                                    )
 
 
-
-def initialize_table_dictionary(method:str='Tmatrix') -> dict :
+def initialize_table_dictionary(dpol2add:list,method:str='Tmatrix') -> dict :
     """Initializes the dictionary to store all the necessary parameters and columns of the tables"""
     empty_table_dict = {}
     list_of_parameters = ['LAM',
@@ -108,8 +102,10 @@ def cloud_water_species(hydrometeor:str, cloud_water_over:str) -> str :
 
 def read_and_extract_tables_content(band:str,
                                     hydrometeors:list,
+                                    moments:dict,
                                     cloud_water_over:str,
                                     scheme:str,
+                                    dpol2add:list,
                                     path_table:str,
                                     verbose:bool,
                                     )-> dict:
@@ -125,10 +121,10 @@ def read_and_extract_tables_content(band:str,
     Returns:
         table_dict (dict) : dictionary containing min/step/max values for multiple parameters
     """
-    print("Reading tables for",radar_band,"band")
+    print("Reading tables for",band,"band")
     deb_timer = tm.time()
     micro_for_table = get_scheme_to_fetch_table(microphysics=scheme)
-    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary()
+    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
     
     for h in hydrometeors:
         if h == 'cc':
@@ -146,9 +142,9 @@ def read_and_extract_tables_content(band:str,
         df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         for columnName in columns_to_retrieve :
             if columnName == 'Fw' or columnName == 'N' :
-                if hydrometeors_moments[h]==1 :
+                if moments[h]==1 :
                     table_dict['Fw'][h] = df_columns['P3'].to_numpy()
-                elif hydrometeors_moments[h]==2 :
+                elif moments[h]==2 :
                     table_dict['N'][h] = df_columns['P3'].to_numpy()
             else :
                 table_dict[columnName][h] = df_columns[columnName].to_numpy()
