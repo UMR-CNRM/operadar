@@ -40,6 +40,10 @@ def operadar(filename:str,
              dpol2add:list=cf.dpol2add,
              scattering_method:str=cf.scattering_method,
              cloud_water_over:str=cf.cloud_water_over,
+             subDomain:list[float]|None=cf.subDomain,
+             mixed_phase_parametrization:str=cf.MixedPhase,
+             dpol2add:list=cf.dpol2add,
+             scattering_method:str=cf.scattering_method,
              radar_band:str=cf.radar_band,
              distmax_rad:float=cf.distmax_rad,
              radarloc:str|list=cf.radarloc,
@@ -189,6 +193,7 @@ def operadar(filename:str,
                         MixedPhase=mixed_phase_parametrization,
                         scattering_method=scattering_method,
                         hydrometeors_moments=hydrometeorMoments,
+                        real_case=real_case,
                         )
         # For multiple iterations over different time but with the same settings, save time by
         # not reading again lookup tables and lat/lon fields (if available)
