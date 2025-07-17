@@ -28,6 +28,7 @@ def save_netcdf(X:np.ndarray,
                  radarloc:str|list,
                  scattering_method:str,
                  hydrometeors_moments:dict,
+                 real_case:bool,
                  ) :
     """Save synthetic dual-polarization variables and other model fields (Arome or MesoNH) in a netcdf file.
 
@@ -67,6 +68,7 @@ def save_netcdf(X:np.ndarray,
     dataset_coordinates = add_lat_lon_coordinates(ds_coordinates=dataset_coordinates,
                                                   lat=lat,
                                                   lon=lon,
+                                                  real_case=real_case,
                                                   )
     dataset_attributes = dict(horizontal_resolution = int(Y[1]-Y[0]),
                               model = model,
