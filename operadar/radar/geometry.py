@@ -5,7 +5,6 @@ import math
 import time as tm
 import numpy as np
 
-from operadar.operadar_conf import cnst_angle
 
 
 def compute_radar_geometry(X:np.ndarray,
@@ -15,6 +14,7 @@ def compute_radar_geometry(X:np.ndarray,
                            elev_max:float,
                            model:str,
                            radarloc:str|list,
+                           cnst_angle:int,
                            distmax_rad:float=255e3,
                            )-> tuple[np.ndarray,np.ndarray]:
     """Mimic radar geometry in the model grid.

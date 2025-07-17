@@ -27,21 +27,26 @@ from operadar.utils.formats_data import format_temporal_variable,define_output_p
 
 
 def operadar(filename:str,
-             modelname:str=cf.model,
              read_tables:bool=True,
              in_dir_path:str=cf.input_filePath,
              out_dir_path:str=cf.outPath,
              tables_path:str=cf.path_tables,
+             modelname:str=cf.model,
+             real_case:bool=cf.real_case,
              microphysics_scheme:str=cf.micro_scheme,
              hydrometeorMoments:dict[int]=cf.hydrometeors_moments,
-             radar_band:str=cf.radar_band,
-             radarloc:str|list=cf.radarloc,
-             distmax_rad:float=cf.distmax_rad,
-             tables_content:dict={},
-             mixed_phase_parametrization:str=cf.MixedPhase,
              subDomain:list[float]|None=cf.subDomain,
+             mixed_phase_parametrization:str=cf.MixedPhase,
+             dpol2add:list=cf.dpol2add,
+             scattering_method:str=cf.scattering_method,
+             radar_band:str=cf.radar_band,
+             distmax_rad:float=cf.distmax_rad,
+             radarloc:str|list=cf.radarloc,
+             cnst_angle:int=cf.cnst_angle,
+             tables_content:dict={},
              get_more_details=False,
              append_in_file=False,
+             save_netcdf_single_hydrometeor:bool=cf.save_netcdf_single_hydrometeor,
              ) -> tuple[bool,bool,dict]:
     """Radar forward operator main function. 
 
@@ -92,7 +97,7 @@ def operadar(filename:str,
     input_file_path = Path(in_dir_path+filename)
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
-						 real_case=cf.real_case,
+						 real_case=real_case,
                                                  )
     outFilePath = define_output_path(out_dir_path=out_dir_path,
                                      model=modelname,
@@ -109,6 +114,7 @@ def operadar(filename:str,
                                                                   )
             tables_content = read_and_extract_tables_content(band=radar_band,
                                                              scheme=microphysics_scheme,
+                                                             moments=hydrometeorMoments,
                                                              path_table=tables_path,
                                                              hydrometeors=hydromet_list,
                                                              verbose=get_more_details,
@@ -116,6 +122,8 @@ def operadar(filename:str,
         # Read model variables
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
                                                            modelname=modelname,
+                                                           micro_scheme=microphysics_scheme,
+                                                           real_case=real_case,
                                                            domain=subDomain,
                                                            hydrometeorMoments=hydrometeorMoments,
                                                            verbose=get_more_details,
@@ -124,6 +132,7 @@ def operadar(filename:str,
         mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
                                                            elev_max=tables_content['ELEVmax']["rr"],
                                                            model=modelname,
+                                                           cnst_angle=cnst_angle,
                                                            distmax_rad=distmax_rad,
                                                            radarloc=radarloc,
                                                            )
@@ -148,6 +157,7 @@ def operadar(filename:str,
                                              elev=elevations, Fw=Fw,
                                              contents=M,
                                              concentrations=Nc,
+                                             dpol2add=dpol2add,
                                              tables_dict=tables_content,
                                              hydrometeorMoments=hydrometeorMoments,
                                              X=X, Y=Y, Z=Alt,
@@ -155,6 +165,7 @@ def operadar(filename:str,
                                              date_time=temporal_variable,
                                              output_file_path=outFilePath,
                                              append_in_fa=append_in_file,
+                                             save_netcdf_single_hydrometeor=save_netcdf_single_hydrometeor,
                                              )
         
         # Saving file or reinjecting fields into the input file
@@ -162,13 +173,19 @@ def operadar(filename:str,
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations
             append_in_input_file(complete_input_path=input_file_path,
                                  dpolVar=dpolDict,
-                                 var2add=cf.dpol2add,
+                                 var2add=dpol2add,
                                  )
         else :
             save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon,
                         datetime=temporal_variable, dpolDict=dpolDict,
                         contentsDict=M, concentrationsDict=Nc,
                         temperature=Tc, outfile=Path(outFilePath),
+                        dpol2add=dpol2add, model=modelname,
+                        micro_scheme=microphysics_scheme,
+                        radar_band=radar_band, radarloc=radarloc,
+                        MixedPhase=mixed_phase_parametrization,
+                        scattering_method=scattering_method,
+                        hydrometeors_moments=hydrometeorMoments,
                         )
         # For multiple iterations over different time but with the same settings, save time by
         # not reading again lookup tables and lat/lon fields (if available)

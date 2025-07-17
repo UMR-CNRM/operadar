@@ -5,12 +5,13 @@ import sys
 import time as tm
 from pathlib import Path
 from numpy import ndarray
-from operadar.operadar_conf import real_case, micro_scheme 
 
 
 
 def read_model_file(filePath:Path,
                     modelname:str,
+                    micro_scheme:str,
+                    real_case:bool,
                     domain:list[float]|None,
                     hydrometeorMoments:dict[int],
                     verbose:bool,

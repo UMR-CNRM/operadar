@@ -9,15 +9,9 @@ import time as tm
 import numpy as np
 import pandas as pd
 
-from operadar.operadar_conf import (radar_band,
-                                    dpol2add,
-                                    hydrometeors_moments,
-                                    micro_scheme,
-                                    )
 
 
-
-def initialize_table_dictionary(method:str='Tmatrix') -> dict :
+def initialize_table_dictionary(dpol2add:list,method:str='Tmatrix') -> dict :
     """Initializes the dictionary to store all the necessary parameters and columns of the tables"""
     empty_table_dict = {}
     list_of_parameters = ['LAM',
@@ -41,9 +35,7 @@ def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix')->list
     """Depending on the variables the user wants to compute and the chosen scattering method,
     creating a list of the table's column names to extract."""
     
-    table_columnNames = ['Tc', 'ELEV', 'M']
-    if micro_scheme[0:3]=='ICE' : table_columnNames +=['Fw'] # to remove later ?
-    elif micro_scheme[0:3]=='LIM' : table_columnNames +=['N'] # to remove later ?
+    table_columnNames = ['Tc', 'ELEV', 'M', 'Fw', 'N']
     
     if scattering_method == 'Tmatrix' or scattering_method == 'both' :
         if 'Zh' in dpol2add :
@@ -94,7 +86,9 @@ def get_scheme_to_fetch_table(microphysics:str) -> str :
 
 def read_and_extract_tables_content(band:str,
                                     hydrometeors:list,
+                                    moments:dict,
                                     scheme:str,
+                                    dpol2add:list,
                                     path_table:str,
                                     verbose:bool,
                                     )-> dict:
@@ -110,10 +104,10 @@ def read_and_extract_tables_content(band:str,
     Returns:
         table_dict (dict) : dictionary containing min/step/max values for multiple parameters
     """
-    print("Reading tables for",radar_band,"band")
+    print("Reading tables for",band,"band")
     deb_timer = tm.time()
     micro_for_table = get_scheme_to_fetch_table(microphysics=scheme)
-    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary()
+    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
     
     for h in hydrometeors: 
         nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{band}{h}'
@@ -127,12 +121,11 @@ def read_and_extract_tables_content(band:str,
         if verbose : print("\tRetrieving necessary columns in the table for",h)
         df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
         for columnName in columns_to_retrieve :
-            if columnName == 'Fw' and hydrometeors_moments[h]==1 :
-                table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                #table_dict['N'][h] = df_columns['P3'].to_numpy()*0
-            elif columnName == 'N' and hydrometeors_moments[h]==2 :
-                table_dict[columnName][h] = df_columns['P3'].to_numpy()
-                #table_dict['Fw'][h] = df_columns['P3'].to_numpy()*0
+            if columnName == 'Fw' or columnName == 'N' :
+                if moments[h]==1 :
+                    table_dict['Fw'][h] = df_columns['P3'].to_numpy()
+                elif moments[h]==2 :
+                    table_dict['N'][h] = df_columns['P3'].to_numpy()
             else :
                 table_dict[columnName][h] = df_columns[columnName].to_numpy()
         del df_columns
