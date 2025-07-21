@@ -448,7 +448,7 @@ C     ***********************************************************************
       COMPLEX*16 Saa,Sbb,Saaf,Sbbf,deltaco
       COMPLEX*16 SaaR,SbbR,deltacoR ! Rayleigh
       
-      REAL*8 aj,bj
+      REAL*8 aj,bj,aSnow,bSnow
       REAL*8 P
       CHARACTER*6 espece
       CHARACTER*27 Hydromet_const_file ! MesoNH hydrometeor characteristics (ICE3)
@@ -532,7 +532,7 @@ C     ***********************************************************************
       WRITE (0,*) '   DIEL=',DIEL !,"ok" options: 
       WRITE (0,*) '   ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
       WRITE (0,*) '   ARcnst=',ARcnst !,"ok" options: -1 (if ARfunc=CNST), 0.8,0.2,0.6  
-      WRITE (0,*) '   DSTYfunc=',DSTYfunc !,"ok"  options: BR07, RHOX, ZA05, LS15
+      WRITE (0,*) '   DSTYfunc=',DSTYfunc !,"ok"  options: BR07, ARO1M, ICON1M, ZA05, LS15
       WRITE (0,*) '   Frim=',Frim !,"ok"  used only in ZA05 and LS15
       WRITE (0,50) LAM
    50 FORMAT ('    LAM=',F5.1)
@@ -710,6 +710,15 @@ C ============================================================================
           ! ----- density Leinonen and Szyrmer (2015)
           ELSE IF (DSTYfunc .EQ. "LS15") THEN
             CALL LS15RHOX(D,Frim,RHOP)
+          ! ----- density Moisseev et al. 2017
+          ELSE IF (DSTYfunc .EQ. "MO17") THEN
+            CALL MO17RHOX(D,Frim,P,RHOP)
+          ! ----- m-D relationship ICON-D2 1M
+          ELSE IF (DSTYfunc .EQ. "ICON") THEN
+            aSnow = 0.038
+            bSnow = 2
+            Dm=D*(AR**(-1.0/3))
+            CALL ICOND2_1M_RHOX(aSnow,bSnow,D,Dm,P,RHOP)
           ! ----- m-D relationship ICE3/LIMA
           ELSE 
             CALL QRHOX(aj,bj,D,Dm,P,RHOP)
@@ -1331,7 +1340,7 @@ C     ###################################
 C     ###################################
       SUBROUTINE QRHOX(XA,XB,D,DM,P,RHOX) 
 C     ###################################
-      ! Caclul de la masse volumique
+      ! Caclul de la masse volumique avec coef AROME
       ! in  : xa et xb
       !       d,dm,p
       ! out : rhox=masse volumique
@@ -1349,6 +1358,28 @@ C     ###################################
       RETURN
       END
       !END FUNCTION QRHOX
+
+C     ###################################
+      SUBROUTINE ICOND2_1M_RHOX(XA,XB,D,DM,P,RHOX) 
+C     ###################################
+        ! Caclul de la masse volumique
+        ! in  : xa et xb
+        !       d,dm,p
+        ! out : rhox=masse volumique
+      
+        REAL*8 XA,XB
+        REAL*8 D,DM
+        REAL*8 M,V,P
+        REAL*8 RHOX
+  
+        M=XA*(DM*1D-3)**XB
+        V=P/6*(D*1D-3)**3
+  
+        RHOX=M/V !kg/m3 
+  
+        RETURN
+        END
+        !END FUNCTION QRHOX
       
 
 C     ###################################
@@ -1366,16 +1397,15 @@ C     ###################################
 
       RETURN
       END
-      !END FUNCTION QRHOX   
+      !END FUNCTION BR07RHOX   
             
-
 
 C     ###################################
       SUBROUTINE ZA05RHOX(D,Frim, RHOX) 
 C     ###################################
       ! Caclul de la masse volumique selon Zawadzki et al. 2005
       ! pour la neige
-      ! in  : d
+      ! in  : d, frim
       ! out : rhox=masse volumique
       
       REAL*8 D,Frim
@@ -1388,8 +1418,7 @@ C     ###################################
       ENDIF
       RETURN
       END
-      !END FUNCTION QRHOX
-
+      !END FUNCTION ZA05RHOX
 
 
 C     ###################################
@@ -1397,7 +1426,7 @@ C     ###################################
 C     ###################################
       ! Caclul de la masse volumique selon Leinonen and Szyrmer (2015)
       ! pour la neige
-      ! in  : d
+      ! in  : d, frim
       ! out : rhox=masse volumique
       
       REAL*8 D,Frim
@@ -1412,7 +1441,26 @@ C     ###################################
       ENDIF
       RETURN
       END
-      !END FUNCTION QRHOX
+      !END FUNCTION LS15RHOX
+
+
+C     ###################################
+      SUBROUTINE MO17RHOX(D,Frim,P, RHOX) 
+C     ###################################
+      ! Caclul de la masse volumique selon Moisseev et al. 2017
+      ! pour la neige
+      ! in  : d, frim
+      ! out : rhox=masse volumique
+      
+      REAL*8 D,Frim,P
+      REAL*8 RHOX
+      
+      RHOX=1000*Frim* 0.075*(6/P)*D**(-0.95) !kg/m3
+      
+      RETURN
+      END
+      !END FUNCTION MO17RHOX
+
 
 c     ###################################
       SUBROUTINE QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSX) 

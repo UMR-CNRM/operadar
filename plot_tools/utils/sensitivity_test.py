@@ -20,7 +20,7 @@ def sensitivity_test(hydrometeor:str,
                      ref:bool,
                      combine:list):
     # Checkig every scenario
-    nrows_plot, asRow, asLegend = analyse_dict(dictParam,hydrometeor,combine) #; print(asRow,asLegend,nrows_plot)
+    nrows_plot, asRow, asLegend = analyse_dict(dictParam,hydrometeor,combine) ; print(asRow,asLegend,nrows_plot)
     # Plot creation
     fig,axes = plt.subplots(nrows=nrows_plot,
                             ncols=len(which_dpolVar),
@@ -69,7 +69,7 @@ def sensitivity_test(hydrometeor:str,
                                                                         method=method,
                                                                         )
             plot_table(h=hydrometeor, param=dictSettings,
-                        color='dimgray', axeX=axeX,
+                        color='k', axeX=axeX,
                         which_dpolVar=which_dpolVar,
                         figAx=axes, method=method,
                         legend=asLegend, subfigRow=asRow,

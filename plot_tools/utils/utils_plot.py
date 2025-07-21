@@ -20,8 +20,8 @@ pltX={'D':'Deq',
 pltunit={'D':'mm',
          'M':r'kg m$^{-3}$',
          }
-dmax_dict={'ii':5,
-           'ss':20,
+dmax_dict={'ii':5, # in mm
+           'ss':10,
            'gg':50,
            'cc':2,
            'rr':10,
@@ -126,12 +126,12 @@ def get_Y_min_max(var,hydro,xAxis):
     ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cc': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
     # ZDR
     ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':5,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
+    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
     ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
     ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
     # KDP
     ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.1,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
     ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
     ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
     # RHOHV
@@ -215,6 +215,8 @@ def set_legend(whichLegend,SIGBETA,ARfunc,ARcnst,DSTYfunc,Frim,DIELfunc,Fw,Nc,is
             elif lgd_elmt == 'number_concentration' :
                 label += f'Nc={Nc} '
             elif lgd_elmt == 'density_func' :
+                if DSTYfunc == 'RHOX': DSTYfunc = 'AROME (1M)'
+                if DSTYfunc == 'ICON': DSTYfunc = 'ICON-D2 (1M)'
                 label += f'DSTYfunc:{DSTYfunc} '
             elif lgd_elmt == 'riming_fraction' :
                 label += f'frim:{Frim} '
@@ -254,6 +256,9 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
         SIGBETA, DIELfunc = param['SIGBETA'], param['DIEL']
         ARfunc, ARcnst = param['ARfunc'], param['ARcnst']
         DSTYfunc, Frim = param['DSTYfunc'], param['Frim']
+    
+    if DSTYfunc == 'RHOX': DSTYfunc = 'AROME (1M)'
+    if DSTYfunc == 'ICON': DSTYfunc = 'ICON-D2 (1M)'
     
     subfig_title = {'canting_angle' : r'$\sigma_{\beta}=$'+str(SIGBETA)+u'\u00B0',
                     'axis_ratio_func' : f'ARfunc: {ARfunc}',
@@ -311,7 +316,7 @@ def plot_table(h:str, axeX:str, param:dict,
         # else :
         isRef = True
         if nbRef == 1 :
-            color='dimgray'
+            color='k'
         else :
             alpha=0.6
         
@@ -337,7 +342,7 @@ def plot_table(h:str, axeX:str, param:dict,
         for m in listMethod :
             yaxis = dpolDict[m][varName]
             figAx[ivar].plot(xaxis[rows],yaxis[rows],
-                             label=lgd_label+f' {m}',
+                             label=lgd_label+f'\n{m}',
                              linewidth=lw,
                              color=color,
                              ls=ls[m],
