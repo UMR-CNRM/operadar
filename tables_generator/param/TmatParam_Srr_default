@@ -1,7 +1,7 @@
 type:rr
 band:S
-canting:analyt
-sigbeta:10.0
+canting:nocant
+sigbeta:0.0
 DIEL:Liebe91
 ARfunc:BR02
 ARcnst:1.0

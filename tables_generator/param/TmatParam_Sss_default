@@ -1,10 +1,10 @@
 type:ss
 band:S
-canting:analyt
-sigbeta:40.0
+canting:nocant
+sigbeta:0.0
 DIEL:RY19dry
-ARfunc:CNST
-ARcnst:0.60
+ARfunc:AUds
+ARcnst:0.80
 DSTYfunc:RHOX
 Frim:1.0
 LAM:106.2
