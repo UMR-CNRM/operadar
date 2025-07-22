@@ -84,9 +84,26 @@ def get_scheme_to_fetch_table(microphysics:str) -> str :
 
 
 
+def cloud_water_species(hydrometeor:str, cloud_water_over:str) -> str :
+    """Handle the different name of the cloud water lookup tables (there is
+    one for cloud water over sea and one for cloud water over land)"""
+    if cloud_water_over == 'land' :
+        hydrometeor = 'cl'
+    elif cloud_water_over == 'sea' :
+        hydrometeor = 'cs'
+    else :
+        print('_____________')
+        print('/!\ ERROR /!\ :',cloud_water_over,'is not a valid option for cloud water')
+        print('                can only be cloud water over "sea" or "land"')
+        sys.exit()
+    return hydrometeor
+
+
+
 def read_and_extract_tables_content(band:str,
                                     hydrometeors:list,
                                     moments:dict,
+                                    cloud_water_over:str,
                                     scheme:str,
                                     dpol2add:list,
                                     path_table:str,
@@ -109,7 +126,10 @@ def read_and_extract_tables_content(band:str,
     micro_for_table = get_scheme_to_fetch_table(microphysics=scheme)
     table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
     
-    for h in hydrometeors: 
+    for h in hydrometeors:
+        if h == 'cc':
+            h = cloud_water_species(hydrometeor=h, cloud_water_over=cloud_water_over)
+
         nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{band}{h}'
         
         if verbose : print("\tReading min/step/max for",h)
