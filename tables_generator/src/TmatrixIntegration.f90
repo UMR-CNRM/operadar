@@ -154,7 +154,7 @@ REAL :: K2 !dielectric factor
 CHARACTER*2 :: typeh
 CHARACTER*1 :: bande
 CHARACTER*4  :: CCLOUD ! LIMA OU ICE3
-CHARACTER*2 :: espece
+CHARACTER*2 :: espece, MOMENT
 CHARACTER*2 :: espece_rr ! rain
 character(len=1024) :: nomfileCoef, nomfileCoef_rr, nomfileCoefInt, Hydromet_const_file
 integer :: ios
@@ -219,6 +219,7 @@ call get_command_argument(1, exec_dir)
 call get_command_argument(2, typeh)
 call get_command_argument(3, bande)
 call get_command_argument(4, CCLOUD)
+call get_command_argument(5, MOMENT)
 
 
 !**************************************************
@@ -246,14 +247,17 @@ expCCstep=0.1
 WRITE(0,*) ' -----------------------------------------------------------'
 WRITE (0,*) ' Conversion of the table as a function of the diameter into a table as a function of the hydrometeor content.'
 WRITE (0,*) '    microphysics=',CCLOUD
-WRITE (0,*) '    type=',typeh
+WRITE (0,*) '    type=',typeh,' (',MOMENT,')'
 WRITE (0,*) '    band=',bande
 
-IF ((CCLOUD=='LIMA' .OR. CCLOUD=='LIMT') .AND. &
-    (typeh=='rr' .or. typeh=='mm' .or. typeh=='tt' .or. typeh=='ii')) THEN 
-    Nmoments=2
-ELSE
+IF (CCLOUD=='ICE3') THEN
+  Nmoments=1
+ELSE IF (CCLOUD=='LIMA' .OR. CCLOUD=='LIMT') THEN
+  IF (MOMENT=='1M') THEN 
     Nmoments=1
+  ELSE IF (MOMENT=='2M') THEN 
+    Nmoments=2
+  ENDIF
 ENDIF
 
 !----- Reading of the hydrometeor constants for PSD calculations
@@ -386,7 +390,7 @@ ENDIF
 
 !=================================
 !Output file
-nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//bande//typeh
+nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
 PRINT *,' Creation of ',trim(nomfileCoefInt)
 
 OPEN (6,FILE=trim(nomfileCoefInt))
