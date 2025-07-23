@@ -21,7 +21,7 @@ def check_variable_is_in_dataset(mnhFile:Dataset):
 
     if len(missing_var)>0 :
         print('_____________')
-        print('/!\ ERROR /!\ Missing variables :',missing_var)
+        print('/!\\ ERROR /!\\ Missing variables :',missing_var)
         sys.exit()
 
 

@@ -425,7 +425,7 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
             nrows = len(dictParam[variation_columns])
         else :
             print('')
-            print('/!\ ERROR : Only 2 parameters can vary among :',dictParam.keys())
+            print('/!\\ ERROR : Only 2 parameters can vary among :',dictParam.keys())
             print('    ------> You need to fix at least',nb_fixed_param-2,'of them.')
             sys.exit()
     #print(nrows,'rows:',variation_columns,'legend:',variation_legend) ; sys.exit()

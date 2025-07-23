@@ -39,7 +39,7 @@ def read_model_file(filePath:Path,
     
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',modelname,'is not a valid name. Must be either "Arome" or "MesoNH".')
+        print('/!\\ ERROR /!\\ :',modelname,'is not a valid name. Must be either "Arome" or "MesoNH".')
         sys.exit()
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
