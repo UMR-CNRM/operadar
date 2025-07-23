@@ -21,7 +21,7 @@ path_tables = "./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
-real_case=False   # for MesoNH only
+real_case=False
 
 # ----- Microphysics scheme name : can be 'ICE3', 'ICE4' or 'LIMA'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
