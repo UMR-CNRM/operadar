@@ -78,7 +78,7 @@ def get_scheme_to_fetch_table(microphysics:str) -> str :
         return "LIMA"
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',microphysics,'is not a valid name for table computation')
+        print('/!\\ ERROR /!\\ :',microphysics,'is not a valid name for table computation')
         print('                the name has to start with : "ICE" or "LIM"')
         sys.exit()
 
@@ -93,7 +93,7 @@ def cloud_water_species(hydrometeor:str, cloud_water_over:str) -> str :
         hydrometeor = 'cs'
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',cloud_water_over,'is not a valid option for cloud water')
+        print('/!\\ ERROR /!\\ :',cloud_water_over,'is not a valid option for cloud water')
         print('                can only be cloud water over "sea" or "land"')
         sys.exit()
     return hydrometeor
