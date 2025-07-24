@@ -69,21 +69,6 @@ def retrieve_needed_columns(dpol2add:list,scattering_method:str='Tmatrix')->list
 
 
 
-def get_scheme_to_fetch_table(microphysics:str) -> str :
-    """Choice of the right table depending on the microphysics (will be modified later ?)"""
-
-    if microphysics[0:3] == "ICE" :
-        return "ICE3"
-    elif microphysics[0:3] == "LIM" :
-        return "LIMA"
-    else :
-        print('_____________')
-        print('/!\\ ERROR /!\\ :',microphysics,'is not a valid name for table computation')
-        print('                the name has to start with : "ICE" or "LIM"')
-        sys.exit()
-
-
-
 def cloud_water_species(hydrometeor:str, cloud_water_over:str) -> str :
     """Handle the different name of the cloud water lookup tables (there is
     one for cloud water over sea and one for cloud water over land)"""
@@ -123,14 +108,15 @@ def read_and_extract_tables_content(band:str,
     """
     print("Reading tables for",band,"band")
     deb_timer = tm.time()
-    micro_for_table = get_scheme_to_fetch_table(microphysics=scheme)
+    micro_for_table = scheme[0:4]
     table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
     
     for h in hydrometeors:
         if h == 'cc':
-            h = cloud_water_species(hydrometeor=h, cloud_water_over=cloud_water_over)
-
-        nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{band}{h}'
+            hfile = cloud_water_species(hydrometeor=h, cloud_water_over=cloud_water_over)
+        else :
+            hfile = h
+        nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{moments[h]}M_{band}{hfile}'
         
         if verbose : print("\tReading min/step/max for",h)
         df_params = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
