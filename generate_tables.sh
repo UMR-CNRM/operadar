@@ -13,12 +13,12 @@ RIMING=""
 DIEL=""
 
 # List of (fixed) parameters
-HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "ws" "gg" "wg" "hh" "wh")
+HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg" "wh" "ws")
 BAND_LIST=("C" "S" "X" "K" "W")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("ICE3" "LIMA")
+MICRO_LIST=("LIMC") #"ICE3" "LIMA" "ICJW" "LIMC"
 
 # Errors storage
 MISSING_FILES=()
@@ -41,14 +41,14 @@ usage() {
     echo " "
     echo "Accepted values for :"
     echo "  --band    (radar band)          : C, K, S, W, X"
-    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, tt, wg, hh, wh "
+    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, hh, cl, cs, wg, wh, ws "
     echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
     echo "  --arv     (axis ratio value)    : any float value."
     echo "  --canting (canting angle)       : any float value."
     echo "  --dsty    (density function)    : BR07, RHOX, LS15, ZA05"
     echo "  --riming  (fraction of riming)  : any float value >= 1 (1=unrimed)"
     echo "  --diel    (dielectric function) : Liebe91, RY19dry, LBwetgr, MGwMA08"
-    echo "Further details are available in the README.md "
+    echo "Further details are available in the Wiki of the project."
     echo " "
     exit 1
 }
@@ -68,6 +68,9 @@ valid_dstyf(){
 }
 valid_dielf(){
     [[ "${DIELfunc_LIST[*]}" =~ "$1" ]]
+}
+valid_microphysics(){
+    [[ "${MICRO_LIST[*]}" =~ "$1" ]]
 }
 
 # Reading arguments
@@ -161,7 +164,7 @@ generate_tables() {
 
     for H in "${HYDRO_LIST[@]}"; do
 
-        echo -e "\n====== START OF THE PROGRAM FOR ${H} ======"
+        echo -e "\n================== START OF THE PROGRAM FOR ${H} =================="
         
         if [[ "$output_subfolder" == "default" ]]; then
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
@@ -200,7 +203,7 @@ generate_tables() {
                         echo "Table for the range of diameters already exists."
                     fi
 
-                    INTEGRATED_TABLE="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
+                    INTEGRATED_TABLE="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
                     echo "Integrating over the ${H} PSD for ${MICRO} microphysics (${MOMENT})"
                     if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO" "$MOMENT"; then
                         mv "$INTEGRATED_TABLE" "$OUT_FILE"
@@ -214,7 +217,7 @@ generate_tables() {
             fi
         done
 
-        echo -e "\n====== END OF THE PROGRAM FOR ${H} ======"
+        echo -e "\n================== END OF THE PROGRAM FOR ${H} =================="
                 
     done
 
