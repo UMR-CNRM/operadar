@@ -599,33 +599,29 @@ C     ***********************************************************************
       WRITE(4,*) 'D,Deq,Fw,Fw_lim,RHOP,EPSX,RHOI,EPSI,AR,SIGBETA'        
      
       !==============================================================
-       
-        !================== Loop over temperature Tc (°C) ====================
-        NTc=nint((Tcmax-Tcmin)/Tcstep)+1
-        DO idTc=0,NTc-1
-          Tc=Tcmin+idTc*Tcstep  
-          Tk=Tc+273.15 !T (°K)
+      
+      NTc=nint((Tcmax-Tcmin)/Tcstep)+1 !========= Loop over temperature (°C)
+      DO idTc=0,NTc-1 
+        Tc=Tcmin+idTc*Tcstep  
+        Tk=Tc+273.15 !T (°K)
         
-          !=============== Loop over elevation ELEV ===================
-          NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1
-          DO idELEV=0,NELEV-1
-            ELEV=ELEVmin+idELEV*ELEVstep
+        NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1 !========= Loop over elevation
+        DO idELEV=0,NELEV-1
+          ELEV=ELEVmin+idELEV*ELEVstep
+          
+          NFw=nint((Fwmax-Fwmin)/Fwstep)+1 !========= Loop over liquid water fraction
+          DO idF=0,NFw-1
+            Fw=Fwmin+idF*Fwstep
 
-            !=================== Loop over liquid water fraction Fw ==========
-            NFw=nint((Fwmax-Fwmin)/Fwstep)+1
-            DO idF=0,NFw-1
-              Fw=Fwmin+idF*Fwstep
-
-              !=================== Loop over diameters D (mm) ==============
-              ND=nint((expDmax-expDmin)/expDstep)+1
-              DO idD=0,ND-1
-                expD=expDmin+idD*expDstep
-                D=10**(expD)
+            ND=nint((expDmax-expDmin)/expDstep)+1 !========= Loop over diameters(mm) 
+            DO idD=0,ND-1
+              expD=expDmin+idD*expDstep
+              D=10**(expD)
 
       ! Indentation is removed to avoid too long lines (fortran 77)
       
 C ============================================================================      
-C        Axis ratio for Tmatrix AR, max diameter Dm, particule density RHOP, partially melted eq diameter Deq
+C  Axis ratio for Tmatrix AR, max diameter Dm, particule density RHOP, partially melted eq diameter Deq
 C ============================================================================
 ! INPUT: ARfunc, ARcnst, D, Fw, aj, bj, RHOLW, RHOI
 ! OUTPUT: AR, Dm, RHOP, Deqr
