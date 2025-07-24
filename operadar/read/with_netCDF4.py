@@ -116,7 +116,7 @@ def get_concentrations(mnhFile:Dataset,
     for key in hydrometeors:
         concentrations[key] = np.zeros(temperature.shape)
     
-    if microphysics_scheme[0:3]=="ICE":
+    if microphysics_scheme[0:2]=="IC":
         concentrations['ii'] = mnhFile.variables['CIT'][0,:,:,:][:,i_min:i_max,j_min:j_max]
         concentrations['ii'][concentrations['ii']==999.] = float('nan')
     if microphysics_scheme[0:3] =="LIM" :
