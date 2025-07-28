@@ -5,25 +5,29 @@ import numpy as np
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
-def mask_precipitations(contents:dict[np.ndarray],
+def mask_precipitations(contents:dict[str,np.ndarray],
                         expMmin:float,
-                        hydrometeors_moments:dict[int],
+                        hydrometeors_moments:dict[str,int],
                         )-> np.ndarray:
     """Mask grid points where the total precipitations are below 10^expMmin."""
     print("Masking precipitations where total <",10**expMmin,"kg/m3.")
-    hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeors_moments,datatype='model')
+    hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeors_moments,
+                                                               datatype='model',
+                                                               )
     total_content=np.sum(contents[h] for h in hydrometeors_model)
     mask_precip = (total_content>10**expMmin)  
     return mask_precip   
 
 
 
-def mask_bright_band(contents:dict[np.ndarray],
-                     hydrometeors_moments:dict[int],
+def mask_bright_band(contents:dict[str,np.ndarray],
+                     hydrometeors_moments:dict[str,int],
                      expMmin:float,
                      )-> np.ndarray:
     """Mask grid points where rain, graupel and/or hail contents are below 10^expMmin."""
-    hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeors_moments,datatype='model')
+    hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeors_moments,
+                                                               datatype='model',
+                                                               )
     if 'hh' in hydrometeors_model :
         mask_BB = ((contents["rr"] > 10**expMmin) & ((contents["gg"]> 10**expMmin) | (contents["hh"]> 10**expMmin)))
     else :							

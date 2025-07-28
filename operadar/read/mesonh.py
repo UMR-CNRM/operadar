@@ -14,9 +14,17 @@ from operadar.read.with_netCDF4 import *
 
 
 
-def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
-                hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
-               )-> tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray,dict[np.ndarray],dict[np.ndarray],np.ndarray]:
+def read_mesonh(filePath: str,micro: str,subDomain:list[int]|list[float]|None,
+                hydrometeorMoments: dict[str,int],real_case: bool,verbose:bool,
+               )-> tuple[np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         dict[str,np.ndarray],
+                         dict[str,np.ndarray],
+                         np.ndarray,
+                         ]:
     """Read and extract data from an MesoNH.nc file
 
     Args:

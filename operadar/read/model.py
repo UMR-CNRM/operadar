@@ -13,9 +13,17 @@ def read_model_file(filePath:Path,
                     micro_scheme:str,
                     real_case:bool,
                     domain:list[float]|None,
-                    hydrometeorMoments:dict[int],
+                    hydrometeorMoments:dict[str,int],
                     verbose:bool,
-                    )-> tuple[ndarray,ndarray,ndarray,ndarray,ndarray,dict[ndarray],dict[ndarray],ndarray]:
+                    )-> tuple[ndarray,
+                              ndarray,
+                              ndarray,
+                              ndarray,
+                              ndarray,
+                              dict[str,ndarray],
+                              dict[str,ndarray],
+                              ndarray,
+                              ]:
     """Read model file (either Arome or MesoNH)"""
     
     print("Reading model variables")

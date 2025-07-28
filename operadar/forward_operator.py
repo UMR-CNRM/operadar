@@ -17,9 +17,9 @@ from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
 from operadar.save.append_dpolvar import append_in_input_file
-from operadar.read.lookup_tables import read_and_extract_tables_content
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
+from operadar.read.lookup_tables import read_and_extract_tables_content
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.save.save_dpolvar import create_tree_structure_outFiles, save_netcdf
 from operadar.utils.formats_data import format_temporal_variable,define_output_path
@@ -34,25 +34,21 @@ def operadar(filename:str,
              modelname:str=cf.model,
              real_case:bool=cf.real_case,
              microphysics_scheme:str=cf.micro_scheme,
-             hydrometeorMoments:dict[int]=cf.hydrometeors_moments,
-             subDomain:list[float]|None=cf.subDomain,
-             mixed_phase_parametrization:str=cf.MixedPhase,
-             dpol2add:list=cf.dpol2add,
-             scattering_method:str=cf.scattering_method,
+             hydrometeorMoments:dict[str,int]=cf.hydrometeors_moments,
              cloud_water_over:str=cf.cloud_water_over,
-             subDomain:list[float]|None=cf.subDomain,
+             subDomain:list[int]|list[float]|None=cf.subDomain,
              mixed_phase_parametrization:str=cf.MixedPhase,
              dpol2add:list=cf.dpol2add,
              scattering_method:str=cf.scattering_method,
              radar_band:str=cf.radar_band,
              distmax_rad:float=cf.distmax_rad,
-             radarloc:str|list=cf.radarloc,
+             radarloc:str|list|None=cf.radarloc,
              cnst_angle:int=cf.cnst_angle,
              tables_content:dict={},
              get_more_details=False,
              append_in_file=False,
              save_netcdf_single_hydrometeor:bool=cf.save_netcdf_single_hydrometeor,
-             ) -> tuple[bool,bool,dict]:
+             ) -> tuple[bool,dict]:
     """Radar forward operator main function. 
 
     Args:

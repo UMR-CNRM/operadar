@@ -57,7 +57,7 @@ def get_geometry(epygram_file,
 def get_contents_T_and_R(epygram_file,
                          pressure:np.ndarray,
                          hydrometeors: list,
-                         )-> tuple[dict[np.ndarray],np.ndarray,np.ndarray]:
+                         )-> tuple[dict[str,np.ndarray],np.ndarray,np.ndarray]:
     """Retrieve the 3D temperature field, the 3D content fields and compute the gas constant."""
     # 3D kelvin temperature T
     T = np.zeros(pressure.shape)
@@ -93,7 +93,7 @@ def get_concentrations(epygram_file,
                        hydrometeorsConfig: dict,
                        content:dict,
                        temperature:np.ndarray,
-                       )-> dict[np.ndarray]:
+                       )-> dict[str,np.ndarray]:
     """Retrieve concentration fields for all hydrometeor classes, depending on their moments."""
     Nc={}
     for hydrometeor,moment in hydrometeorsConfig.items():
@@ -101,13 +101,17 @@ def get_concentrations(epygram_file,
         
         if moment == 2:
             if hydrometeor == 'rr' :
-                extract_rr_cc = epygram_file.readfields('S0*N_RAIN')
-                for level in range(len(extract_rr_cc)):
-                    Nc[hydrometeor][level,:,:] = extract_rr_cc[level].getdata()
+                extract_rr_N = epygram_file.readfields('S0*N_RAIN')
+                for level in range(len(extract_rr_N)):
+                    Nc[hydrometeor][level,:,:] = extract_rr_N[level].getdata()
             elif hydrometeor == 'ii' :
-                extract_ii_cc = epygram_file.readfields('S0*N_ICE')
-                for level in range(len(extract_ii_cc)):
-                    Nc[hydrometeor][level,:,:] = extract_ii_cc[level].getdata()
+                extract_ii_N = epygram_file.readfields('S0*N_ICE')
+                for level in range(len(extract_ii_N)):
+                    Nc[hydrometeor][level,:,:] = extract_ii_N[level].getdata()
+            elif hydrometeor == 'cc' :
+                extract_cc_N = epygram_file.readfields('S0*N_CLOUD')
+                for level in range(len(extract_cc_N)):
+                    Nc[hydrometeor][level,:,:] = extract_cc_N[level].getdata()
         elif moment == 1 :
             if hydrometeor == 'ii' :
                 Nc["ii"]=800*np.ones(temperature.shape)

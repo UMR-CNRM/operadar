@@ -5,12 +5,13 @@ import epygram
 import pandas as pd
 from pathlib import Path
 from numpy import ndarray
+from typing import Sequence
 from netCDF4 import Dataset
 from pandas import Timestamp
 
 
 
-def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Timestamp:
+def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Timestamp|int:
     """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
 
     if model_type=='Arome':
@@ -33,7 +34,7 @@ def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Time
 
 
 
-def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float,float,float,float]:
+def get_lat_lon_from_subdomain(domain:Sequence[float])-> tuple[float,float,float,float]:
     """Get latitude/longitude minimum and maximun from a list of
     float [lonmin, lonmax, latmin, latmax]"""
     lon_min = domain[0] ; lon_max = domain[1]
@@ -43,11 +44,11 @@ def get_lat_lon_from_subdomain(domain:list[float])-> tuple[float,float,float,flo
 
 
 
-def Fw_or_Nc(momentsDict:dict[int],
-                          hydrometeor:str,
-                          concentration:ndarray,
-                          Fw:ndarray,
-                          tables_dict:dict):
+def Fw_or_Nc(momentsDict:dict[str,int],
+             hydrometeor:str,
+             concentration:ndarray,
+             Fw:ndarray,
+             ):
     """ Select the right column in the lookup table depending of the number of moment for the hydrometeor.
     TODO : change the reading of the table so that the parameters are kept the same !
 
@@ -60,15 +61,10 @@ def Fw_or_Nc(momentsDict:dict[int],
     if momentsDict[hydrometeor] == 2 :
         col_name = 'Nc'
         field_temp = concentration
-        col = 'expCC'
     else:
         col_name = "Fw"
         field_temp = Fw
-        col = 'Fw'
-    col_min = tables_dict[f'{col}min'][hydrometeor]
-    col_step = tables_dict[f'{col}step'][hydrometeor]
-    col_max = tables_dict[f'{col}max'][hydrometeor]
-    return field_temp, col_min, col_max, col_step, col_name
+    return field_temp, col_name
 
         
         

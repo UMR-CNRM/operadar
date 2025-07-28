@@ -7,6 +7,8 @@ import xarray as xr
 import pandas as pd
 from pathlib import Path
 
+import operadar.operadar_conf as cf
+
 
 
 def save_netcdf(X:np.ndarray,
@@ -15,20 +17,20 @@ def save_netcdf(X:np.ndarray,
                  lat:np.ndarray,
                  lon:np.ndarray,
                  datetime:pd.Timestamp,
-                 dpolDict:dict[np.ndarray],
-                 contentsDict:dict[np.ndarray],
-                 concentrationsDict:dict[np.ndarray],
-                 temperature:np.ndarray,
-                 dpol2add:list,
-                 model:str,
-                 micro_scheme:str,
-                 radar_band:str,
-                 MixedPhase:str,
                  outfile:Path,
-                 radarloc:str|list,
-                 scattering_method:str,
-                 hydrometeors_moments:dict,
-                 real_case:bool,
+                 dpolDict:dict[str,np.ndarray],
+                 contentsDict:dict[str,np.ndarray],
+                 concentrationsDict:dict[str,np.ndarray],
+                 temperature:np.ndarray,
+                 dpol2add:list=cf.dpol2add,
+                 model:str=cf.model,
+                 micro_scheme:str=cf.micro_scheme,
+                 radar_band:str=cf.radar_band,
+                 MixedPhase:str=cf.MixedPhase,
+                 radarloc:str|list|None=cf.radarloc,
+                 scattering_method:str=cf.scattering_method,
+                 hydrometeors_moments:dict=cf.hydrometeors_moments,
+                 real_case:bool=cf.real_case,
                  ) :
     """Save synthetic dual-polarization variables and other model fields (Arome or MesoNH) in a netcdf file.
 
