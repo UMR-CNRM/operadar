@@ -5,7 +5,7 @@
  *   ----------------------------------------------
  *
  *   You may want to adjust some parameters.
- *   /!\ Possible options are displayed. Be careful and respect if quotes are needed or not.
+ *   The possible options are displayed. Be careful and respect if quotes are needed or not.
  *   Please make a copy of this file before any changes
  *
 """
@@ -23,7 +23,7 @@ path_tables = "./tables_generator/tables/default/"
 model = 'Arome'
 real_case=False
 
-# ----- Microphysics scheme name : can be 'ICE3', 'ICE4' or 'LIMA'
+# ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
 #       Note : only the four first characters are used to select the right table
 micro_scheme = 'LIMA_exp_GNZR'
