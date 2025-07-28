@@ -98,28 +98,21 @@ def get_concentrations(epygram_file,
     Nc={}
     
     arome_hydrometeors=link_varname_with_arome_name()
+    for key,val in arome_hydrometeors.items():
+        arome_hydrometeors[key]=val.split('_')[0]
     
     for hydrometeor,moment in hydrometeorsConfig.items():
         Nc[hydrometeor]=np.zeros(temperature.shape)
-        
         if moment == 2:
-            if hydrometeor == 'rr' :
-                extract_rr_N = epygram_file.readfields('S0*N_RAIN')
-                for level in range(len(extract_rr_N)):
-                    Nc[hydrometeor][level,:,:] = extract_rr_N[level].getdata()
-            elif hydrometeor == 'ii' :
-                extract_ii_N = epygram_file.readfields('S0*N_ICE')
-                for level in range(len(extract_ii_N)):
-                    Nc[hydrometeor][level,:,:] = extract_ii_N[level].getdata()
-            elif hydrometeor == 'cc' :
-                extract_cc_N = epygram_file.readfields('S0*N_CLOUD')
-                for level in range(len(extract_cc_N)):
-                    Nc[hydrometeor][level,:,:] = extract_cc_N[level].getdata()
+            extract_N = epygram_file.readfields('S0*N_'+arome_hydrometeors[hydrometeor])
+            for level in range(len(extract_N)):
+                Nc[hydrometeor][level,:,:] = extract_N[level].getdata()
         elif moment == 1 :
             if hydrometeor == 'ii' :
                 Nc["ii"]=800*np.ones(temperature.shape)
-                    
             # TODO : explicitely compute Nc for all one moments species   
+            # elif hydrometeor == 'ii' :
+            #     Nc["ii"]=800*np.ones(temperature.shape)        
     return Nc
 
 
