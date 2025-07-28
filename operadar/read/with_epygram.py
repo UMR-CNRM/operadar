@@ -96,6 +96,9 @@ def get_concentrations(epygram_file,
                        )-> dict[str,np.ndarray]:
     """Retrieve concentration fields for all hydrometeor classes, depending on their moments."""
     Nc={}
+    
+    arome_hydrometeors=link_varname_with_arome_name()
+    
     for hydrometeor,moment in hydrometeorsConfig.items():
         Nc[hydrometeor]=np.zeros(temperature.shape)
         

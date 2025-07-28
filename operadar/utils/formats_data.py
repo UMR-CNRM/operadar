@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import epygram
 import pandas as pd
 from pathlib import Path
@@ -11,7 +12,10 @@ from pandas import Timestamp
 
 
 
-def format_temporal_variable(filePath:Path,model_type:str,real_case:bool)-> Timestamp|int:
+def format_temporal_variable(filePath:Path,
+                             model_type:str,
+                             real_case:bool,
+                             )-> Timestamp | int:
     """Extract the temporal variable from an Arome or MesoNH file and format it if necessary."""
 
     if model_type=='Arome':
@@ -69,12 +73,15 @@ def Fw_or_Nc(momentsDict:dict[str,int],
         
         
 
-def define_output_path(out_dir_path,model,scheme,radar_band,temporal_variable):
+def define_output_path(out_dir_path:str,
+                       model:str,
+                       scheme:str,
+                       radar_band:str,
+                       temporal_variable:Timestamp|int):
     """Define output path depending on the temporal variable type."""
 
     if type(temporal_variable) is pd.Timestamp :
-        outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
+        outName = f"dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
     else :
-        temporal_variable = int(temporal_variable)
-        outPath = f"{out_dir_path}dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable}"
-    return outPath
+        outName = f"dpolvar_{model}_{scheme}_{radar_band}band_{int(temporal_variable)}"
+    return Path(os.path.join(out_dir_path,outName))

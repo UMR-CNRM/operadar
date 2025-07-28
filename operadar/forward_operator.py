@@ -6,6 +6,7 @@ Created on Thu Apr 26 13:17:47 2018
 """
 
 # External modules
+import os
 import argparse
 import time as tm
 from sys import exit
@@ -95,7 +96,7 @@ def operadar(filename:str,
     # Create or check tree structure of the output directory path
     create_tree_structure_outFiles(output_dir=Path(out_dir_path))
     # Format temporal variable and output file name
-    input_file_path = Path(in_dir_path+filename)
+    input_file_path = Path(os.path.join(in_dir_path,filename))
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=modelname,
 						 real_case=real_case,
@@ -106,7 +107,7 @@ def operadar(filename:str,
                                      radar_band=radar_band,
                                      temporal_variable=temporal_variable,
                                      ) 
-    if not Path(outFilePath).with_suffix('.nc').exists() or append_in_file :
+    if not outFilePath.with_suffix('.nc').exists() or append_in_file :
         
         # Read lookup tables
         if read_tables :
@@ -157,7 +158,8 @@ def operadar(filename:str,
         # Compute dual-pol radar variables
         dpolDict = compute_dualpol_variables(temperature=Tc,
                                              mask_precip_dist=partial_mask,
-                                             elev=elevations, Fw=Fw,
+                                             elev=elevations,
+                                             Fw=Fw,
                                              contents=M,
                                              concentrations=Nc,
                                              dpol2add=dpol2add,
@@ -180,9 +182,10 @@ def operadar(filename:str,
                                  )
         else :
             save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon,
-                        datetime=temporal_variable, dpolDict=dpolDict,
+                        datetime=temporal_variable,
+                        dpolDict=dpolDict,
                         contentsDict=M, concentrationsDict=Nc,
-                        temperature=Tc, outfile=Path(outFilePath),
+                        temperature=Tc, outfile=outFilePath,
                         dpol2add=dpol2add, model=modelname,
                         micro_scheme=microphysics_scheme,
                         radar_band=radar_band, radarloc=radarloc,

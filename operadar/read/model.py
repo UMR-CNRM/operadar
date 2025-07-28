@@ -5,6 +5,7 @@ import sys
 import time as tm
 from pathlib import Path
 from numpy import ndarray
+from typing import Sequence
 
 
 
@@ -12,7 +13,7 @@ def read_model_file(filePath:Path,
                     modelname:str,
                     micro_scheme:str,
                     real_case:bool,
-                    domain:list[float]|None,
+                    domain:Sequence[float]|Sequence[float]|None,
                     hydrometeorMoments:dict[str,int],
                     verbose:bool,
                     )-> tuple[ndarray,
