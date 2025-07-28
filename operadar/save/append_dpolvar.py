@@ -11,7 +11,7 @@ epygram.init_env()
 
 
 def append_in_input_file(complete_input_path:Path,
-                         dpolVar:dict[np.ndarray],
+                         dpolVar:dict[str,np.ndarray],
                          var2add:list,
                          ):
     

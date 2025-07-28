@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from hmac import new
 import math
 import time as tm
 import numpy as np
@@ -101,14 +102,18 @@ def compute_dualpol_variables(temperature:np.ndarray,
                 dpol_h[var][mask_tot]=dpolDict[var]
                 dpol_h[var][~mask_tot]= np.nan
             dpol_h = compute_dpol_var(dpolDict=dpol_h,dpol2add=dpol2add)
-            outFilePath = Path(f'{output_file_path}_{h}')
-            save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon, datetime=date_time,
+            
+            parent_directory = output_file_path.parent
+            new_filename=Path(f"{output_file_path.stem}_{h}")
+            path_single_netcdf = parent_directory.joinpath(new_filename)
+            save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon,
+                        datetime=date_time,
                         dpolDict=dpol_h,
                         contentsDict={h:contents[h]},
                         concentrationsDict={h:concentrations[h]},
                         temperature=temperature,
                         dpol2add=dpol2add,
-                        outfile=outFilePath,
+                        outfile=path_single_netcdf,
                         )
                  
             del dpol_h   
