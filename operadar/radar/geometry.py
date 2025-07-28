@@ -13,7 +13,7 @@ def compute_radar_geometry(X:np.ndarray,
                            Tc:np.ndarray,
                            elev_max:float,
                            model:str,
-                           radarloc:str|list,
+                           radarloc:str|list|None,
                            cnst_angle:int,
                            distmax_rad:float=255e3,
                            )-> tuple[np.ndarray,np.ndarray]:
