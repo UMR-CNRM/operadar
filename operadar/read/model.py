@@ -5,16 +5,26 @@ import sys
 import time as tm
 from pathlib import Path
 from numpy import ndarray
-from operadar.operadar_conf import real_case, micro_scheme 
+from typing import Sequence
 
 
 
 def read_model_file(filePath:Path,
                     modelname:str,
-                    domain:list[float]|None,
-                    hydrometeorMoments:dict[int],
+                    micro_scheme:str,
+                    real_case:bool,
+                    domain:Sequence[float]|Sequence[float]|None,
+                    hydrometeorMoments:dict[str,int],
                     verbose:bool,
-                    )-> tuple[ndarray,ndarray,ndarray,ndarray,ndarray,dict[ndarray],dict[ndarray],ndarray]:
+                    )-> tuple[ndarray,
+                              ndarray,
+                              ndarray,
+                              ndarray,
+                              ndarray,
+                              dict[str,ndarray],
+                              dict[str,ndarray],
+                              ndarray,
+                              ]:
     """Read model file (either Arome or MesoNH)"""
     
     print("Reading model variables")
@@ -38,7 +48,7 @@ def read_model_file(filePath:Path,
     
     else :
         print('_____________')
-        print('/!\ ERROR /!\ :',modelname,'is not a valid name. Must be either "Arome" or "MesoNH".')
+        print('/!\\ ERROR /!\\ :',modelname,'is not a valid name. Must be either "Arome" or "MesoNH".')
         sys.exit()
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")

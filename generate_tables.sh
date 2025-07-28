@@ -13,12 +13,12 @@ RIMING=""
 DIEL=""
 
 # List of (fixed) parameters
-HYDRO_LIST=("cc" "rr" "ii" "ss" "ws" "gg" "wg" "hh" "wh")
+HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg" "wh" "ws")
 BAND_LIST=("C" "S" "X" "K" "W")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("ICE3" "LIMA")
+MICRO_LIST=("LIMC") #"ICE3" "LIMA" "ICJW" "LIMC"
 
 # Errors storage
 MISSING_FILES=()
@@ -41,14 +41,14 @@ usage() {
     echo " "
     echo "Accepted values for :"
     echo "  --band    (radar band)          : C, K, S, W, X"
-    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, tt, wg, hh, wh "
+    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, hh, cl, cs, wg, wh, ws "
     echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
     echo "  --arv     (axis ratio value)    : any float value."
     echo "  --canting (canting angle)       : any float value."
     echo "  --dsty    (density function)    : BR07, RHOX, LS15, ZA05"
     echo "  --riming  (fraction of riming)  : any float value >= 1 (1=unrimed)"
     echo "  --diel    (dielectric function) : Liebe91, RY19dry, LBwetgr, MGwMA08"
-    echo "Further details are available in the README.md "
+    echo "Further details are available in the Wiki of the project."
     echo " "
     exit 1
 }
@@ -68,6 +68,9 @@ valid_dstyf(){
 }
 valid_dielf(){
     [[ "${DIELfunc_LIST[*]}" =~ "$1" ]]
+}
+valid_microphysics(){
+    [[ "${MICRO_LIST[*]}" =~ "$1" ]]
 }
 
 # Reading arguments
@@ -161,7 +164,7 @@ generate_tables() {
 
     for H in "${HYDRO_LIST[@]}"; do
 
-        echo -e "\n====== START OF THE PROGRAM FOR ${H} ======"
+        echo -e "\n================== START OF THE PROGRAM FOR ${H} =================="
         
         if [[ "$output_subfolder" == "default" ]]; then
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
@@ -169,57 +172,52 @@ generate_tables() {
             PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}"
             cp ${PARAM_FILE} "${PARAM_FILE}_${output_subfolder}"
         fi
-        OUT_FILE_ICE3="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_ICE3_${BAND}${H}"
-        OUT_FILE_LIMA="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_LIMA_${BAND}${H}"
 
-        # if [[ -f "$OUT_FILE_ICE3" && -f "$OUT_FILE_LIMA" ]]; then
-        #     echo "$OUT_FILE_ICE3 and $OUT_FILE_LIMA already exist."
-             
-        # else
-            mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
-            mkdir -p "${TABLE_FOLDER}/${H}"
-            if [[ -f "$PARAM_FILE" ]]; then
-                DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
-                # if [[ ! -f "$DIAMETER_TABLE" ]]; then
-                    cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
-                    echo "Launching the creation of the tables for a range of diameters."
-                    # Temporary mv into Tmat directory to execute the f77 Tmat binary
-                    pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
-                    ./Tmat
-                    if [[ $? -ne 0 ]]; then
-                        echo "Error: Table creation failed for $H."                        
-                    fi
-                    popd > /dev/null
-                    # Back to the Launching directory
-                    if [ -f "$DIAMETER_TABLE" ]; then
-                    cp "${DIAMETER_TABLE}" "${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
-                    fi               
-                #  else
-                #     echo "Table for the range of diameters already exists."
-                # fi
+        for MICRO in "${MICRO_LIST[@]}"; do
+            MOMENT=$( cat "${PARAM_FILE}"| grep $MICRO |cut -d : -f2 )
+            OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
 
-                for MICRO in "${MICRO_LIST[@]}"; do
-                    INTEGRATED_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${BAND}${H}"
-                    HYDRO_PATH="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${BAND}${H}"
-
-                    # if [[ -f "$INTEGRATED_TABLE" ]]; then
-                        echo "$INTEGRATED_TABLE already exists."
-                    # else
-                        echo "Integrating over the ${H} PSD for ${MICRO} microphysics"
-                        if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO"; then
-                            mv "$HYDRO_PATH" "$INTEGRATED_TABLE"
-                            echo "Tables generated for $H with $MICRO microphysics."
-                        else
-                            echo "Error: Failed integration for $H with $MICRO microphysics."
-                        fi
-                    # fi
-                done
+            if [[ -f "$OUT_FILE" ]]; then
+                echo "$OUT_FILE already exist."
+                
             else
-                echo "Missing or unknown file: $PARAM_FILE"
-            fi
-        # fi
+                mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+                mkdir -p "${TABLE_FOLDER}/${H}"
+                if [[ -f "$PARAM_FILE" ]]; then
+                    DIAMETER_TABLE="${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}"
+                    if [[ ! -f "$DIAMETER_TABLE" ]]; then
+                        cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
+                        echo "Launching the creation of the tables for a range of diameters."
+                        # Temporary mv into Tmat directory to execute the f77 Tmat binary
+                        pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
+                        ./Tmat
+                        if [[ $? -ne 0 ]]; then
+                            echo "Error: Table creation failed for $H."                        
+                        fi
+                        popd > /dev/null
+                        # Back to the Launching directory
+                        if [ -f "$DIAMETER_TABLE" ]; then
+                        cp "${DIAMETER_TABLE}" "${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
+                        fi               
+                    else
+                        echo "Table for the range of diameters already exists."
+                    fi
 
-        echo -e "\n====== END OF THE PROGRAM FOR ${H} ======"
+                    INTEGRATED_TABLE="${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
+                    echo "Integrating over the ${H} PSD for ${MICRO} microphysics (${MOMENT})"
+                    if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$H" "$BAND" "$MICRO" "$MOMENT"; then
+                        mv "$INTEGRATED_TABLE" "$OUT_FILE"
+                        echo "Tables generated for $H with $MICRO microphysics."
+                    else
+                        echo "Error: Failed integration for $H with $MICRO microphysics."
+                    fi
+                else
+                    echo "Missing or unknown file: $PARAM_FILE"
+                fi
+            fi
+        done
+
+        echo -e "\n================== END OF THE PROGRAM FOR ${H} =================="
                 
     done
 

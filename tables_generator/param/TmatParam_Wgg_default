@@ -20,3 +20,7 @@ expDstep:0.002
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0
+ICE3:1M
+LIMA:1M
+ICJW:1M
+LIMC:1M

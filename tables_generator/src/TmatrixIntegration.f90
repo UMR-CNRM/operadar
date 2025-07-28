@@ -153,8 +153,8 @@ REAL :: K2 !dielectric factor
 ! Variables for input and output files names
 CHARACTER*2 :: typeh
 CHARACTER*1 :: bande
-CHARACTER*4  :: CCLOUD ! LIMA OU ICE3
-CHARACTER*2 :: espece
+CHARACTER*4  :: CCLOUD ! LIMA ICE3 LIMC ICJW
+CHARACTER*2 :: espece, MOMENT
 CHARACTER*2 :: espece_rr ! rain
 character(len=1024) :: nomfileCoef, nomfileCoef_rr, nomfileCoefInt, Hydromet_const_file
 integer :: ios
@@ -219,6 +219,7 @@ call get_command_argument(1, exec_dir)
 call get_command_argument(2, typeh)
 call get_command_argument(3, bande)
 call get_command_argument(4, CCLOUD)
+call get_command_argument(5, MOMENT)
 
 
 !**************************************************
@@ -246,19 +247,21 @@ expCCstep=0.1
 WRITE(0,*) ' -----------------------------------------------------------'
 WRITE (0,*) ' Conversion of the table as a function of the diameter into a table as a function of the hydrometeor content.'
 WRITE (0,*) '    microphysics=',CCLOUD
-WRITE (0,*) '    type=',typeh
+WRITE (0,*) '    type=',typeh,' (',MOMENT,')'
 WRITE (0,*) '    band=',bande
 
-IF ((CCLOUD=='LIMA' .OR. CCLOUD=='LIMT') .AND. &
-    (typeh=='rr' .or. typeh=='mm' .or. typeh=='tt' .or. typeh=='ii')) THEN 
-    Nmoments=2
+IF (CCLOUD=='ICE3') THEN
+  Nmoments=1
 ELSE
+  IF (MOMENT=='1M') THEN 
     Nmoments=1
+  ELSE IF (MOMENT=='2M') THEN 
+    Nmoments=2
+  ENDIF
 ENDIF
 
 !----- Reading of the hydrometeor constants for PSD calculations
 Hydromet_const_file = trim(exec_dir)//'/../param/'//CCLOUD//'_constants.txt'
-!Hydromet_const_file = '../param/'//CCLOUD//'_constants.txt'
 WRITE(0,*) ' Reading : ',trim(Hydromet_const_file)
 
 open(unit=333,file = trim(Hydromet_const_file),action="read",iostat=ios)
@@ -386,7 +389,7 @@ ENDIF
 
 !=================================
 !Output file
-nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//bande//typeh
+nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
 PRINT *,' Creation of ',trim(nomfileCoefInt)
 
 OPEN (6,FILE=trim(nomfileCoefInt))
@@ -607,7 +610,7 @@ DO idTc=0,nTcloop
           
           ! Distribution of the solid part of the hydrometeor  
           IF((1-Fw)*M .GT. 0) THEN
-            CALL PSD((1-Fw)*M,Dmrec,CCLOUD,P3,typeh,&
+            CALL PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
               aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
               !WRITE(0,*) "PSD solid part, N_ss=",N_ss
           ELSE
@@ -618,7 +621,7 @@ DO idTc=0,nTcloop
           ! The maximum diameter Dm is replaced by the maximum
           ! diameter of the equivalent "melted" hydrometeor Deqrm
           IF(Fw*M .GT. 0) THEN
-            call PSD(Fw*M,Deqrmrec,CCLOUD,P3,'rr',&
+            call PSD(Fw*M,Deqrmrec,Tk,CCLOUD,P3,'rr',&
             aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,mumax,Nmoments,lamj,N_rr)
             !WRITE(0,*) "PSD liquid part, N_rr=",N_ss
           ELSE
@@ -748,7 +751,7 @@ DO idTc=0,nTcloop
   
           ! Distribution of the solid part of the hydromet content
           IF((1-Fw)*M .GT. 0) THEN
-            call PSD((1-Fw)*M,Dmrec,CCLOUD,P3,typeh,&
+            call PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
               aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
               N_ss2=N_ss
             IF(M_ss .GT. 0) THEN
@@ -764,7 +767,7 @@ DO idTc=0,nTcloop
   
           ! Distribution of the liquid part of the hydromet content
           IF(Fw*M .GT. 0) THEN
-            call PSD(Fw*M,Deqrmrec,CCLOUD,P3,'rr',&
+            call PSD(Fw*M,Deqrmrec,Tk,CCLOUD,P3,'rr',&
                       aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,mumax,Nmoments,&
                       lamj,N_rr)
             N_rr2=N_rr
@@ -900,7 +903,7 @@ DO idTc=0,nTcloop
 
             ! Distribution of the solid part of the hydromet content
             IF((1-Fw)*M .GT. 0) THEN
-              call PSD((1-Fw)*M,Dmrec,CCLOUD,P3,typeh,&
+              call PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
                         aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
               N_ss2=N_ss
               IF(M_ss .GT. 0) THEN
@@ -914,7 +917,7 @@ DO idTc=0,nTcloop
 
             ! Distribution of the liquid part of the hydromet content
             IF(Fw*M .GT. 0) THEN
-              call PSD(Fw*M,Deqrmrec,CCLOUD,P3,'rr',&
+              call PSD(Fw*M,Deqrmrec,Tk,CCLOUD,P3,'rr',&
                         aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,mumax,Nmoments,lamj,N_rr)
               N_rr2=N_rr
               IF(M_rr .GT. 0) THEN
@@ -930,10 +933,10 @@ DO idTc=0,nTcloop
             N = (1-Fw)*N_ss*(vts/vtm)+Fw*N_rr*(vtr/vtm)
             N2 = (1-Fw)*N_ss2*(vts/vtm)+Fw*N_rr2*(vtr/vtm)
           ELSE
-            !call PSD(M,(Dmrec+Dmrecinf)/2.,&
+            !call PSD(M,(Dmrec+Dmrecinf)/2.,Tk,&
             ! aj,bj,nuj,alphaj,Cj,Xj,lamj,N)
             vtm=ccj*(Drec**ddj)
-            call PSD(M,Dmrec,CCLOUD,P3,typeh,&
+            call PSD(M,Dmrec,Tk,CCLOUD,P3,typeh,&
                       aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N)
             N2=N  
           ENDIF ! ENDIF "ws" or "wg"
@@ -1109,7 +1112,8 @@ END
 !            SUBROUTINE PSD 
 !
 ! Calculation of slope parameter and PSD for a given M, D
-! (and concentration P3 if CCLOUD=LIMA)
+! and concentration if Nmoments=2)
+! snow parameterization based on Wurtz 2021, 2023
 !
 ! IN: M (Hydrometeor content if 1 moment (kg m-3) 
 ! M=rhodref * r  with rhodref = dry air density (kg m-3)
@@ -1124,16 +1128,16 @@ END
 ! 1-moment and 2-moments: N (m-3)
 
 !**********************************************************************          
-SUBROUTINE PSD(M,D,CCLOUD,P3,typeh,a,b,nuconst,alpha,c,x,mumax,Nmoments,lamb,N)
+SUBROUTINE PSD(M,D,Tk,CCLOUD,P3,typeh,a,b,nuconst,alpha,c,x,mumax,Nmoments,lamb,N)
 IMPLICIT NONE
 INTEGER,INTENT(in) :: Nmoments
 REAL,INTENT(in)  :: a,b,nuconst,alpha,c,x,mumax
-REAL,INTENT(in)  :: D,M,P3
+REAL,INTENT(in)  :: D,M,P3,Tk ! temperature in Kelvin for Wurtz parameterization of snow
 CHARACTER*2,INTENT(in)  ::typeh
 CHARACTER*4,INTENT(in)  ::CCLOUD
 REAL,INTENT(out) :: lamb,N
 
-REAL :: No,mucalc,mu,Dm,nu
+REAL :: No,mucalc,mu,Dm,nu,lambMP
 
 ! LIMA is 2-moments for cloud droplets, rain drops and pristine ice crystals
 ! For these 3 species, the number concentration N is prognostic
@@ -1141,30 +1145,76 @@ REAL :: No,mucalc,mu,Dm,nu
 ! => the pronostic parameter CRAINT (P3) in MesoNH has to be multiplied by rhodref
 !  before looking for the scattering coef in the T-matrix table
 
-IF (Nmoments==2) THEN
-  No=P3
-  ! LIMA Marie Taufour with diagnostic mu  
-  IF (CCLOUD=='LIMT' .AND. typeh=='rr') THEN
-    Dm=(M/(a*No))**(1/b)  ! Mean volume diameter for spherical drops (b = 3)
-                          ! obtained if we consider that all drops have the same size 
-                          ! (MesoNH 5.4 Physics doc eq 7.30 p 146)   
-    mucalc=38.66*exp(-1.59*(Dm*10**3)) ! adapted from eq (7) of Taufour et al 2018 (Dm in mm!)
-    mu=max(min(mucalc,mumax),0.0) ! mu is borned: 0 <= mu <= 15
-    nu=mu+1
-  ELSE
-    nu=nuconst
-  ENDIF
-  lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
-  
+! LIMA Marie Taufour with diagnostic mu  
+IF (CCLOUD=='LIMT' .AND. typeh=='rr'.AND. Nmoments==2) THEN
+  Dm=(M/(a*No))**(1/b)  ! Mean volume diameter for spherical drops (b = 3)
+                        ! obtained if we consider that all drops have the same size 
+                        ! (MesoNH 5.4 Physics doc eq 7.30 p 146)   
+  mucalc=38.66*exp(-1.59*(Dm*10**3)) ! adapted from eq (7) of Taufour et al 2018 (Dm in mm!)
+  mu=max(min(mucalc,mumax),0.0) ! mu is borned: 0 <= mu <= 15
+  nu=mu+1
 ELSE
   nu=nuconst
-  lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
-  No   = c*(lamb**x)
 ENDIF
 
-N = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
-    *No*alpha*(lamb**(alpha*nu))
-     
+IF (CCLOUD=='ICE3') THEN
+  lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+  No   = c*(lamb**x)
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
+ELSE IF (CCLOUD=='ICJW') THEN
+  IF (typeh=='ss') THEN 
+    IF (Tk>263.15) THEN 
+      lambMP = 10**(14.554-0.0423*Tk) ! eq6 Wurtz 2023
+    ELSE
+      lambMP = 10**(6.226-0.0106*Tk) ! eq6 Wurtz 2023
+    ENDIF
+    lamb = lambMP * (1/(2*SQRT(2.0))) &
+          * SQRT((GAMMA(nu+2/alpha)*GAMMA(nu+4/alpha)) &
+                  /(GAMMA(nu+1/alpha)*GAMMA(nu+3/alpha))) ! eq8 Wurtz 2023
+    No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
+  ELSE
+    lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+    No   = c*(lamb**x)
+  ENDIF
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
+ELSE IF (CCLOUD=='LIMA') THEN
+  IF (Nmoments==1) THEN
+    lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+    No   = c*(lamb**x)
+  ELSE IF (Nmoments==2) THEN
+    No=P3
+    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+  ENDIF
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
+ELSE IF (CCLOUD=='LIMC') THEN
+  IF (typeh=='ss') THEN 
+    IF (Tk>263.15) THEN 
+      lambMP = 10**(14.554-0.0423*Tk) ! eq6 Wurtz 2023
+    ELSE
+      lambMP = 10**(6.226-0.0106*Tk) ! eq6 Wurtz 2023
+    ENDIF
+    lamb = lambMP * (1/(2*SQRT(2.0))) &
+          * SQRT((GAMMA(nu+2/alpha)*GAMMA(nu+4/alpha)) &
+                  /(GAMMA(nu+1/alpha)*GAMMA(nu+3/alpha))) ! eq8 Wurtz 2023
+    No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
+  ELSE
+    IF (Nmoments==1) THEN
+      lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+      No   = c*(lamb**x)
+    ELSE IF (Nmoments==2) THEN
+      No=P3
+      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+    ENDIF
+  ENDIF
+  N = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
+      *No*alpha*(lamb**(alpha*nu))
+ENDIF    
 RETURN
 END
         

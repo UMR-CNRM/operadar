@@ -57,7 +57,7 @@ def get_geometry(epygram_file,
 def get_contents_T_and_R(epygram_file,
                          pressure:np.ndarray,
                          hydrometeors: list,
-                         )-> tuple[dict[np.ndarray],np.ndarray,np.ndarray]:
+                         )-> tuple[dict[str,np.ndarray],np.ndarray,np.ndarray]:
     """Retrieve the 3D temperature field, the 3D content fields and compute the gas constant."""
     # 3D kelvin temperature T
     T = np.zeros(pressure.shape)
@@ -93,26 +93,26 @@ def get_concentrations(epygram_file,
                        hydrometeorsConfig: dict,
                        content:dict,
                        temperature:np.ndarray,
-                       )-> dict[np.ndarray]:
+                       )-> dict[str,np.ndarray]:
     """Retrieve concentration fields for all hydrometeor classes, depending on their moments."""
     Nc={}
+    
+    arome_hydrometeors=link_varname_with_arome_name()
+    for key,val in arome_hydrometeors.items():
+        arome_hydrometeors[key]=val.split('_')[0]
+    
     for hydrometeor,moment in hydrometeorsConfig.items():
         Nc[hydrometeor]=np.zeros(temperature.shape)
-        
         if moment == 2:
-            if hydrometeor == 'rr' :
-                extract_rr_cc = epygram_file.readfields('S0*N_RAIN')
-                for level in range(len(extract_rr_cc)):
-                    Nc[hydrometeor][level,:,:] = extract_rr_cc[level].getdata()
-            elif hydrometeor == 'ii' :
-                extract_ii_cc = epygram_file.readfields('S0*N_ICE')
-                for level in range(len(extract_ii_cc)):
-                    Nc[hydrometeor][level,:,:] = extract_ii_cc[level].getdata()
+            extract_N = epygram_file.readfields('S0*N_'+arome_hydrometeors[hydrometeor])
+            for level in range(len(extract_N)):
+                Nc[hydrometeor][level,:,:] = extract_N[level].getdata()
         elif moment == 1 :
             if hydrometeor == 'ii' :
                 Nc["ii"]=800*np.ones(temperature.shape)
-                    
             # TODO : explicitely compute Nc for all one moments species   
+            # elif hydrometeor == 'ii' :
+            #     Nc["ii"]=800*np.ones(temperature.shape)        
     return Nc
 
 

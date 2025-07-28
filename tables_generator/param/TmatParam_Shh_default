@@ -1,7 +1,7 @@
 type:hh
 band:S
-canting:analyt
-sigbeta:40.0
+canting:nocant
+sigbeta:0.0
 DIEL:RY19dry
 ARfunc:RYdg
 ARcnst:0.80
@@ -20,3 +20,7 @@ expDstep:0.01
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0
+ICE3:1M
+LIMA:1M
+ICJW:1M
+LIMC:1M

@@ -3,7 +3,7 @@
 
 
 
-def link_varname_with_arome_name ()-> dict[int]:
+def link_varname_with_arome_name ()-> dict[str,str]:
     """Make the correspondance between the hydrometeor keys and the variable names commonly used in AROME."""
     model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
     model_name=['HUMI.SPECIFI','CLOUD_WATER','RAIN','ICE_CRYSTAL','SNOW','GRAUPEL','HAIL']
@@ -12,7 +12,7 @@ def link_varname_with_arome_name ()-> dict[int]:
 
 
 
-def link_varname_with_mesonh_name ()-> dict[int]:
+def link_varname_with_mesonh_name ()-> dict[str,str]:
     """Make the correspondance between the hydrometeor keys and the variable names commonly used in MesoNH."""
     model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
     model_name=['RVT','RCT','RRT','RIT','RST','RGT','RHT']
@@ -21,7 +21,7 @@ def link_varname_with_mesonh_name ()-> dict[int]:
 
 
 
-def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[int],
+def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[str,int],
                                           datatype:str,
                                           verbose:bool=False) -> list[str]:
     """Make the correspondance between available hydrometeor keys in the model or tables

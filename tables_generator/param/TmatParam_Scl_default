@@ -1,13 +1,13 @@
-type:tt
-band:W
-canting:analyt
+type:cl
+band:S
+canting:nocant
 sigbeta:0.0
 DIEL:Liebe91
 ARfunc:CNST
 ARcnst:1.0
 DSTYfunc:RHOX
 Frim:1.0
-LAM:3.15
+LAM:106.2
 ELEVmin:0.0
 ELEVmax:10.0
 ELEVstep:10.0
@@ -20,3 +20,7 @@ expDstep:0.02
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0
+ICE3:1M
+LIMA:2M
+ICJW:1M
+LIMC:2M

@@ -5,7 +5,7 @@
  *   ----------------------------------------------
  *
  *   You may want to adjust some parameters.
- *   /!\ Possible options are displayed. Be careful and respect if quotes are needed or not.
+ *   The possible options are displayed. Be careful and respect if quotes are needed or not.
  *   Please make a copy of this file before any changes
  *
 """
@@ -21,15 +21,17 @@ path_tables = "./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
-real_case=False   # for MesoNH only
+real_case=False
 
-# ----- Microphysics scheme name : can be 'ICE3', 'ICE4' or 'LIMA'
+# ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
-#       Note : only the three first characters are used to select the right scheme
+#       Note : only the four first characters are used to select the right table
 micro_scheme = 'LIMA_exp_GNZR'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
+#       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
 hydrometeors_moments = {'cc':2,'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
+cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land) or cs (sea) lookup table
 
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
 #                           or as [i_min,i_max,j_min,j_max] for an idealized case

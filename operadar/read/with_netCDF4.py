@@ -7,6 +7,7 @@
 import sys
 import numpy as np
 from netCDF4 import Dataset
+from typing import Sequence
 from operadar.utils.formats_data import get_lat_lon_from_subdomain
 
 
@@ -21,7 +22,7 @@ def check_variable_is_in_dataset(mnhFile:Dataset):
 
     if len(missing_var)>0 :
         print('_____________')
-        print('/!\ ERROR /!\ Missing variables :',missing_var)
+        print('/!\\ ERROR /!\\ Missing variables :',missing_var)
         sys.exit()
 
 
@@ -50,9 +51,9 @@ def get_geometry(mnhFile:Dataset,
 
 
 def get_subdomain_indices(mnhFile:Dataset,
-                          subDomain:list[float],
+                          subDomain:Sequence[float]|Sequence[int],
                           real_case:bool,
-                          ):
+                          ) -> tuple[int,int,int,int]:
     if real_case:
         LAT = mnhFile.variables['latitude'][:]
         LON = mnhFile.variables['longitude'][:]
@@ -95,7 +96,7 @@ def get_contents(mnhFile:Dataset,
                  rho3D:np.ndarray,
                  i_min:int, i_max:int,
                  j_min:int, j_max:int,
-                 )->dict[np.ndarray]:
+                 )->dict[str,np.ndarray]:
     contents = {}
     for key in hydrometeors:
         contents[key] = np.empty(temperature.shape)
@@ -116,7 +117,7 @@ def get_concentrations(mnhFile:Dataset,
     for key in hydrometeors:
         concentrations[key] = np.zeros(temperature.shape)
     
-    if microphysics_scheme[0:3]=="ICE":
+    if microphysics_scheme[0:2]=="IC":
         concentrations['ii'] = mnhFile.variables['CIT'][0,:,:,:][:,i_min:i_max,j_min:j_max]
         concentrations['ii'][concentrations['ii']==999.] = float('nan')
     if microphysics_scheme[0:3] =="LIM" :

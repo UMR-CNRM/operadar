@@ -1,4 +1,4 @@
-type:mm
+type:cl
 band:C
 canting:analyt
 sigbeta:0.0
@@ -20,3 +20,7 @@ expDstep:0.02
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0
+ICE3:1M
+LIMA:2M
+ICJW:1M
+LIMC:2M

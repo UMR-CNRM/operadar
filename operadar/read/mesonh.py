@@ -8,15 +8,28 @@ Created on Tue Apr 11 09:55:15 2023
 
 import time as tm
 import numpy as np
+from pathlib import Path
 from netCDF4 import Dataset
-from operadar.utils.make_links import link_keys_with_available_hydrometeors, link_varname_with_mesonh_name
+from typing import Sequence
+
 from operadar.read.with_netCDF4 import *
+from operadar.utils.make_links import link_keys_with_available_hydrometeors, link_varname_with_mesonh_name
 
 
 
-def read_mesonh(filePath: str,micro: str,subDomain:list[float]|None,
-                hydrometeorMoments: dict[int],real_case: bool,verbose:bool,
-               )-> tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray,dict[np.ndarray],dict[np.ndarray],np.ndarray]:
+def read_mesonh(filePath:Path,
+                micro:str,
+                subDomain:Sequence[int]|Sequence[float]|None,
+                hydrometeorMoments: dict[str,int],real_case: bool,verbose:bool,
+               )-> tuple[np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         dict[str,np.ndarray],
+                         dict[str,np.ndarray],
+                         np.ndarray,
+                         ]:
     """Read and extract data from an MesoNH.nc file
 
     Args:
