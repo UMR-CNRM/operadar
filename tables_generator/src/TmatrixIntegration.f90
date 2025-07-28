@@ -1157,12 +1157,11 @@ ELSE
   nu=nuconst
 ENDIF
 
-
 IF (CCLOUD=='ICE3') THEN
   lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
   No   = c*(lamb**x)
-  N    = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
-         *No*alpha*(lamb**(alpha*nu))
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
 ELSE IF (CCLOUD=='ICJW') THEN
   IF (typeh=='ss') THEN 
@@ -1174,12 +1173,13 @@ ELSE IF (CCLOUD=='ICJW') THEN
     lamb = lambMP * (1/(2*SQRT(2.0))) &
           * SQRT((GAMMA(nu+2/alpha)*GAMMA(nu+4/alpha)) &
                   /(GAMMA(nu+1/alpha)*GAMMA(nu+3/alpha))) ! eq8 Wurtz 2023
+    No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
   ELSE
     lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+    No   = c*(lamb**x)
   ENDIF
-  No   = c*(lamb**x)
-  N    = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
-           *No*alpha*(lamb**(alpha*nu))
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
 ELSE IF (CCLOUD=='LIMA') THEN
   IF (Nmoments==1) THEN
@@ -1189,8 +1189,8 @@ ELSE IF (CCLOUD=='LIMA') THEN
     No=P3
     lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
   ENDIF
-  N = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
-      *No*alpha*(lamb**(alpha*nu))
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
 ELSE IF (CCLOUD=='LIMC') THEN
   IF (typeh=='ss') THEN 
@@ -1202,7 +1202,7 @@ ELSE IF (CCLOUD=='LIMC') THEN
     lamb = lambMP * (1/(2*SQRT(2.0))) &
           * SQRT((GAMMA(nu+2/alpha)*GAMMA(nu+4/alpha)) &
                   /(GAMMA(nu+1/alpha)*GAMMA(nu+3/alpha))) ! eq8 Wurtz 2023
-    No   = c*(lamb**x)
+    No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
   ELSE
     IF (Nmoments==1) THEN
       lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
