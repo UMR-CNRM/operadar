@@ -1,7 +1,7 @@
 type:ss
 band:C
-canting:nocant
-sigbeta:0.0
+canting:analyt
+sigbeta:40.0
 DIEL:RY19dry
 ARfunc:CNST
 ARcnst:0.60
