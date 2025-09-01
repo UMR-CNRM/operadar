@@ -3,7 +3,7 @@
 
 import argparse
 from .forward_operator import operadar
-from .operadar_conf import load_configuration_file
+from .load_config_file import load_configuration_file
 
 
 def run_cli():
