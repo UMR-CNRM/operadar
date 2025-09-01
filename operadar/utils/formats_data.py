@@ -61,7 +61,6 @@ def Fw_or_Nc(momentsDict:dict[str,int],
     * all other species (graupel / snow / wet graupel / wet snow ? )=> treated as 1-moment but can have a variable wet fraction
     => 3d parameter = Fw
     """
-    
     if momentsDict[hydrometeor] == 2 :
         col_name = 'Nc'
         field_temp = concentration
@@ -69,7 +68,6 @@ def Fw_or_Nc(momentsDict:dict[str,int],
         col_name = "Fw"
         field_temp = Fw
     return field_temp, col_name
-
         
         
 

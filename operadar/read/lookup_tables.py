@@ -137,6 +137,8 @@ def read_and_extract_tables_content(band:str,
         
         if verbose : print("\tRetrieving necessary columns in the table for",h)
         df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
+        df_columns = df_columns.astype(float)
+
         for columnName in columns_to_retrieve :
             if columnName == 'Fw' or columnName == 'N' :
                 if moments[h]==1 :

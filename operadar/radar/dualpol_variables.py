@@ -22,9 +22,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               Fw:np.ndarray,
                               contents:dict[str,np.ndarray],
                               concentrations:dict[str,np.ndarray],
-                              dpol2add:list,
                               tables_dict:dict,
-                              hydrometeorMoments:dict[str,int],
                               X:np.ndarray,
                               Y:np.ndarray,
                               Z:np.ndarray,
@@ -33,7 +31,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                               date_time:Timestamp,
                               output_file_path:Path,
                               append_in_fa:bool,
-                              save_netcdf_single_hydrometeor:bool,
+                              config,
                               )-> dict[str,np.ndarray] :
     """Compute synthetic radar dual-polarimetrization variables for a given wavelength,
     microphysics, and mixed phase parametrization.
@@ -59,12 +57,12 @@ def compute_dualpol_variables(temperature:np.ndarray,
     Returns:
         dict[np.ndarray]: dictionary containing all the dual-polarimetrization fields.
     """
-    
-    var2interpol = variables_to_interpolate(which_dpol=dpol2add)
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
+        
+    var2interpol = variables_to_interpolate(which_dpol=config.dpol2add)
+    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=config.hydrometeors_moments,
                                                          datatype='tables'
                                                          )
-    print("Computation of",dpol2add,"for :") ; deb_timer = tm.time()
+    print("Computation of",config.dpol2add,"for :") ; deb_timer = tm.time()
     
     initialize_dict = 0
     for h in hydrometeors :
@@ -77,7 +75,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         mask_tot = (mask_precip_dist & mask_content) 
 
         dpolDict = compute_scatcoeffs_single_hydrometeor(hydrometeor=h,
-                                                         dpol2add=dpol2add,
+                                                         dpol2add=config.dpol2add,
                                                          variables_for_interpolation=var2interpol,
                                                          mask_tot=mask_tot,
                                                          Tc=temperature,
@@ -85,7 +83,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                                                          content_h=contents[h],
                                                          concentration_h=concentrations[h],
                                                          tables_dict=tables_dict,
-                                                         hydrometeorMoments=hydrometeorMoments,
+                                                         hydrometeorMoments=config.hydrometeors_moments,
                                                     ) 
         
         # Addition of scattering coef for all hydrometeor
@@ -96,24 +94,25 @@ def compute_dualpol_variables(temperature:np.ndarray,
             fields2sum[var][mask_tot]+=dpolDict[var]
         
         # If saving single type, compute final polarimetric values
-        if save_netcdf_single_hydrometeor :
+        if config.save_netcdf_single_hydrometeor :
             dpol_h = {var:np.zeros(temperature.shape) for var in dpolDict.keys()}
             for var in dpolDict.keys():
                 dpol_h[var][mask_tot]=dpolDict[var]
                 dpol_h[var][~mask_tot]= np.nan
-            dpol_h = compute_dpol_var(dpolDict=dpol_h,dpol2add=dpol2add)
+            dpol_h = compute_dpol_var(dpolDict=dpol_h,dpol2add=config.dpol2add)
             
             parent_directory = output_file_path.parent
             new_filename=Path(f"{output_file_path.stem}_{h}")
             path_single_netcdf = parent_directory.joinpath(new_filename)
-            save_netcdf(X=X, Y=Y, Z=Z, lat=lat, lon=lon,
+            save_netcdf(X=X, Y=Y, Z=Z,
+                        lat=lat, lon=lon,
                         datetime=date_time,
                         dpolDict=dpol_h,
                         contentsDict={h:contents[h]},
                         concentrationsDict={h:concentrations[h]},
                         temperature=temperature,
-                        dpol2add=dpol2add,
                         outfile=path_single_netcdf,
+                        config=config,
                         )
                  
             del dpol_h   
@@ -124,7 +123,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
         fields2sum[var][~mask_precip_dist] = np.nan 
         
     # Dpol var calculation over the sum of scatering coefficients and linear Z
-    fields2sum = compute_dpol_var(dpolDict=fields2sum,dpol2add=dpol2add)
+    fields2sum = compute_dpol_var(dpolDict=fields2sum,dpol2add=config.dpol2add)
     
     print("\t--> Done in",round(tm.time() - deb_timer,2),"seconds")    
     return fields2sum  
@@ -293,14 +292,14 @@ def perform_nD_interpolation(tableDict:dict,
         elev (np.ndarray): angle elevation field
         T (np.ndarray): temperature (°C) field
         P3 (np.ndarray): liquid water fraction or number concentration field 
-        content (np.ndarray): hydrometeor content field of values
+        content (np.ndarray): hydrometeor content field of values (kg/m3)
         dpol2add (list[str]): used to select the appropriate columns in the lookup table
 
     Returns:
         dict: dictionnary containing fields of interpolated scattering coefficients over the grid
     """
     
-    M = np.copy(content)*0.0#-100
+    M = np.copy(content)*0.0-100
     M[content>0] = np.log10(content[content>0])
     
     P = np.copy(P3)

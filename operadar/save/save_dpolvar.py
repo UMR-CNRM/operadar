@@ -7,8 +7,6 @@ import xarray as xr
 import pandas as pd
 from pathlib import Path
 
-import operadar.operadar_conf as cf
-
 
 
 def save_netcdf(X:np.ndarray,
@@ -17,20 +15,12 @@ def save_netcdf(X:np.ndarray,
                  lat:np.ndarray,
                  lon:np.ndarray,
                  datetime:pd.Timestamp|int,
-                 outfile:Path,
                  dpolDict:dict[str,np.ndarray],
                  contentsDict:dict[str,np.ndarray],
                  concentrationsDict:dict[str,np.ndarray],
                  temperature:np.ndarray,
-                 dpol2add:list=cf.dpol2add,
-                 model:str=cf.model,
-                 micro_scheme:str=cf.micro_scheme,
-                 radar_band:str=cf.radar_band,
-                 MixedPhase:str=cf.MixedPhase,
-                 radarloc:str|list|None=cf.radarloc,
-                 scattering_method:str=cf.scattering_method,
-                 hydrometeors_moments:dict=cf.hydrometeors_moments,
-                 real_case:bool=cf.real_case,
+                 outfile:Path,
+                 config,
                  ) :
     """Save synthetic dual-polarization variables and other model fields (Arome or MesoNH) in a netcdf file.
 
@@ -59,7 +49,7 @@ def save_netcdf(X:np.ndarray,
                              )
     dataset_variables = add_dualPol_variables(ds_variables=dataset_variables,
                                               dpolDict=dpolDict,
-                                              dpolvar2add=dpol2add,
+                                              dpolvar2add=config.dpol2add,
                                               ) 
     dataset_coordinates = dict(y = (["y"], Y.astype('i4')),
                                x = (["x"], X.astype('i4')),
@@ -70,17 +60,17 @@ def save_netcdf(X:np.ndarray,
     dataset_coordinates = add_lat_lon_coordinates(ds_coordinates=dataset_coordinates,
                                                   lat=lat,
                                                   lon=lon,
-                                                  real_case=real_case,
+                                                  real_case=config.real_case,
                                                   )
     dataset_attributes = dict(horizontal_resolution = int(Y[1]-Y[0]),
-                              model = model,
-                              microphysics = micro_scheme,
-                              radar_band = radar_band,
-                              mixed_phase_type = MixedPhase,
-                              radar_location = str(radarloc),
-                              scattering_method = scattering_method,
+                              model = config.model,
+                              microphysics = config.microphysics_scheme,
+                              radar_band = config.radar_band,
+                              mixed_phase_type = config.mixed_phase_parametrization,
+                              radar_location = str(config.radarloc),
+                              scattering_method = config.scattering_method,
                               )
-    dataset_attributes.update({f'{key}_moment':value for key,value in hydrometeors_moments.items()})
+    dataset_attributes.update({f'{key}_moment':value for key,value in config.hydrometeors_moments.items()})
         
     ds=xr.Dataset(data_vars = dataset_variables,
                   coords = dataset_coordinates,
