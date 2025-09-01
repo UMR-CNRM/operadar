@@ -158,7 +158,7 @@ CHARACTER*2 :: espece, MOMENT
 CHARACTER*2 :: espece_rr ! rain
 character(len=1024) :: nomfileCoef, nomfileCoef_rr, nomfileCoefInt, Hydromet_const_file
 integer :: ios
-character(len=256) :: exec_dir
+character(len=256) :: exec_dir, repo
 
 ! Variables to be read in the table (Tmatrix and Rayleigh scattering)
 REAL ::ELEVrec,Tcrec,Fwrec
@@ -216,10 +216,11 @@ RHOLW=1000.
 !              Handle input arguments 
 !**************************************************
 call get_command_argument(1, exec_dir)
-call get_command_argument(2, typeh)
-call get_command_argument(3, bande)
-call get_command_argument(4, CCLOUD)
-call get_command_argument(5, MOMENT)
+call get_command_argument(2, repo)
+call get_command_argument(3, typeh)
+call get_command_argument(4, bande)
+call get_command_argument(5, CCLOUD)
+call get_command_argument(6, MOMENT)
 
 
 !**************************************************
@@ -283,8 +284,8 @@ close(333)
 
 
 !---- Input Files
-nomfileCoef  = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh
-nomfileCoef_rr = trim(exec_dir)//'/../tables/rr/TmatCoefDiff_'//bande//'rr'
+nomfileCoef  = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//bande//typeh
+nomfileCoef_rr = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//bande//'rr'
 
 WRITE(0,*) ' Reading ',trim(nomfileCoef)
 
@@ -389,7 +390,7 @@ ENDIF
 
 !=================================
 !Output file
-nomfileCoefInt = trim(exec_dir)//'/../tables/'//typeh//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
+nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
 PRINT *,' Creation of ',trim(nomfileCoefInt)
 
 OPEN (6,FILE=trim(nomfileCoefInt))
