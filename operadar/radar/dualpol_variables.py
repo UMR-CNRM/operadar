@@ -159,15 +159,15 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
         
     # Estimate for each grid point the scattering coefficients values based on the lookup tables
     # (return a dict containing 3D fields of scattering coefficients)
-    fields3D_from_table = perform_nD_interpolation(tableDict=tables_dict,
-                                                    hydrometeor=hydrometeor,
-                                                    colName=colName,
-                                                    elev=elev_temp,
-                                                    T=Tc_temp,
-                                                    P3=field_temp,
-                                                    content=content_temp,
-                                                    dpol2add=dpol2add,
-                                                    )
+    fields3D_from_table = hypercube_interpolation(tableDict=tables_dict,
+                                                  hydrometeor=hydrometeor,
+                                                  colName=colName,
+                                                  elev=elev_temp,
+                                                  T=Tc_temp,
+                                                  P3=field_temp,
+                                                  content=content_temp,
+                                                  dpol2add=dpol2add,
+                                                 )
     # Compute dualpol variables from scattering coefficients
     dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM'][hydrometeor],
                                          interpolated_from_table=fields3D_from_table,
@@ -273,15 +273,15 @@ def variables_to_interpolate(which_dpol:list,scattering_method:str='Tmatrix'):
 
 
 
-def perform_nD_interpolation(tableDict:dict,
-                             hydrometeor:str,
-                             colName:str,
-                             elev:np.ndarray,
-                             T:np.ndarray,
-                             P3:np.ndarray,
-                             content:np.ndarray,
-                             dpol2add:list[str],
-                             ) -> dict :
+def hypercube_interpolation(tableDict:dict,
+                            hydrometeor:str,
+                            colName:str,
+                            elev:np.ndarray,
+                            T:np.ndarray,
+                            P3:np.ndarray,
+                            content:np.ndarray,
+                            dpol2add:list[str],
+                            ) -> dict :
     """Construct 3D fields of scattering coefficients, based on the tables. The interpolation is
     currently performed with 4 fields (elevation, temperature, P3 (=Fw or Nc), and content).
 
@@ -310,48 +310,72 @@ def perform_nD_interpolation(tableDict:dict,
         P[P3>0]=np.log10(P3[P3>0])
         P[P3<=0]=P_min
 
+    # Grid geometry
     T_min, T_max, step_T = tableDict['Tcmin'][hydrometeor], tableDict['Tcmax'][hydrometeor],tableDict['Tcstep'][hydrometeor]
     elev_min, elev_max, step_elev = tableDict['ELEVmin'][hydrometeor], tableDict['ELEVmax'][hydrometeor],tableDict['ELEVstep'][hydrometeor]
     M_min, M_max, step_M = tableDict['expMmin'][hydrometeor], tableDict['expMmax'][hydrometeor],tableDict['expMstep'][hydrometeor]
     
-    # Nombre de pas (important pour le calcul de l'index)
+    # Number of values for each parameter to compute the indices
     n_T = int((T_max - T_min) / step_T) + 1
     n_elev = int((elev_max - elev_min) / step_elev) + 1
     n_P = int((P_max - P_min) / step_P) + 1
     n_M = int((M_max - M_min) / step_M) + 1
 
-    # Bornes inférieures
+    # For each point, get the coordinates of the local hypercube (inf and sup for each axis)
     T_inf, T_sup = get_bounds(T, T_min, T_max, step_T)
     elev_inf, elev_sup = get_bounds(elev, elev_min, elev_max, step_elev)
     P_inf, P_sup = get_bounds(P, P_min, P_max, step_P)
     M_inf, M_sup = get_bounds(M, M_min, M_max, step_M)
     
-    # Index des points inf et sup
-    idx_inf = get_linear_index(T_inf, elev_inf, P_inf, M_inf,
+    # Compute fractional weights along each axis (0 or 1 within the inf/sup bound)
+    # safe divide: if sup==inf (point exactly on node) denominator is zero -> use epsilon to avoid divby0.
+    # For those cases, numerator is also zero, so weight becomes 0 (it takes the inf node).
+    eps = 1e-12
+    wT = (T - T_inf) / np.maximum(T_sup - T_inf, eps)
+    wE = (elev - elev_inf) / np.maximum(elev_sup - elev_inf, eps)
+    wP = (P - P_inf) / np.maximum(P_sup - P_inf, eps)
+    wM = (M - M_inf) / np.maximum(M_sup - M_inf, eps)
+    
+    # Generate the 16 (2^4) corner combinations in vectorized form 
+    corners = np.array(np.meshgrid([0,1],[0,1],[0,1],[0,1])).T.reshape(-1,4) # shape (16,4) with all 0/1 choices for (T,E,P,M)
+    cT, cE, cP, cM = corners.T  # shape (16,)
+
+    # For each corner (axis 0) and for each point (axis 1), choose the coordinate (inf or sup)
+    # results are arrays of shape (16, N)
+    vals_T = np.where(cT[:,None] == 0, T_inf[None,:], T_sup[None,:])
+    vals_E = np.where(cE[:,None] == 0, elev_inf[None,:], elev_sup[None,:])
+    vals_P = np.where(cP[:,None] == 0, P_inf[None,:], P_sup[None,:])
+    vals_M = np.where(cM[:,None] == 0, M_inf[None,:], M_sup[None,:])
+
+    # Compute the weight of each corner as product of 1D weights
+    # For each corner choose w or (1-w) depending on whether we took sup (1) or inf (0)
+    weights_T = np.where(cT[:,None] == 0, 1.0 - wT[None,:], wT[None,:])  # (16,N)
+    weights_E = np.where(cE[:,None] == 0, 1.0 - wE[None,:], wE[None,:])
+    weights_P = np.where(cP[:,None] == 0, 1.0 - wP[None,:], wP[None,:])
+    weights_M = np.where(cM[:,None] == 0, 1.0 - wM[None,:], wM[None,:])
+    
+    # Overall corner weights shape (16,N)
+    weights = weights_T * weights_E * weights_P * weights_M
+
+    # Convert corner coordinates to linear indices into the lookup table
+    idx_all = get_linear_index(vals_T, vals_E, vals_P, vals_M,
                                T_min, elev_min, P_min, M_min,
                                step_T, step_elev, step_P, step_M,
-                               n_T, n_elev, n_P, n_M)
-
-    idx_sup = get_linear_index(T_sup, elev_sup, P_sup, M_sup,
-                               T_min, elev_min, P_min, M_min,
-                               step_T, step_elev, step_P, step_M,
-                               n_T, n_elev, n_P, n_M)
-    
-    # Coefficient alpha sur la diagonale 4D
-    dx = np.stack([T - T_inf, elev - elev_inf, P - P_inf, M - M_inf], axis=0)
-    d  = np.stack([step_T, step_elev, step_P, step_M], axis=0)
-
-    # alpha = projection sur la diagonale
-    norm2 = np.sum(d**2)
-    broadcast_shape = M.shape
-    alpha = np.sum(dx * d.reshape(-1,*([1]*len(broadcast_shape))), axis=0) / norm2
-    
+                               n_T, n_elev, n_P, n_M)  # shape (16,N)
+        
+    # Fetch corner values from the table (vectorized) and sum weighted contributions
     scatCoefsDict = {}
     scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add)
     for column in scatCoef_columns:
-        val_inf = tableDict[column][hydrometeor][idx_inf]
-        val_sup = tableDict[column][hydrometeor][idx_sup]
-        scatCoefsDict[column] = (1 - alpha) * val_inf + alpha * val_sup
+        vals_at_corners = tableDict[column][hydrometeor][idx_all]  # (16,N)
+        for ind in idx_all :
+            print('index',ind,'---> borne T=',tableDict['Tc'][hydrometeor][ind],
+                        ' /  borne M=',tableDict['M'][hydrometeor][ind],
+                        ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][ind],
+                        ' /  borne P3=',tableDict[colName][hydrometeor][ind]) 
+        #print(tableDict['Tc'][hydrometeor][idx_all],tableDict['M'][hydrometeor][idx_all],tableDict['ELEV'][hydrometeor][idx_all])
+        # weighted sum across the 16 corners -> result shape (N,)
+        scatCoefsDict[column] = np.sum(weights * vals_at_corners, axis=0)
 
     return scatCoefsDict 
 
@@ -376,10 +400,11 @@ def get_linear_index(T:np.ndarray, E:np.ndarray, P:np.ndarray, M:np.ndarray,
     Returns:
         np.ndarray: Array of the indices to use in the lookup table.
     """
-    iT = np.floor((T - T_min) / step_T).astype(int)
-    iE = np.floor((E - E_min) / step_E).astype(int)
-    iP = np.floor((P - P_min) / step_P).astype(int)
-    iM = np.floor((M - M_min) / step_M).astype(int)
+    epsilon = 1e-10
+    iT = np.floor((T - T_min) / step_T + epsilon).astype(int)
+    iE = np.floor((E - E_min) / step_E + epsilon).astype(int)
+    iP = np.floor((P - P_min) / step_P + epsilon).astype(int)
+    iM = np.floor((M - M_min) / step_M + epsilon).astype(int)
 
     return (
         iT * n_E * n_P * n_M +
@@ -414,4 +439,5 @@ def get_bounds(val:np.ndarray,
     # Ensure the possible values stay in the range of allowed values for the given field
     val_inf = np.clip(val_inf, val_min, val_max)
     val_sup = np.clip(val_sup, val_min, val_max)
+    
     return val_inf, val_sup

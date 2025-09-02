@@ -95,11 +95,11 @@ def cloud_water_species(hydrometeor:str,
 def read_and_extract_tables_content(band:str,
                                     hydrometeors:list,
                                     moments:dict,
-                                    cloud_water_over:str,
                                     scheme:str,
                                     dpol2add:list,
                                     path_table:str,
-                                    verbose:bool,
+                                    verbose:bool=True,
+                                    cloud_water_over:str='land',
                                     ) -> dict :
     """Extract min/step/max parameters and necessary columns in the table for later
     computation of the dual-pol variables.
