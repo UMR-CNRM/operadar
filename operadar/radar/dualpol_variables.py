@@ -458,7 +458,7 @@ def compute_radar_constant(radar_wavelength:float,temperature):
     relaxation_freq = (20.27 + 146.5 * theta + 314.0 * theta**2) * 1e9 # eq.2a Liebe
 
     eps_water = high_freq_cnst + (static_permittivity - high_freq_cnst) / (1.0 - 1j*frequency / relaxation_freq) # eq.2 Liebe
-    dielectric_factor = np.sqrt(eps_water)
+    dielectric_factor = np.sqrt(eps_water).real
     
     k2 = ((dielectric_factor**2 - 1.0) / (dielectric_factor**2 + 2.0))**2 
     radar_cnst = (1e12 * radar_wavelength**4) / (k2 * (np.pi**5))
