@@ -14,7 +14,7 @@
 input_filePath  = "home/my_input_folder/" 
 
 # ----- OUPUT file(s) directory
-outPath = f"/home/my_output_folder/"
+output_filePath = f"/home/my_output_folder/"
 
 # ----- Lookup tables directory path
 path_tables = "./tables_generator/tables/default/"
@@ -26,7 +26,7 @@ real_case=False
 # ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
 #       Note : only the four first characters are used to select the right table
-micro_scheme = 'LIMA_exp_GNZR'
+microphysics_scheme = 'LIMA_exp_GNZR'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 #       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
@@ -40,7 +40,7 @@ subDomain = None
 
 # ----- Mixed phase simulation : can be 'T_pos' or 'Fw_pos' or 'Fw_posg'.
 #                                Please, have a look at the README beforehand.
-MixedPhase = 'Fw_posg'
+mixed_phase_parametrization = 'Fw_posg'
 
 # ----- Additional output : if True, compute the dual-pol variables for each hydrometeor class
 #                           and save the resultant netcdf (1 file/hydrometeor class)

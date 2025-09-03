@@ -58,6 +58,4 @@ if [ -z "$FILENAME" ] || [ -z "$CONFIG" ]; then
 fi
 
 
-cp ./configFiles/$CONFIG operadar/operadar_conf.py
-
-python3 -u operadar/forward_operator.py $FILENAME $VERBOSE $APPEND
+python3 -u -m operadar $FILENAME $CONFIG $VERBOSE $APPEND

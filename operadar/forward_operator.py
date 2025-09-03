@@ -7,13 +7,13 @@ Created on Thu Apr 26 13:17:47 2018
 
 # External modules
 import os
-import argparse
 import time as tm
 from sys import exit
 from pathlib import Path
+from dataclasses import dataclass
+from typing import List, Union, Optional, Dict
 
-# 0perad modules
-import operadar.operadar_conf as cf
+# 0PERADAR modules
 from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
@@ -23,32 +23,68 @@ from operadar.radar.dualpol_variables import compute_dualpol_variables
 from operadar.read.lookup_tables import read_and_extract_tables_content
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.save.save_dpolvar import create_tree_structure_outFiles, save_netcdf
-from operadar.utils.formats_data import format_temporal_variable,define_output_path
+from operadar.utils.formats_data import format_temporal_variable, define_output_path
 
 
 
-def operadar(filename:str,
-             read_tables:bool=True,
-             in_dir_path:str=cf.input_filePath,
-             out_dir_path:str=cf.outPath,
-             tables_path:str=cf.path_tables,
-             modelname:str=cf.model,
-             real_case:bool=cf.real_case,
-             microphysics_scheme:str=cf.micro_scheme,
-             hydrometeorMoments:dict[str,int]=cf.hydrometeors_moments,
-             cloud_water_over:str=cf.cloud_water_over,
-             subDomain:list[int]|list[float]|None=cf.subDomain,
-             mixed_phase_parametrization:str=cf.MixedPhase,
-             dpol2add:list=cf.dpol2add,
-             scattering_method:str=cf.scattering_method,
-             radar_band:str=cf.radar_band,
-             distmax_rad:float=cf.distmax_rad,
-             radarloc:str|list|None=cf.radarloc,
-             cnst_angle:int=cf.cnst_angle,
+@dataclass
+class Config:
+    input_filePath: str
+    output_filePath: str
+    path_tables: str
+    model: str
+    real_case: bool
+    microphysics_scheme: str
+    hydrometeors_moments: Dict[str, int]
+    cloud_water_over: str
+    subDomain: Optional[List[Union[float,int]]]
+    mixed_phase_parametrization: str
+    save_netcdf_single_hydrometeor: bool
+    dpol2add: List[str]
+    scattering_method: str
+    radar_band: str
+    distmax_rad: float
+    radarloc: Optional[str]
+    cnst_angle: float
+
+
+
+def load_config_instance(config_file) -> Config:
+    print('user file config',config_file)
+    return Config(**{key: val for key,val in vars(config_file).items() if not key.startswith("__") and not callable(val)})
+
+
+
+def update_config_with_overrides(config, **overrides):
+    for key, value in overrides.items():
+        if value is not None and hasattr(config, key):
+            setattr(config, key, value)
+
+
+
+def operadar(filename: str,
+             configuration:str,
+             read_tables: bool=True,
+             in_dir_path=None,
+             out_dir_path=None,
+             tables_path=None,
+             modelname=None,
+             real_case=None,
+             microphysics_scheme=None,
+             hydrometeorMoments=None,
+             cloud_water_over=None,
+             subDomain=None,
+             mixed_phase_parametrization=None,
+             save_netcdf_single_hydrometeor=None,
+             dpol2add=None,
+             scattering_method=None,
+             radar_band=None,
+             distmax_rad=None,
+             radarloc=None,
+             cnst_angle=None,
              tables_content:dict={},
              get_more_details=False,
              append_in_file=False,
-             save_netcdf_single_hydrometeor:bool=cf.save_netcdf_single_hydrometeor,
              ) -> tuple[bool,dict]:
     """Radar forward operator main function. 
 
@@ -86,64 +122,75 @@ def operadar(filename:str,
         tables_content (dict) : to keep in memory the tables parameters and values throughout multiple iterations over the same radar band
         
     """
-    
     begin_program_timer = tm.time()
+    
+    #Load the configuration based on the config file or the given arguments
+    conf = load_config_instance(config_file=configuration)
+    update_config_with_overrides(conf,
+                                 input_filePath=in_dir_path, output_filePath=out_dir_path, path_tables=tables_path,
+                                 model=modelname, real_case=real_case, microphysics_scheme=microphysics_scheme,
+                                 hydrometeors_moments=hydrometeorMoments, cloud_water_over=cloud_water_over,
+                                 subDomain=subDomain, mixed_phase_parametrization=mixed_phase_parametrization,
+                                 save_netcdf_single_hydrometeor=save_netcdf_single_hydrometeor, 
+                                 dpol2add=dpol2add, scattering_method=scattering_method, radar_band=radar_band,
+                                 distmax_rad=distmax_rad, radarloc=radarloc, cnst_angle=cnst_angle)
+    
     
     if append_in_file and subDomain != None :
         print('Cannot reinject a subdomain into the original input file. Please, set subDomaine = None to continue.')
         exit()
     
     # Create or check tree structure of the output directory path
-    create_tree_structure_outFiles(output_dir=Path(out_dir_path))
+    create_tree_structure_outFiles(output_dir=Path(conf.output_filePath))
     # Format temporal variable and output file name
-    input_file_path = Path(os.path.join(in_dir_path,filename))
+    input_file_path = Path(os.path.join(conf.input_filePath,filename))
     temporal_variable = format_temporal_variable(filePath=input_file_path,
-                                                 model_type=modelname,
-						 real_case=real_case,
+                                                 model_type=conf.model,
+						                         real_case=conf.real_case,
                                                  )
-    outFilePath = define_output_path(out_dir_path=out_dir_path,
-                                     model=modelname,
-                                     scheme=microphysics_scheme,
-                                     radar_band=radar_band,
+    outFilePath = define_output_path(out_dir_path=conf.output_filePath,
+                                     model=conf.model,
+                                     scheme=conf.microphysics_scheme,
+                                     radar_band=conf.radar_band,
                                      temporal_variable=temporal_variable,
                                      ) 
     if not outFilePath.with_suffix('.nc').exists() or append_in_file :
         
         # Read lookup tables
         if read_tables :
-            hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
+            hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=conf.hydrometeors_moments,
                                                                   datatype='tables',
                                                                   )
-            tables_content = read_and_extract_tables_content(band=radar_band,
-                                                             scheme=microphysics_scheme,
-                                                             moments=hydrometeorMoments,
-                                                             path_table=tables_path,
-                                                             dpol2add=dpol2add,
+            tables_content = read_and_extract_tables_content(band=conf.radar_band,
+                                                             scheme=conf.microphysics_scheme,
+                                                             moments=conf.hydrometeors_moments,
+                                                             path_table=conf.path_tables,
+                                                             dpol2add=conf.dpol2add,
                                                              hydrometeors=hydromet_list,
-                                                             cloud_water_over=cloud_water_over,
+                                                             cloud_water_over=conf.cloud_water_over,
                                                              verbose=get_more_details,
                                                             )
         # Read model variables
         [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
-                                                           modelname=modelname,
-                                                           micro_scheme=microphysics_scheme,
-                                                           real_case=real_case,
-                                                           domain=subDomain,
-                                                           hydrometeorMoments=hydrometeorMoments,
+                                                           modelname=conf.model,
+                                                           micro_scheme=conf.microphysics_scheme,
+                                                           real_case=conf.real_case,
+                                                           domain=conf.subDomain,
+                                                           hydrometeorMoments=conf.hydrometeors_moments,
                                                            verbose=get_more_details,
                                                            )
         # Compute radar geometry
         mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
                                                            elev_max=tables_content['ELEVmax']["rr"],
-                                                           model=modelname,
-                                                           cnst_angle=cnst_angle,
-                                                           distmax_rad=distmax_rad,
-                                                           radarloc=radarloc,
+                                                           model=conf.model,
+                                                           cnst_angle=conf.cnst_angle,
+                                                           distmax_rad=conf.distmax_rad,
+                                                           radarloc=conf.radarloc,
                                                            )
         # Mask precipitations
         mask_precip = mask_precipitations(contents=M,
                                           expMmin=tables_content['expMmin']["rr"],
-                                          hydrometeors_moments=hydrometeorMoments,
+                                          hydrometeors_moments=conf.hydrometeors_moments,
                                           )
         # Combine masks
         partial_mask = (mask_precip & mask_dist_max)
@@ -151,9 +198,9 @@ def operadar(filename:str,
         # Compute mixed phase parametrization
         [M, Nc,Fw] = compute_mixed_phase(contents=M,
                                          concentrations=Nc,
-                                         hydrometeorMoments=hydrometeorMoments,
+                                         hydrometeorMoments=conf.hydrometeors_moments,
                                          expMmin=tables_content['expMmin']["rr"],
-                                         parametrization=mixed_phase_parametrization,
+                                         parametrization=conf.mixed_phase_parametrization,
                                          ) 
         # Compute dual-pol radar variables
         dpolDict = compute_dualpol_variables(temperature=Tc,
@@ -162,15 +209,13 @@ def operadar(filename:str,
                                              Fw=Fw,
                                              contents=M,
                                              concentrations=Nc,
-                                             dpol2add=dpol2add,
                                              tables_dict=tables_content,
-                                             hydrometeorMoments=hydrometeorMoments,
                                              X=X, Y=Y, Z=Alt,
                                              lat=lat, lon=lon,
                                              date_time=temporal_variable,
                                              output_file_path=outFilePath,
                                              append_in_fa=append_in_file,
-                                             save_netcdf_single_hydrometeor=save_netcdf_single_hydrometeor,
+                                             config=conf,
                                              )
         
         # Saving file or reinjecting fields into the input file
@@ -178,21 +223,12 @@ def operadar(filename:str,
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations
             append_in_input_file(complete_input_path=input_file_path,
                                  dpolVar=dpolDict,
-                                 var2add=dpol2add,
+                                 var2add=conf.dpol2add,
                                  )
         else :
-            save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon,
-                        datetime=temporal_variable,
-                        dpolDict=dpolDict,
-                        contentsDict=M, concentrationsDict=Nc,
-                        temperature=Tc, outfile=outFilePath,
-                        dpol2add=dpol2add, model=modelname,
-                        micro_scheme=microphysics_scheme,
-                        radar_band=radar_band, radarloc=radarloc,
-                        MixedPhase=mixed_phase_parametrization,
-                        scattering_method=scattering_method,
-                        hydrometeors_moments=hydrometeorMoments,
-                        real_case=real_case,
+            save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon, datetime=temporal_variable,
+                        dpolDict=dpolDict, contentsDict=M, concentrationsDict=Nc,
+                        temperature=Tc, outfile=outFilePath, config=conf,
                         )
         # For multiple iterations over different time but with the same settings, save time by
         # not reading again lookup tables and lat/lon fields (if available)
@@ -204,19 +240,7 @@ def operadar(filename:str,
     
     else :
         read_tables = True
-        print("File exists at :",outFilePath+'.nc')
+        print("File exists at :",outFilePath.with_suffix('.nc'))
         print("-----------------------------------------------------------------------------")
         return read_tables, dict()
 
-
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="OPERADAR")
-    parser.add_argument("filename", type=str)
-    parser.add_argument("--append", action="store_true",default=False)
-    parser.add_argument("--verbose", action="store_true",default=False)
-    operad_args = parser.parse_args()
-    operadar(filename=operad_args.filename,
-             get_more_details=operad_args.verbose,
-             append_in_file=operad_args.append)
