@@ -7,7 +7,6 @@ import time as tm
 import numpy as np
 from pathlib import Path
 from pandas import Timestamp
-from pyrsistent import v
 
 from operadar.utils.formats_data import Fw_or_Nc
 from operadar.save.save_dpolvar import save_netcdf
