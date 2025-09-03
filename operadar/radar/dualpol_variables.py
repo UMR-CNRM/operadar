@@ -171,7 +171,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
     # Compute dualpol variables from scattering coefficients
     dpolDict_h = dpol_var_from_scatcoefs(wavelength=tables_dict['LAM'][hydrometeor],
                                          interpolated_from_table=fields3D_from_table,
-                                         dpol2add=dpol2add,
+                                         dpol2add=dpol2add,Tc=Tc_temp,
                                          )
     del fields3D_from_table
     del elev_temp, Tc_temp, content_temp, Fw_temp, concentration_temp
@@ -183,14 +183,18 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
 def dpol_var_from_scatcoefs(wavelength:float,
                             interpolated_from_table:dict,
                             dpol2add:list,
+                            Tc:np.ndarray,
                             ) -> dict[str,np.ndarray]:
     """Compute linear polarimetric variables."""
     wavelength=wavelength/1000
     temp_dict = {}
+    radar_constant=compute_radar_constant(radar_wavelength=wavelength,temperature=Tc)         
     if "Zh" in dpol2add or "Zdr" in dpol2add :
-        temp_dict["Zhhlin"]= ((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sighh']
+        #temp_dict["Zhhlin"]= ((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sighh']
+        temp_dict["Zhhlin"]= radar_constant*interpolated_from_table['sighh']
     if "Zdr" in dpol2add :
-        temp_dict["Zvvlin"]=((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sigvv']
+        #temp_dict["Zvvlin"]=((1e3*wavelength)**4./(math.pi**5.*0.93))*interpolated_from_table['sigvv']
+        temp_dict["Zvvlin"]= radar_constant*interpolated_from_table['sigvv']
     if "Kdp" in dpol2add :
         temp_dict["Kdp"] = interpolated_from_table['kdp']
     if "Rhohv" in dpol2add :
