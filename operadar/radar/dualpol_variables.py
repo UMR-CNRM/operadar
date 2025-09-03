@@ -7,6 +7,7 @@ import time as tm
 import numpy as np
 from pathlib import Path
 from pandas import Timestamp
+from pyrsistent import v
 
 from operadar.utils.formats_data import Fw_or_Nc
 from operadar.save.save_dpolvar import save_netcdf
@@ -435,3 +436,28 @@ def get_bounds(val:np.ndarray,
     val_sup = np.clip(val_sup, val_min, val_max)
     
     return val_inf, val_sup
+
+
+
+def compute_radar_constant(radar_wavelength:float,temperature):
+    """Water complex dielectric function (Liebe et al., 1991)
+    NOTE : electromagnetic fields in exp(-i*omega*t), i.e. Im(epsw)>=0
+
+    Args:
+        radar_wavelength (float): provided in mm
+        temperature (): in °C
+    """
+    frequency = 299792458/radar_wavelength*1e-3  # Hz
+    
+    theta = 1.0 - 300.0 / (273.15+temperature) # eq.1 Liebe
+    static_permittivity = 77.66 - 103.3 * theta # eq.1 Liebe
+    high_freq_cnst = 0.066 * static_permittivity # eq.2a Liebe
+    relaxation_freq = (20.27 + 146.5 * theta + 314.0 * theta**2) * 1e9 # eq.2a Liebe
+
+    eps_water = high_freq_cnst + (static_permittivity - high_freq_cnst) / (1.0 - 1j*frequency / relaxation_freq) # eq.2 Liebe
+    dielectric_factor = np.sqrt(eps_water)
+    
+    k2 = ((dielectric_factor**2 - 1.0) / (dielectric_factor**2 + 2.0))**2 
+    radar_cnst = (1e12 * radar_wavelength**4) / (k2 * (np.pi**5))
+    
+    return radar_cnst
