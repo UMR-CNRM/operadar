@@ -58,7 +58,6 @@ def compute_dualpol_variables(temperature:np.ndarray,
         dict[np.ndarray]: dictionary containing all the dual-polarimetrization fields.
     """
         
-    var2interpol = variables_to_interpolate(which_dpol=config.dpol2add)
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=config.hydrometeors_moments,
                                                          datatype='tables'
                                                          )
@@ -76,7 +75,6 @@ def compute_dualpol_variables(temperature:np.ndarray,
 
         dpolDict = compute_scatcoeffs_single_hydrometeor(hydrometeor=h,
                                                          dpol2add=config.dpol2add,
-                                                         variables_for_interpolation=var2interpol,
                                                          mask_tot=mask_tot,
                                                          Tc=temperature,
                                                          el=elev, Fw=Fw,
@@ -132,7 +130,6 @@ def compute_dualpol_variables(temperature:np.ndarray,
 
 def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                           dpol2add:list,
-                                          variables_for_interpolation:list,
                                           Tc:np.ndarray,
                                           el:np.ndarray,
                                           Fw:np.ndarray,
@@ -186,7 +183,7 @@ def dpol_var_from_scatcoefs(wavelength:float,
                             Tc:np.ndarray,
                             ) -> dict[str,np.ndarray]:
     """Compute linear polarimetric variables."""
-    wavelength=wavelength/1000
+    wavelength=wavelength*1e-3
     temp_dict = {}
     radar_constant=compute_radar_constant(radar_wavelength=wavelength,temperature=Tc)         
     if "Zh" in dpol2add or "Zdr" in dpol2add :
@@ -285,6 +282,7 @@ def hypercube_interpolation(tableDict:dict,
                             P3:np.ndarray,
                             content:np.ndarray,
                             dpol2add:list[str],
+                            test_mode:bool=False,
                             ) -> dict :
     """Construct 3D fields of scattering coefficients, based on the tables. The interpolation is
     currently performed with 4 fields (elevation, temperature, P3 (=Fw or Nc), and content).
@@ -303,8 +301,8 @@ def hypercube_interpolation(tableDict:dict,
         dict: dictionnary containing fields of interpolated scattering coefficients over the grid
     """
     
-    M = np.copy(content)*0.0-100
-    M[content>0] = np.log10(content[content>0])
+    expntM = np.copy(content)*0.0-100
+    expntM[content>0] = np.log10(content[content>0])
     
     P = np.copy(P3)
     if colName == 'Fw' :
@@ -317,19 +315,19 @@ def hypercube_interpolation(tableDict:dict,
     # Grid geometry
     T_min, T_max, step_T = tableDict['Tcmin'][hydrometeor], tableDict['Tcmax'][hydrometeor],tableDict['Tcstep'][hydrometeor]
     elev_min, elev_max, step_elev = tableDict['ELEVmin'][hydrometeor], tableDict['ELEVmax'][hydrometeor],tableDict['ELEVstep'][hydrometeor]
-    M_min, M_max, step_M = tableDict['expMmin'][hydrometeor], tableDict['expMmax'][hydrometeor],tableDict['expMstep'][hydrometeor]
+    expntM_min, expntM_max, step_expntM = tableDict['expMmin'][hydrometeor], tableDict['expMmax'][hydrometeor],tableDict['expMstep'][hydrometeor]
     
     # Number of values for each parameter to compute the indices
     n_T = int((T_max - T_min) / step_T) + 1
     n_elev = int((elev_max - elev_min) / step_elev) + 1
     n_P = int((P_max - P_min) / step_P) + 1
-    n_M = int((M_max - M_min) / step_M) + 1
+    n_expntM = int((expntM_max - expntM_min) / step_expntM) + 1
 
     # For each point, get the coordinates of the local hypercube (inf and sup for each axis)
     T_inf, T_sup = get_bounds(T, T_min, T_max, step_T)
     elev_inf, elev_sup = get_bounds(elev, elev_min, elev_max, step_elev)
     P_inf, P_sup = get_bounds(P, P_min, P_max, step_P)
-    M_inf, M_sup = get_bounds(M, M_min, M_max, step_M)
+    expntM_inf, expntM_sup = get_bounds(expntM, expntM_min, expntM_max, step_expntM)
     
     # Compute fractional weights along each axis (0 or 1 within the inf/sup bound)
     # safe divide: if sup==inf (point exactly on node) denominator is zero -> use epsilon to avoid divby0.
@@ -338,7 +336,7 @@ def hypercube_interpolation(tableDict:dict,
     wT = (T - T_inf) / np.maximum(T_sup - T_inf, eps)
     wE = (elev - elev_inf) / np.maximum(elev_sup - elev_inf, eps)
     wP = (P - P_inf) / np.maximum(P_sup - P_inf, eps)
-    wM = (M - M_inf) / np.maximum(M_sup - M_inf, eps)
+    wM = (expntM - expntM_inf) / np.maximum(expntM_sup - expntM_inf, eps)
     
     # Generate the 16 (2^4) corner combinations in vectorized form 
     corners = np.array(np.meshgrid([0,1],[0,1],[0,1],[0,1])).T.reshape(-1,4) # shape (16,4) with all 0/1 choices for (T,E,P,M)
@@ -349,7 +347,7 @@ def hypercube_interpolation(tableDict:dict,
     vals_T = np.where(cT[:,None] == 0, T_inf[None,:], T_sup[None,:])
     vals_E = np.where(cE[:,None] == 0, elev_inf[None,:], elev_sup[None,:])
     vals_P = np.where(cP[:,None] == 0, P_inf[None,:], P_sup[None,:])
-    vals_M = np.where(cM[:,None] == 0, M_inf[None,:], M_sup[None,:])
+    vals_expntM = np.where(cM[:,None] == 0, expntM_inf[None,:], expntM_sup[None,:])
 
     # Compute the weight of each corner as product of 1D weights
     # For each corner choose w or (1-w) depending on whether we took sup (1) or inf (0)
@@ -362,19 +360,24 @@ def hypercube_interpolation(tableDict:dict,
     weights = weights_T * weights_E * weights_P * weights_M
 
     # Convert corner coordinates to linear indices into the lookup table
-    idx_all = get_linear_index(vals_T, vals_E, vals_P, vals_M,
-                               T_min, elev_min, P_min, M_min,
-                               step_T, step_elev, step_P, step_M,
-                               n_T, n_elev, n_P, n_M)  # shape (16,N)
+    idx_all = get_linear_index(vals_T, vals_E, vals_P, vals_expntM,
+                               T_min, elev_min, P_min, expntM_min,
+                               step_T, step_elev, step_P, step_expntM,
+                               n_T, n_elev, n_P, n_expntM)  # shape (16,N)
         
-    # Fetch corner values from the table (vectorized) and sum weighted contributions
+    # Fetch corner values from the table (vectorized) and sum weighted contributions across the 16 corners
     scatCoefsDict = {}
     scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add)
     for column in scatCoef_columns:
         vals_at_corners = tableDict[column][hydrometeor][idx_all]  # (16,N)
-        # weighted sum across the 16 corners -> result shape (N,)
-        scatCoefsDict[column] = np.sum(weights * vals_at_corners, axis=0)
-
+        scatCoefsDict[column] = np.sum(weights * vals_at_corners, axis=0) # result in shape (N,)
+        if test_mode : # only used with unitest on interpolation
+            for idx in idx_all :
+                print('index',idx,'---> borne T=',tableDict['Tc'][hydrometeor][idx],
+                            ' /  borne M=',tableDict['M'][hydrometeor][idx],
+                            ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][idx],
+                            ' /  borne P3=',tableDict[colName][hydrometeor][idx],
+                            ' /  sighh =',tableDict['sighh'][hydrometeor][idx])
     return scatCoefsDict 
 
 
@@ -458,7 +461,7 @@ def compute_radar_constant(radar_wavelength:float,temperature):
     relaxation_freq = (20.27 + 146.5 * theta + 314.0 * theta**2) * 1e9 # eq.2a Liebe
 
     eps_water = high_freq_cnst + (static_permittivity - high_freq_cnst) / (1.0 - 1j*frequency / relaxation_freq) # eq.2 Liebe
-    dielectric_factor = np.sqrt(eps_water)
+    dielectric_factor = np.sqrt(eps_water).real
     
     k2 = ((dielectric_factor**2 - 1.0) / (dielectric_factor**2 + 2.0))**2 
     radar_cnst = (1e12 * radar_wavelength**4) / (k2 * (np.pi**5))
