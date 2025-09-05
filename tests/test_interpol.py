@@ -7,10 +7,10 @@ import sys
 
 
 band='C'
-hydrometeor='ss'
+hydrometeor='cc'
 micro='ICE3'
 moment=1
-dpol2add=['Kdp']
+dpol2add=['Zh']
 path_table ='/home/davidcl/Programmation/operadar/tables_generator/tables/default/'
 tableDict=read_and_extract_tables_content(band=band,
                                           hydrometeors=[hydrometeor],
@@ -18,6 +18,7 @@ tableDict=read_and_extract_tables_content(band=band,
                                           scheme=micro,
                                           dpol2add=dpol2add,
                                           path_table=path_table,
+                                          test_interpolation=True,
                                           )
 
 colName='Fw'
@@ -42,7 +43,7 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
                                                       P3step = tableDict[f'{colName}step'][hydrometeor],
                                                       P3name = colName,
                                                       ncol_interpolation = 4,
-                                                      shutdown_warnings = True,
+                                                      shutdown_warnings = False,
                                                       )
     # Store scat coef values for each min/max born in Matcoef
     MatCoef = {}
@@ -55,7 +56,8 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
             print('index',kTmat[ind],'---> borne T=',tableDict['Tc'][hydrometeor][kTmat[ind]],
                     ' /  borne M=',tableDict['M'][hydrometeor][kTmat[ind]],
                     ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][kTmat[ind]],
-                    ' /  borne P3=',tableDict[colName][hydrometeor][kTmat[ind]]) 
+                    ' /  borne P3=',tableDict[colName][hydrometeor][kTmat[ind]],
+                    ' /  sighh =',tableDict['sighh'][hydrometeor][kTmat[ind]]) 
     # Interpol scat coef values
     scatCoefsDict = INTERPOL(ELEVred, Tcred, P3red, Mred, MatCoef,scatCoef_columns,idx_key_pair)   
 
@@ -320,12 +322,12 @@ def  INTERPOL(ELEVred:np.ndarray, Tcred:np.ndarray, Fwred:np.ndarray, Mred:np.nd
 
 
 # Fake data                       
-elev=np.array([90])
-T=np.array([-4.58])
-P3=np.zeros((1,))
-content=np.array([2.547e-1])
+elev=np.array([0])
+T=np.array([-10.5])
+P3=np.array([0.])
+content=np.array([0.1*1e-3])
 print('======================================')
-print('Point(s) to interpolate (T,M,ELEV,P3):',T,content,elev,P3,)
+print(f'Point(s) to interpolate for {hydrometeor} (T,M,ELEV,P3):',T,content,elev,P3,)
 print('======================================','\n')
 
 print('--------------- KTMAT + INTERPOL ---------------')
@@ -333,5 +335,5 @@ scatCoefsDict2=perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,
 print('Final value (old way):',scatCoefsDict2,'\n')
 
 print('--------------- NEW HYPERCUBE INTERPOL ---------------')
-scatCoefsDict=hypercube_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpol2add)
+scatCoefsDict=hypercube_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpol2add,test_mode=True)
 print('Final value (hypercube):',scatCoefsDict,'\n')
