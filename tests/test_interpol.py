@@ -18,6 +18,7 @@ tableDict=read_and_extract_tables_content(band=band,
                                           scheme=micro,
                                           dpol2add=dpol2add,
                                           path_table=path_table,
+                                          test_interpolation=True,
                                           )
 
 colName='Fw'
@@ -55,7 +56,8 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
             print('index',kTmat[ind],'---> borne T=',tableDict['Tc'][hydrometeor][kTmat[ind]],
                     ' /  borne M=',tableDict['M'][hydrometeor][kTmat[ind]],
                     ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][kTmat[ind]],
-                    ' /  borne P3=',tableDict[colName][hydrometeor][kTmat[ind]]) 
+                    ' /  borne P3=',tableDict[colName][hydrometeor][kTmat[ind]],
+                    ' /  sighh =',tableDict['sighh'][hydrometeor][kTmat[ind]]) 
     # Interpol scat coef values
     scatCoefsDict = INTERPOL(ELEVred, Tcred, P3red, Mred, MatCoef,scatCoef_columns,idx_key_pair)   
 
@@ -333,5 +335,5 @@ scatCoefsDict2=perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,
 print('Final value (old way):',scatCoefsDict2,'\n')
 
 print('--------------- NEW HYPERCUBE INTERPOL ---------------')
-scatCoefsDict=hypercube_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpol2add)
+scatCoefsDict=hypercube_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpol2add,test_mode=True)
 print('Final value (hypercube):',scatCoefsDict,'\n')

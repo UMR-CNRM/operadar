@@ -100,6 +100,7 @@ def read_and_extract_tables_content(band:str,
                                     path_table:str,
                                     verbose:bool=True,
                                     cloud_water_over:str='land',
+                                    test_interpolation:bool=False,
                                     ) -> dict :
     """Extract min/step/max parameters and necessary columns in the table for later
     computation of the dual-pol variables.
@@ -121,6 +122,7 @@ def read_and_extract_tables_content(band:str,
     deb_timer = tm.time()
     micro_for_table = scheme[0:4]
     table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
+    if test_interpolation: columns_to_retrieve+=['Tc', 'ELEV', 'M', 'Fw']
     
     for h in hydrometeors:
         if h == 'cc':
