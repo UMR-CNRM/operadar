@@ -7,10 +7,10 @@ import sys
 
 
 band='C'
-hydrometeor='ss'
+hydrometeor='cc'
 micro='ICE3'
 moment=1
-dpol2add=['Kdp']
+dpol2add=['Zh']
 path_table ='/home/davidcl/Programmation/operadar/tables_generator/tables/default/'
 tableDict=read_and_extract_tables_content(band=band,
                                           hydrometeors=[hydrometeor],
@@ -42,7 +42,7 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
                                                       P3step = tableDict[f'{colName}step'][hydrometeor],
                                                       P3name = colName,
                                                       ncol_interpolation = 4,
-                                                      shutdown_warnings = True,
+                                                      shutdown_warnings = False,
                                                       )
     # Store scat coef values for each min/max born in Matcoef
     MatCoef = {}
@@ -320,12 +320,12 @@ def  INTERPOL(ELEVred:np.ndarray, Tcred:np.ndarray, Fwred:np.ndarray, Mred:np.nd
 
 
 # Fake data                       
-elev=np.array([90])
-T=np.array([-4.58])
-P3=np.zeros((1,))
-content=np.array([2.547e-1])
+elev=np.array([0])
+T=np.array([-10.5])
+P3=np.array([0.])
+content=np.array([0.1*1e-3])
 print('======================================')
-print('Point(s) to interpolate (T,M,ELEV,P3):',T,content,elev,P3,)
+print(f'Point(s) to interpolate for {hydrometeor} (T,M,ELEV,P3):',T,content,elev,P3,)
 print('======================================','\n')
 
 print('--------------- KTMAT + INTERPOL ---------------')
