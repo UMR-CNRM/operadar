@@ -14,6 +14,7 @@ def sensitivity_test(hydrometeor:str,
                      which_dpolVar:list,
                      method:str,
                      microphysics:str,
+                     moment:int,
                      band:str,
                      folder_tables:str,
                      folder_figures:str,
@@ -28,7 +29,7 @@ def sensitivity_test(hydrometeor:str,
                             layout='constrained',
                             )
     # Generic table name
-    tableName, delim = get_table_name(axeX,band,hydrometeor,microphysics)
+    tableName, delim = get_table_name(axeX,band,hydrometeor,microphysics,moment)
     
     # SCENARIO 1 : only one value given per argument
     if asRow == None and asLegend == None :

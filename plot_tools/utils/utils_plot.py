@@ -23,7 +23,8 @@ pltunit={'D':'mm',
 dmax_dict={'ii':5, # in mm
            'ss':10,
            'gg':50,
-           'cc':2,
+           'cl':2,
+           'cs':2,
            'rr':10,
            'wg':50,
            'hh':100,
@@ -32,7 +33,8 @@ dmax_dict={'ii':5, # in mm
 T_dict = {'ii':-30,
           'ss':-10,
           'gg':0,
-          'cc':5,
+          'cl':5,
+          'cs':5,
           'rr':10,
           'wg':10,
           'hh':1,
@@ -41,7 +43,8 @@ T_dict = {'ii':-30,
 nameHydrometeors = {'ii':'Pristine ice',
                     'ss':'Dry Snow',
                     'gg':'Dry Graupel',
-                    'cc':'Cloud Water',
+                    'cl':'Cloud Water (over land)',
+                    'cs':'Cloud Water (over sea)',
                     'rr':'Rain',
                     'wg':'Wet Graupel',
                     'hh':'Dry Hail',
@@ -87,7 +90,14 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   'Frim':1.0,
                   'DIEL':'Liebe91',
                   },
-            'cc':{'SIGBETA':0.0,
+            'cl':{'SIGBETA':0.0,
+                  'ARfunc':'CNST',
+                  'ARvalue':1.0,
+                  'DSTYfunc':'RHOX',
+                  'Frim':1.0,
+                  'DIEL':'Liebe91',
+                  },
+            'cs':{'SIGBETA':0.0,
                   'ARfunc':'CNST',
                   'ARvalue':1.0,
                   'DSTYfunc':'RHOX',
@@ -120,20 +130,20 @@ def get_Y_min_max(var,hydro,xAxis):
     ymin_dict,ymax_dict={},{}
     for dpol in ['Zh','Zdr','Kdp','Rhohv']: ymin_dict[dpol],ymax_dict[dpol]={'D':{},'M':{}},{'D':{},'M':{}}
     # ZH
-    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
-    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 80,'cc': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
-    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
-    ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cc': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
+    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-20,'cs':-60,'cl':-60,'rr':0,'wg':-10,'hh': 20,'wh': 20}
+    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 60,'cs':20,'cl': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
+    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-40,'cs':-60,'cl':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
+    ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cs':20,'cl': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
     # ZDR
-    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
-    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
+    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-0.5,'cs':0,'cl':0,'rr':-0.5,'wg':-4,'hh':-2,'wh':-4}
+    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
+    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-2,'cl':0,'cs':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
+    ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
     # KDP
-    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
-    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.05,'cl':0,'cs':0,'rr':-0.25,'wg':-4,'hh':-30,'wh':-30}
+    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.2,'cl':0,'cs':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
+    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
     # RHOHV
     ymin_dict["Rhohv"]['M'][hydro]=0.9
     ymax_dict["Rhohv"]['M'][hydro]=1.0
@@ -144,9 +154,9 @@ def get_Y_min_max(var,hydro,xAxis):
 
 
 
-def get_table_name(axeX,band,hydro,micro='ICE3'):
+def get_table_name(axeX,band,hydro,micro='ICE3',moment=1):
     tableName={'D':f'TmatCoefDiff_{band}{hydro}',
-               'M':f'TmatCoefInt_{micro}_{band}{hydro}',
+               'M':f'TmatCoefInt_{micro}_{str(moment)}M_{band}{hydro}',
                }
     delim={'D':r"\s+",
            'M':';',

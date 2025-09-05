@@ -19,7 +19,7 @@ Nii=800 #selected number concentration for primary ice
 
 
 
-def main(h:str,band:str,method:str,micro:str,axe:str,dictParam:dict,add_ref:bool,combine:list):
+def main(h:str,band:str,method:str,micro:str,nmoment:int,axe:str,dictParam:dict,add_ref:bool,combine:list):
     
     sensitivity_test(hydrometeor=h,
                      axeX=axe,
@@ -27,6 +27,7 @@ def main(h:str,band:str,method:str,micro:str,axe:str,dictParam:dict,add_ref:bool
                      which_dpolVar=['Zh','Zdr','Kdp'],#,'Rhohv'],
                      method=method,
                      microphysics=micro,
+                     moment=nmoment,
                      band=band,
                      folder_tables=Path_tables,
                      folder_figures=dir_fig,
@@ -79,11 +80,13 @@ if __name__ == '__main__':
                     liquid_water_fraction = parser_args.Fw,
                     number_concentration = parser_args.Nc,
                     )
-    
+    if len(parser_args.Nc)>=1 : nMoment=2
+    else : nMoment = 1
     main(h=parser_args.hydro,
          band=parser_args.band,
          method=parser_args.method,
          micro=parser_args.micro,
+         nmoment=nMoment,
          axe=parser_args.axe,
          dictParam = dictArgs,
          add_ref=parser_args.ref,
