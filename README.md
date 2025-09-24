@@ -1,8 +1,13 @@
-# Radar forward operator (operadar)
-This radar forward operator is developped by the researchers of the National Centre for Meteorological Research (CNRM).
+# OPERADAR "Observation oPErator for polarimetric RADAR"
+OPERADAR is developed at CNRM (National Centre for Meteorological Research) 
+to compute synthetic dual-polarization radar variables from model fields in a 3D grid.
 
-The software is designed to compute synthetic dual-polarization variables as well as the specific attenuation at orthogonal polarizations in a 3D grid.
-It is adapted to read and manipulate AROME and MesoNH model files and currently requires a repository of lookup tables. These tables contain the scattering coefficients to compute the polarimetric variables, either in the Rayleigh or Mie scattering regime (with the T-matrix method). 
+The computed variables include reflectivity, differential reflectivity, specific differential phase, cross-correlation coefficient, and specific attenuation at horizontal and vertical polarizations.
+
+It is adapted to read AROME and MesoNH atmospheric model files, and the available options (mass-density relations, particle size distributions) are consistent with the microphysics options currently available for these models.
+
+OPERADAR is used for research applications, mainly for the evaluation of AROME and MesoNH microphysics schemes in the polarimetric radar space.
+It currently requires a repository of lookup tables. These tables contain the scattering coefficients to compute the polarimetric variables, either in the Rayleigh or Mie scattering regime (with the T-matrix method). 
 
 <span style='color:DodgerBlue;font-weight:bold'>------- NEW SINCE JUNE 2025 ! -------</span>
 <br>OPERADAR software now includes an executable to generate the lookup tables. The scattering coefficients stored in the tables are computed both in the Rayleigh approximation and using the T-matrix method (see [Mishchenko and Travis 1994](https://www.sciencedirect.com/science/article/pii/0030401894907315?via%3Dihub)).
