@@ -2,7 +2,7 @@
 OPERADAR is developed at CNRM (National Centre for Meteorological Research) 
 to compute synthetic dual-polarization radar variables from model fields in a 3D grid.
 
-The computed variables include reflectivity, differential reflectivity, specific differential phase, cross-correlation coefficient, and specific attenuation at horizontal and vertical polarizations.
+The computed variables include reflectivity $Z_{H}$ , differential reflectivity $Z_{DR}$ , specific differential phase shift $K_{DP}$ , cross-correlation coefficient $\rho_{HV}$ and specific attenuation at horizontal and vertical polarizations $A_{H}$ and $A_{v}$ (3D).
 
 It is adapted to read AROME and MesoNH atmospheric model files, and the available options (mass-density relations, particle size distributions) are consistent with the microphysics options currently available for these models.
 
