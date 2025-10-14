@@ -39,33 +39,33 @@ def main(h:str,band:str,method:str,micro:str,nmoment:int,axe:str,dictParam:dict,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="---------------- LOOKUP TABLES PLOT TOOL ----------------")
     parser.add_argument("hydro", type=str, default='rr',
-                        help='Hydrometeor type : rr, ss, gg, wg, wh, hh, cc, ii')
+                        help='Chose one hydrometeor type : rr, ss, gg, wg, wh, hh, cs, cl, ii')
     parser.add_argument("band", type=str, default='C',
-                        help='Band type : C, S, X, W, K')
+                        help='Chose one frequency band : C, S, X, W, K')
     parser.add_argument("--method", type=str, default='Both',
-                        help='Method : Tmatrix, Rayleigh, Both')
+                        help='Which scattering computation method to plot : Tmatrix, Rayleigh, Both. Default : Both')
     parser.add_argument("--micro", type=str, default='ICE3',
-                        help='Microphysics scheme : ICE3, LIMA')
+                        help='Microphysics scheme name (has to correspond with the one used to name the lookup table). Default : ICE3')
     parser.add_argument("--axe", type=str, default='D',
-                        help='Horizontal axis : D (diameter) or M (content)')
+                        help='The plot horizontal axis : D (diameter) or M (content). Default : D')
     parser.add_argument("--ref", action="store_true",default=False,
                         help='Wether to add or not the base configuration on every subfigure.')
     parser.add_argument("--ARvalue", type=float, nargs='*', default=[],
-                        help='Axis ratio : provide as many values as wanted.')
+                        help='Axis ratio : provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--ARfunc", type=str, nargs='*', default=[],
-                        help='Axis ratio function : AUds, CNST, BR02, RYdg, RYwg')
+                        help='Axis ratio function : AUds, CNST, BR02, RYdg, RYwg. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--Fw", type=float, nargs='*', default=[],
-                        help='Liquid water fraction (only for wet hydrometeors) : provide as many values as wanted.')
+                        help='Liquid water fraction (only applies to wet hydrometeors) : provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--Nc", type=float, nargs='*', default=[],
-                        help='Number concentration (only if --axe M) : provide any number of particles per m3.')
+                        help='Number concentration (only if --axe M) : provide any number of particles per m3. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--DSTYfunc", type=str, nargs='*', default=[],
-                        help='Density function : BR07, RHOX')
+                        help='Density function : BR07, RHOX. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--FRIM", type=float, nargs='*', default=[],
-                        help='Riming fraction : (only applies when DSTYfunc=BR07) provide as many values as wanted.')
+                        help='Riming fraction : (only applies when hydrometeor=ss) provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--CANTING", type=float, nargs='*', default=[],
-                        help='Canting angle : provide as many values as wanted.')
+                        help='Canting angle : provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--DIEL", type=str, nargs='*', default=[],
-                        help='Dielectric function : Liebe91, RY19dry, LBwetgr, MGwMA08')
+                        help='Dielectric function : Liebe91, RY19dry, LBwetgr, MGwMA08. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--combine", type=str, nargs='*', default=[],
                         help='Combine at least 2 parameters together so it appears on plot as one curve : axis_ratio, axis_ratio_func, canting_angle, density_func, riming_fraction, diel_func')
     
