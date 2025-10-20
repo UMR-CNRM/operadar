@@ -19,7 +19,11 @@ Nii=800 #selected number concentration for primary ice
 
 
 
-def main(h:str,band:str,method:str,micro:str,nmoment:int,axe:str,dictParam:dict,add_ref:bool,combine:list):
+def main(h:str,band:str,method:str,micro:str,nmoment:int,axe:str,dictParam:dict,
+         add_ref:bool,
+         combine:list,
+         invert_column_and_legend:bool,
+         ):
     
     sensitivity_test(hydrometeor=h,
                      axeX=axe,
@@ -33,6 +37,7 @@ def main(h:str,band:str,method:str,micro:str,nmoment:int,axe:str,dictParam:dict,
                      folder_figures=dir_fig,
                      ref=add_ref,
                      combine=combine,
+                     invertColLegend=invert_column_and_legend,
                      )
 
 
@@ -50,6 +55,8 @@ if __name__ == '__main__':
                         help='The plot horizontal axis : D (diameter) or M (content). Default : D')
     parser.add_argument("--ref", action="store_true",default=False,
                         help='Wether to add or not the base configuration on every subfigure.')
+    parser.add_argument("--invert", action="store_true",default=False,
+                        help='Invert what is shown in the legend with what is displayed in the column.')
     parser.add_argument("--ARvalue", type=float, nargs='*', default=[],
                         help='Axis ratio : provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--ARfunc", type=str, nargs='*', default=[],
@@ -67,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument("--DIEL", type=str, nargs='*', default=[],
                         help='Dielectric function : Liebe91, RY19dry, LBwetgr, MGwMA08. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--combine", type=str, nargs='*', default=[],
-                        help='Combine at least 2 parameters together so it appears on plot as one curve : axis_ratio, axis_ratio_func, canting_angle, density_func, riming_fraction, diel_func')
+                        help='Combine at least 2 parameters together so it appears on plot as one curve : axis_ratio, axis_ratio_func, canting_angle, density_func, riming_fraction, diel_func, liquid_water_fraction')
     
     parser_args = parser.parse_args()
     
@@ -91,4 +98,5 @@ if __name__ == '__main__':
          dictParam = dictArgs,
          add_ref=parser_args.ref,
          combine=parser_args.combine,
+         invert_column_and_legend=parser_args.invert,
          )

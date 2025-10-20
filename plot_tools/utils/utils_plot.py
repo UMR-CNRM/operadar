@@ -119,7 +119,7 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   'DIEL':'LBwetgr',
                   },
             }
-ls={'Tmatrix':'-',
+ls_method={'Tmatrix':'-',
     'Rayleigh':'--',
     }
 
@@ -130,20 +130,20 @@ def get_Y_min_max(var,hydro,xAxis):
     ymin_dict,ymax_dict={},{}
     for dpol in ['Zh','Zdr','Kdp','Rhohv']: ymin_dict[dpol],ymax_dict[dpol]={'D':{},'M':{}},{'D':{},'M':{}}
     # ZH
-    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-20,'cs':-60,'cl':-60,'rr':0,'wg':-10,'hh': 20,'wh': 20}
-    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 60,'cs':20,'cl': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
-    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-40,'cs':-60,'cl':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
+    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-20,'cs':-60,'cl':-60,'rr':0,'wg':-20,'hh': 20,'wh': 20}
+    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 60,'cs':20,'cl': 20,'rr': 70,'wg': 60,'hh':100,'wh':100}
+    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-10,'cs':-60,'cl':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
     ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cs':20,'cl': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
     # ZDR
-    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-0.5,'cs':0,'cl':0,'rr':-0.5,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
-    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-2,'cl':0,'cs':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
+    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-0.5,'cs':0,'cl':0,'rr':-0.5,'wg':-0.5,'hh':-2,'wh':-4}
+    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cl':1,'cs':1,'rr':6,'wg':4,'hh':2,'wh':10}
+    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-0.5,'cl':0,'cs':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
     ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
     # KDP
-    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.05,'cl':0,'cs':0,'rr':-0.25,'wg':-4,'hh':-30,'wh':-30}
+    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.05,'cl':0,'cs':0,'rr':-0.25,'wg':-0.05,'hh':-30,'wh':-30}
     ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
-    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.2,'cl':0,'cs':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.1,'cl':0,'cs':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
+    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.4,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
     # RHOHV
     ymin_dict["Rhohv"]['M'][hydro]=0.9
     ymax_dict["Rhohv"]['M'][hydro]=1.0
@@ -293,7 +293,7 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
                 subfig_title.pop(lgd_elmt)
                            
     if axeX == 'D' : subfig_title.pop('number_concentration')
-    elif axeX == 'M' : subfig_title.pop('liquid_water_fraction')
+    #elif axeX == 'M' : subfig_title.pop('liquid_water_fraction')
     
     for subfigElement in subfig_title.values() :
         common_elements += '\n- '+subfigElement
@@ -303,7 +303,7 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
 
 def plot_table(h:str, axeX:str, param:dict,
                which_dpolVar:list, figAx:str,
-               method:str, color:str,
+               method:str, color:str, moment:int,
                legend:str|None, subfigRow:str|None,
                Fw:float, Nc:int, P3col:np.ndarray,
                Tcol:np.ndarray, ELEVcol:np.ndarray,
@@ -321,9 +321,6 @@ def plot_table(h:str, axeX:str, param:dict,
         and base_cfg[h]['DIEL'] == DIEL
         and base_cfg[h]['Frim'] == Frim
         ):
-        # if h[0:1] == 'w' and subfigRow == None :
-        #     legendItem = legend
-        # else :
         isRef = True
         if nbRef == 1 :
             color='k'
@@ -333,7 +330,10 @@ def plot_table(h:str, axeX:str, param:dict,
     if axeX == 'D' :
         rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
     elif axeX == 'M' :
-        rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
+        if moment == 1 :
+            rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
+        elif moment == 2 :
+            rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
     lgd_label = set_legend(whichLegend=legend, SIGBETA=SIGBETA,
                            ARfunc=ARfunc, ARcnst=ARcnst,
                            DSTYfunc=DSTYfunc, Frim=Frim,
@@ -347,15 +347,20 @@ def plot_table(h:str, axeX:str, param:dict,
                                     )
     for ivar,varName in enumerate(which_dpolVar) :
         ymin,ymax=get_Y_min_max(varName,h,axeX)
-        if method == 'Both': listMethod = ['Tmatrix','Rayleigh']
-        else : listMethod = [method]
+        if method == 'Both':
+            listMethod = ['Tmatrix','Rayleigh']
+            ls_plot = ls_method
+        else : 
+            listMethod = [method]
+            ls_plot = ls_method
+            if isRef and (legend=='liquid_water_fraction' or legend=='number_concentration'): ls_plot = {method:'--'}
         for m in listMethod :
             yaxis = dpolDict[m][varName]
             figAx[ivar].plot(xaxis[rows],yaxis[rows],
                              label=lgd_label+f'\n{m}',
                              linewidth=lw,
                              color=color,
-                             ls=ls[m],
+                             ls=ls_plot[m],
                              alpha=alpha,
                              )
         if axeX == 'D' :
@@ -375,7 +380,7 @@ def plot_table(h:str, axeX:str, param:dict,
 
 
 
-def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
+def analyse_dict(dictParam:dict,hydrometeor:str,combine:list,invertCol_and_Legend:bool) :
     
     if len(combine)==1:
         print('No legend combination possible with combine =',combine) ; sys.exit()
@@ -432,6 +437,12 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
                 else :
                     variation_legend = variations[0]
                     variation_columns = variations[1]
+            if invertCol_and_Legend :
+                print('Inverting what is shown in the legend with what is displayed columnwise.')
+                new_variation_columns = variation_legend
+                new_variation_legend = variation_columns
+                variation_legend = new_variation_legend
+                variation_columns = new_variation_columns
             nrows = len(dictParam[variation_columns])
         else :
             print('')
