@@ -12,10 +12,8 @@ Path_tables = "/home/davidcl/Programmation/operadar/tables_generator/tables/"
 dir_fig="/home/davidcl/Programmation/operadar/plot_tools/sensitivity_study/"
 
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
-
 Fwchoix=0
 ELEVchoix=0 #0 pour radars sol, 90 pour rasta
-Nii=800 #selected number concentration for primary ice
 
 
 

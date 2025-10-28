@@ -28,7 +28,7 @@ nameHydrometeors = {'ii':'Pristine ice',
                     'wh':'Wet Hail',
                     }
 # Selected number concentration for primary ice (ICE3)
-Nii=800
+Nii=1000 # 10**2.9 ~ 794
 
 # Plot axes/units
 pltX={'D':'Deq',
@@ -275,6 +275,12 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
     
     if DSTYfunc == 'RHOX': DSTYfunc = 'AROME (1M)'
     if DSTYfunc == 'ICON': DSTYfunc = 'ICON-D2 (1M)'
+    
+    # Specific case for ice in ICE3 and ICJW
+    #  Nc==0 means no Nc provided when running the script
+    #  --> implies that the species is considered 1-moment
+    if hydro=='ii' and axeX=='M' and Nc==0 :
+        Nc = Nii
     
     subfig_title = {'canting_angle' : r'$\sigma_{\beta}=$'+str(SIGBETA)+u'\u00B0',
                     'axis_ratio_func' : f'ARfunc: {ARfunc}',
