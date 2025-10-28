@@ -7,7 +7,7 @@ import sys
 
 
 band='C'
-hydrometeor='cc'
+hydrometeor='ii'
 micro='ICE3'
 moment=1
 dpol2add=['Zh']
@@ -20,15 +20,15 @@ tableDict=read_and_extract_tables_content(band=band,
                                           path_table=path_table,
                                           test_interpolation=True,
                                           )
-
-colName='Fw'
+tableDict['Nc'] = tableDict.pop('N')
 #print(tableDict)
 
 def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpol2add):
-    [kTmat, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(ELEV = elev,
-                                                      Tc = T,
-                                                      P3r = P3,
-                                                      M = content,
+    if colName == 'Nc' :
+        col_name = 'expCC'
+    else :
+        col_name = colName
+    [kTmat, ELEVred, Tcred, P3red, Mred] = CALC_KTMAT(ELEV = elev, Tc = T, P3r = P3, M = content,
                                                       ELEVmin = tableDict['ELEVmin'][hydrometeor],
                                                       ELEVmax = tableDict['ELEVmax'][hydrometeor],
                                                       ELEVstep = tableDict['ELEVstep'][hydrometeor],
@@ -38,9 +38,9 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
                                                       expMmin = tableDict['expMmin'][hydrometeor],
                                                       expMmax = tableDict['expMmax'][hydrometeor],
                                                       expMstep = tableDict['expMstep'][hydrometeor],
-                                                      P3min = tableDict[f'{colName}min'][hydrometeor],
-                                                      P3max = tableDict[f'{colName}max'][hydrometeor],
-                                                      P3step = tableDict[f'{colName}step'][hydrometeor],
+                                                      P3min = tableDict[f'{col_name}min'][hydrometeor],
+                                                      P3max = tableDict[f'{col_name}max'][hydrometeor],
+                                                      P3step = tableDict[f'{col_name}step'][hydrometeor],
                                                       P3name = colName,
                                                       ncol_interpolation = 4,
                                                       shutdown_warnings = False,
@@ -48,7 +48,7 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
     # Store scat coef values for each min/max born in Matcoef
     MatCoef = {}
     idx_key_pair = []
-    scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add)
+    scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add,test_mode=True)
     for idx,key in enumerate(scatCoef_columns) :
         idx_key_pair += [(idx,key)] 
         for ind in range((2**4)):
@@ -57,12 +57,12 @@ def perform_nD_interpolation(tableDict,hydrometeor,colName,elev,T,P3,content,dpo
                     ' /  borne M=',tableDict['M'][hydrometeor][kTmat[ind]],
                     ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][kTmat[ind]],
                     ' /  borne P3=',tableDict[colName][hydrometeor][kTmat[ind]],
-                    ' /  sighh =',tableDict['sighh'][hydrometeor][kTmat[ind]]) 
+                    ' /  sighh =',tableDict['sighh'][hydrometeor][kTmat[ind]],
+                    ' /  zhh =',tableDict['zhh'][hydrometeor][kTmat[ind]]) 
     # Interpol scat coef values
     scatCoefsDict = INTERPOL(ELEVred, Tcred, P3red, Mred, MatCoef,scatCoef_columns,idx_key_pair)   
 
     return scatCoefsDict
-
 
 def  CALC_KTMAT(ELEV:float, Tc:np.ndarray, P3r, M:np.ndarray,
                 ELEVmin:float, ELEVmax:float, ELEVstep:float,
@@ -323,9 +323,10 @@ def  INTERPOL(ELEVred:np.ndarray, Tcred:np.ndarray, Fwred:np.ndarray, Mred:np.nd
 
 # Fake data                       
 elev=np.array([0])
-T=np.array([-10.5])
-P3=np.array([0.])
-content=np.array([0.1*1e-3])
+T=np.array([-20])
+colName='Nc'
+P3=np.array([800.])
+content=np.array([1.2*1e-4])
 print('======================================')
 print(f'Point(s) to interpolate for {hydrometeor} (T,M,ELEV,P3):',T,content,elev,P3,)
 print('======================================','\n')

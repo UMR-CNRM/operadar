@@ -13,6 +13,7 @@ import pandas as pd
 
 def initialize_table_dictionary(dpol2add:list,
                                 method:str='Tmatrix',
+                                test_mode:bool=False,
                                 ) -> tuple[dict, list[str], list[str]] :
     """Initializes the dictionary to store all the necessary parameters and columns of the tables"""
     empty_table_dict = {}
@@ -26,6 +27,7 @@ def initialize_table_dictionary(dpol2add:list,
     columns_to_loop_over = ['Tc', 'ELEV', 'M', 'Fw', 'N']
     columns_to_retrieve = retrieve_needed_columns(dpol2add=dpol2add,
                                                   scattering_method=method,
+                                                  test_mode=test_mode,
                                                   )
     for key in list_of_parameters + columns_to_loop_over + columns_to_retrieve :
         empty_table_dict[key] = {}
@@ -36,6 +38,7 @@ def initialize_table_dictionary(dpol2add:list,
 
 def retrieve_needed_columns(dpol2add:list,
                             scattering_method:str='Tmatrix',
+                            test_mode:bool=False,
                             ) -> list :
     """Depending on the variables the user wants to compute and the chosen scattering method,
     creating a list of the table's column names to extract."""
@@ -45,6 +48,7 @@ def retrieve_needed_columns(dpol2add:list,
     if scattering_method == 'Tmatrix' or scattering_method == 'both' :
         if 'Zh' in dpol2add :
             table_columnNames += ['sighh']
+            if test_mode : table_columnNames += ['zhh']
         if 'Zdr' in dpol2add :
             table_columnNames += ['sighh','sigvv']
         if 'Kdp' in dpol2add :
@@ -121,8 +125,10 @@ def read_and_extract_tables_content(band:str,
     print("Reading tables for",band,"band")
     deb_timer = tm.time()
     micro_for_table = scheme[0:4]
-    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add)
-    if test_interpolation: columns_to_retrieve+=['Tc', 'ELEV', 'M', 'Fw']
+    table_dict, parameters_to_retrieve, columns_to_retrieve = initialize_table_dictionary(dpol2add=dpol2add,
+                                                                                          test_mode=test_interpolation,
+                                                                                          )
+    if test_interpolation: columns_to_retrieve+=['Tc', 'ELEV', 'M', 'Fw', 'N']
     
     for h in hydrometeors:
         if h == 'cc':
@@ -142,11 +148,13 @@ def read_and_extract_tables_content(band:str,
         df_columns = df_columns.astype(float)
 
         for columnName in columns_to_retrieve :
-            if columnName == 'Fw' or columnName == 'N' :
+            # ---- Only used for test_interpolation=True ----
+            if columnName == 'Fw' or columnName == 'N' : 
                 if moments[h]==1 :
-                    table_dict['Fw'][h] = df_columns['P3'].to_numpy()
-                elif moments[h]==2 :
-                    table_dict['N'][h] = df_columns['P3'].to_numpy()
+                    if h=='ii': table_dict['N']['ii'] = df_columns['P3'].to_numpy()
+                    else : table_dict['Fw'][h] = df_columns['P3'].to_numpy()
+                elif moments[h]==2 : table_dict['N'][h] = df_columns['P3'].to_numpy()
+            # ----------------------------------------------- 
             else :
                 table_dict[columnName][h] = df_columns[columnName].to_numpy()
         del df_columns

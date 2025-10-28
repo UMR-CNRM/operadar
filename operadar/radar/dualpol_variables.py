@@ -370,7 +370,7 @@ def hypercube_interpolation(tableDict:dict,
         
     # Fetch corner values from the table (vectorized) and sum weighted contributions across the 16 corners
     scatCoefsDict = {}
-    scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add)
+    scatCoef_columns = retrieve_needed_columns(dpol2add=dpol2add,test_mode=test_mode)
     for column in scatCoef_columns:
         vals_at_corners = tableDict[column][hydrometeor][idx_all]  # (16,N)
         scatCoefsDict[column] = np.sum(weights * vals_at_corners, axis=0) # result in shape (N,)
@@ -380,7 +380,8 @@ def hypercube_interpolation(tableDict:dict,
                             ' /  borne M=',tableDict['M'][hydrometeor][idx],
                             ' /  borne ELEV=',tableDict['ELEV'][hydrometeor][idx],
                             ' /  borne P3=',tableDict[colName][hydrometeor][idx],
-                            ' /  sighh =',tableDict['sighh'][hydrometeor][idx])
+                            ' /  sighh =',tableDict['sighh'][hydrometeor][idx],
+                            ' /  zhh =',tableDict['zhh'][hydrometeor][idx],)
     return scatCoefsDict 
 
 
