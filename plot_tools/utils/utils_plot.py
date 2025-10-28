@@ -8,12 +8,29 @@ import matplotlib as mpl
 
 
 # ====== BASIC DEFINITIONS ====== #
+# Plot style
 pol_label=10
 pol_legend=10
 pol_title=14
 pol_suptitle=12
 lw=1.5
+ls_method={'Tmatrix':'-',
+           'Rayleigh':'--',
+           }
+nameHydrometeors = {'ii':'Pristine ice',
+                    'ss':'Dry Snow',
+                    'gg':'Dry Graupel',
+                    'cl':'Cloud Water (over land)',
+                    'cs':'Cloud Water (over sea)',
+                    'rr':'Rain',
+                    'wg':'Wet Graupel',
+                    'hh':'Dry Hail',
+                    'wh':'Wet Hail',
+                    }
+# Selected number concentration for primary ice (ICE3)
+Nii=800
 
+# Plot axes/units
 pltX={'D':'Deq',
       'M':'M',
       }
@@ -30,6 +47,12 @@ dmax_dict={'ii':5, # in mm
            'hh':100,
            'wh':100,
            }
+unit={'Zh':'dBZ',
+      'Zdr':'dB',
+      'Kdp':u'\u00B0'+r' km$^{-1}$',
+      'Rhohv':'/',
+      }
+# Table selection
 T_dict = {'ii':-30,
           'ss':-10,
           'gg':0,
@@ -40,21 +63,7 @@ T_dict = {'ii':-30,
           'hh':1,
           'wh':10,
           }
-nameHydrometeors = {'ii':'Pristine ice',
-                    'ss':'Dry Snow',
-                    'gg':'Dry Graupel',
-                    'cl':'Cloud Water (over land)',
-                    'cs':'Cloud Water (over sea)',
-                    'rr':'Rain',
-                    'wg':'Wet Graupel',
-                    'hh':'Dry Hail',
-                    'wh':'Wet Hail',
-                    }
-unit={'Zh':'dBZ',
-        'Zdr':'dB',
-        'Kdp':u'\u00B0'+r' km$^{-1}$',
-        'Rhohv':'/',
-        }
+# Base configuration
 base_cfg = {'ii':{'SIGBETA':0.0,
                   'ARfunc':'CNST',
                   'ARvalue':1.0,
@@ -119,9 +128,6 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   'DIEL':'LBwetgr',
                   },
             }
-ls_method={'Tmatrix':'-',
-    'Rayleigh':'--',
-    }
 
 
 
@@ -331,7 +337,10 @@ def plot_table(h:str, axeX:str, param:dict,
         rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
     elif axeX == 'M' :
         if moment == 1 :
-            rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
+            if h=='ii':
+                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nii))
+            else :
+                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
         elif moment == 2 :
             rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
     lgd_label = set_legend(whichLegend=legend, SIGBETA=SIGBETA,
