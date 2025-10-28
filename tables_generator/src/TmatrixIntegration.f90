@@ -251,8 +251,8 @@ WRITE (0,*) '    microphysics=',CCLOUD
 WRITE (0,*) '    type=',typeh,' (',MOMENT,')'
 WRITE (0,*) '    band=',bande
 
-IF (CCLOUD=='ICE3') THEN
-  Nmoments=1
+IF (CCLOUD=='ICE3' .AND. typeh=='ii') THEN
+  Nmoments=2
 ELSE
   IF (MOMENT=='1M') THEN 
     Nmoments=1
@@ -1160,7 +1160,11 @@ ENDIF
 
 IF (CCLOUD=='ICE3') THEN
   lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
-  No   = c*(lamb**x)
+  IF (typeh=='ii') THEN
+    No = P3
+  ELSE
+    No   = c*(lamb**x)
+  ENDIF
   N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
       *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
@@ -1177,7 +1181,11 @@ ELSE IF (CCLOUD=='ICJW') THEN
     No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
   ELSE
     lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
-    No   = c*(lamb**x)
+    IF (typeh=='ii') THEN
+      No = P3
+    ELSE
+      No   = c*(lamb**x)
+    ENDIF
   ENDIF
   N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
       *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
