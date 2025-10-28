@@ -82,6 +82,7 @@ def compute_dualpol_variables(temperature:np.ndarray,
                                                          concentration_h=concentrations[h],
                                                          tables_dict=tables_dict,
                                                          hydrometeorMoments=config.hydrometeors_moments,
+                                                         micro=config.microphysics_scheme,
                                                     ) 
         
         # Addition of scattering coef for all hydrometeor
@@ -138,6 +139,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                           concentration_h:np.ndarray,
                                           tables_dict:dict,
                                           hydrometeorMoments:dict[str,int],
+                                          micro:str,
                                         ) -> dict[str,np.ndarray]:
     """Compute radar scattering coefficients for a single hydrometeor class."""
 
@@ -152,6 +154,7 @@ def compute_scatcoeffs_single_hydrometeor(hydrometeor:str,
                                    hydrometeor=hydrometeor,
                                    concentration=concentration_temp,
                                    Fw=Fw_temp,
+                                   micro=micro,
                                    )
         
     # Estimate for each grid point the scattering coefficients values based on the lookup tables
