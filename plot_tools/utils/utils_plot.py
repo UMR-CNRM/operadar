@@ -414,7 +414,10 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list,invertCol_and_Legen
     if len(dictParam['liquid_water_fraction'])<1 :
         dictParam['liquid_water_fraction'] += [0.0]
     if len(dictParam['number_concentration'])<1 :
-        dictParam['number_concentration'] += [0.0]
+        if hydrometeor=='ii':
+            dictParam['number_concentration'] += [1000]
+        else:
+            dictParam['number_concentration'] += [0]
     
     nb_keys = len(dictParam.keys())
     nb_items = np.sum([len(dictParam[key]) for key in dictParam.keys()])
