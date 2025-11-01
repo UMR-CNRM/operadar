@@ -36,7 +36,7 @@ def sensitivity_test(hydrometeor:str,
     # SCENARIO 1 : only one value given per argument
     if asRow == None and asLegend == None :
         table_path = f"{folder_tables}{hydrometeor}/{dictParam['axis_ratio_func'][0]}_" \
-                    +f"AR{dictParam['axis_ratio'][0]}_CANT{dictParam['canting_angle'][0]}_" \
+                    +f"AR{dictParam['axis_ratio'][0]:.2f}_CANT{dictParam['canting_angle'][0]}_" \
                     +f"{dictParam['density_func'][0]}_Frim{dictParam['riming_fraction'][0]}_"\
                     +f"{dictParam['diel_func'][0]}/{tableName}"
         dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
@@ -61,7 +61,7 @@ def sensitivity_test(hydrometeor:str,
                                                       Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_"\
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \
@@ -99,7 +99,7 @@ def sensitivity_test(hydrometeor:str,
         colors = get_colors(dictParam, asLegend, combinations, folder_tables, tableName, hydrometeor)
         count=0 
         for (arf, ar, cant, dsty, Frim, diel) in combinations:
-            table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+            table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
             dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
                                                                         delim=delim,
                                                                         axeX=axeX,
@@ -123,7 +123,7 @@ def sensitivity_test(hydrometeor:str,
                                                           Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_" \
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \
@@ -171,7 +171,7 @@ def sensitivity_test(hydrometeor:str,
             colors = get_colors(dictParam, asLegend, combinations, folder_tables, tableName, hydrometeor)
             count = 0
             for (arf, ar, cant, dsty, Frim, diel) in combinations:
-                table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+                table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
                 dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
                                                                             delim=delim,
                                                                             axeX=axeX,
@@ -195,7 +195,7 @@ def sensitivity_test(hydrometeor:str,
                                                               Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_" \
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \

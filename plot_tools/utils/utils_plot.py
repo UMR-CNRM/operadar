@@ -73,7 +73,7 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   },
             'ss':{'SIGBETA':0.0,
                   'ARfunc':'AUds',
-                  'ARvalue':0.8,
+                  'ARvalue':0.75,
                   'DSTYfunc':'RHOX',
                   'Frim':1.0,
                   'DIEL':'RY19dry',
@@ -314,7 +314,7 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
 
 
 def plot_table(h:str, axeX:str, param:dict,
-               which_dpolVar:list, figAx:str,
+               which_dpolVar:list, figAx,
                method:str, color:str, moment:int,
                legend:str|None, subfigRow:str|None,
                Fw:float, Nc:int, P3col:np.ndarray,
@@ -487,7 +487,7 @@ def get_colors(dictParam:dict,
     elif type(asLegend) is list :
         nb_colors = 0
         for arf, ar, cant, dsty, Frim, diel in combinations :
-            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
+            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
                 nb_colors += 1
         nb_colors = nb_colors * len(Fw) * len(Nc)
     
@@ -514,7 +514,7 @@ def get_combinations(dictParam:dict,
                         )
     final_combinations = []
     for arf, ar, cant, dsty, Frim, diel in combinations :
-        filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+        filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
         if os.path.isfile(filepath):
             final_combinations += [(arf, ar, cant, dsty, Frim, diel)]
     if len(final_combinations) < 1 : sys.exit()
