@@ -681,7 +681,7 @@ C ============================================================================
         ELSE IF (ARfunc .EQ. "AUds") THEN
           CALL AR_AU16drys(D,ARcnst,AR) ! AR        
           Dm=D*(AR**(-1.0/3))           ! Dm
-          Deq=D                         ! Deq
+          Deq=D                         ! Deq = D if Fw=0 (no melting)
         ! ----- RYdg (dry graupel/hail) : Ryzhkov 2011, 2019 4.31 p83 (linear increase towards 1 for diameters < 10 mm)
         ELSE IF (ARfunc .EQ. "RYdg") THEN
           CALL AR_RY11dryg(D,ARcnst,AR) ! AR          

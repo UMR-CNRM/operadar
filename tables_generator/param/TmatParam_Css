@@ -4,7 +4,7 @@ canting:analyt
 sigbeta:40.0
 DIEL:RY19dry
 ARfunc:CNST
-ARcnst:0.60
+ARcnst:0.75
 DSTYfunc:RHOX
 Frim:1.0
 LAM:53.2
