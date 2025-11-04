@@ -52,6 +52,7 @@ def Fw_or_Nc(momentsDict:dict[str,int],
              hydrometeor:str,
              concentration:ndarray,
              Fw:ndarray,
+             micro:str,
              ):
     """ Select the right column in the lookup table depending of the number of moment for the hydrometeor.
     TODO : change the reading of the table so that the parameters are kept the same !
@@ -64,6 +65,11 @@ def Fw_or_Nc(momentsDict:dict[str,int],
     if momentsDict[hydrometeor] == 2 :
         col_name = 'Nc'
         field_temp = concentration
+    # ------ ICE3/ICJW specific ------ #
+    elif hydrometeor=='ii' and (micro=='ICE3' or micro=='IJW'):
+        col_name = 'Nc'
+        field_temp = concentration
+    # -------------------------------- #
     else:
         col_name = "Fw"
         field_temp = Fw

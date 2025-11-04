@@ -4,7 +4,7 @@ canting:nocant
 sigbeta:0.0
 DIEL:RY19dry
 ARfunc:AUds
-ARcnst:0.8
+ARcnst:0.75
 DSTYfunc:RHOX
 Frim:1
 LAM:53.2

@@ -14,13 +14,16 @@ def sensitivity_test(hydrometeor:str,
                      which_dpolVar:list,
                      method:str,
                      microphysics:str,
+                     moment:int,
                      band:str,
                      folder_tables:str,
                      folder_figures:str,
                      ref:bool,
-                     combine:list):
+                     combine:list,
+                     invertColLegend:bool):
     # Checkig every scenario
-    nrows_plot, asRow, asLegend = analyse_dict(dictParam,hydrometeor,combine) ; print(asRow,asLegend,nrows_plot)
+    nrows_plot, asRow, asLegend = analyse_dict(dictParam,hydrometeor,combine,invertColLegend)
+    print('Plot rows (nrows):',asRow,f'({nrows_plot})','\nPlot legend:',asLegend)
     # Plot creation
     fig,axes = plt.subplots(nrows=nrows_plot,
                             ncols=len(which_dpolVar),
@@ -28,12 +31,12 @@ def sensitivity_test(hydrometeor:str,
                             layout='constrained',
                             )
     # Generic table name
-    tableName, delim = get_table_name(axeX,band,hydrometeor,microphysics)
+    tableName, delim = get_table_name(axeX,band,hydrometeor,microphysics,moment)
     
     # SCENARIO 1 : only one value given per argument
     if asRow == None and asLegend == None :
         table_path = f"{folder_tables}{hydrometeor}/{dictParam['axis_ratio_func'][0]}_" \
-                    +f"AR{dictParam['axis_ratio'][0]}_CANT{dictParam['canting_angle'][0]}_" \
+                    +f"AR{dictParam['axis_ratio'][0]:.2f}_CANT{dictParam['canting_angle'][0]}_" \
                     +f"{dictParam['density_func'][0]}_Frim{dictParam['riming_fraction'][0]}_"\
                     +f"{dictParam['diel_func'][0]}/{tableName}"
         dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
@@ -44,7 +47,7 @@ def sensitivity_test(hydrometeor:str,
         Fw = dictParam['liquid_water_fraction'][0]
         Nc = dictParam['number_concentration'][0]
         plot_table(h=hydrometeor, param=dictSettings,
-                    color='tab:blue', axeX=axeX,
+                    color='tab:blue', axeX=axeX, moment=moment,
                     which_dpolVar=which_dpolVar,
                     figAx=axes, method=method,
                     legend=asLegend, subfigRow=asRow,
@@ -58,7 +61,7 @@ def sensitivity_test(hydrometeor:str,
                                                       Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_"\
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \
@@ -69,7 +72,7 @@ def sensitivity_test(hydrometeor:str,
                                                                         method=method,
                                                                         )
             plot_table(h=hydrometeor, param=dictSettings,
-                        color='k', axeX=axeX,
+                        color='k', axeX=axeX, moment=moment,
                         which_dpolVar=which_dpolVar,
                         figAx=axes, method=method,
                         legend=asLegend, subfigRow=asRow,
@@ -96,7 +99,7 @@ def sensitivity_test(hydrometeor:str,
         colors = get_colors(dictParam, asLegend, combinations, folder_tables, tableName, hydrometeor)
         count=0 
         for (arf, ar, cant, dsty, Frim, diel) in combinations:
-            table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+            table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
             dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
                                                                         delim=delim,
                                                                         axeX=axeX,
@@ -107,7 +110,7 @@ def sensitivity_test(hydrometeor:str,
                     plot_table(h=hydrometeor, param=dictSettings,
                                 color=colors[count], axeX=axeX,
                                 which_dpolVar=which_dpolVar,
-                                figAx=axes, method=method,
+                                figAx=axes, method=method, moment=moment,
                                 legend=asLegend, subfigRow=asRow,
                                 Fw=Fw, Nc=Nc, Tcol=Tcol, P3col=P3col,
                                 ELEVcol=ELEVcol, dpolDict=dpolDict, xaxis=xaxis,
@@ -120,7 +123,7 @@ def sensitivity_test(hydrometeor:str,
                                                           Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_" \
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \
@@ -137,7 +140,7 @@ def sensitivity_test(hydrometeor:str,
                     plot_table(h=hydrometeor, param=dictSettings,
                                 color=colors[count_ref], axeX=axeX,
                                 which_dpolVar=which_dpolVar,
-                                figAx=axes, method=method,
+                                figAx=axes, method=method, moment=moment,
                                 legend=asLegend, subfigRow=asRow,
                                 Fw=Fw, Nc=Nc, Tcol=Tcol, P3col=P3col,
                                 ELEVcol=ELEVcol, dpolDict=dpolDict,
@@ -168,7 +171,7 @@ def sensitivity_test(hydrometeor:str,
             colors = get_colors(dictParam, asLegend, combinations, folder_tables, tableName, hydrometeor)
             count = 0
             for (arf, ar, cant, dsty, Frim, diel) in combinations:
-                table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+                table_path = f"{folder_tables}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
                 dictSettings,Tcol,ELEVcol,P3col,dpolDict,xaxis = read_table(table_path=table_path,
                                                                             delim=delim,
                                                                             axeX=axeX,
@@ -178,7 +181,7 @@ def sensitivity_test(hydrometeor:str,
                     for Nc in dictParam['number_concentration'] :
                         plot_table(h=hydrometeor, param=dictSettings,
                                     color=colors[count], axeX=axeX,
-                                    which_dpolVar=which_dpolVar,
+                                    which_dpolVar=which_dpolVar, moment=moment,
                                     figAx=axes[idxRow,:], method=method,
                                     legend=asLegend, subfigRow=asRow,
                                     Fw=Fw, Nc=Nc, Tcol=Tcol, P3col=P3col,
@@ -192,7 +195,7 @@ def sensitivity_test(hydrometeor:str,
                                                               Fw=Fw, Nc=Nc)
         if ref :
             table_path = f"{folder_tables}{hydrometeor}/{base_cfg[hydrometeor]['ARfunc']}_" \
-                        +f"AR{base_cfg[hydrometeor]['ARvalue']}_" \
+                        +f"AR{base_cfg[hydrometeor]['ARvalue']:.2f}_" \
                         +f"CANT{base_cfg[hydrometeor]['SIGBETA']}_" \
                         +f"{base_cfg[hydrometeor]['DSTYfunc']}_" \
                         +f"Frim{base_cfg[hydrometeor]['Frim']}_" \
@@ -209,7 +212,7 @@ def sensitivity_test(hydrometeor:str,
                         nbRef = len(dictParam['liquid_water_fraction'])*len(dictParam['number_concentration'])
                         plot_table(h=hydrometeor, param=dictSettings,
                                     color=colors[count_ref], axeX=axeX,
-                                    which_dpolVar=which_dpolVar,
+                                    which_dpolVar=which_dpolVar, moment=moment,
                                     figAx=axes[idxRow,:], method=method,
                                     legend=asLegend, subfigRow=asRow,
                                     Fw=Fw, Nc=Nc, Tcol=Tcol, P3col=P3col,

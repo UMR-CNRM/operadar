@@ -8,12 +8,29 @@ import matplotlib as mpl
 
 
 # ====== BASIC DEFINITIONS ====== #
+# Plot style
 pol_label=10
 pol_legend=10
 pol_title=14
 pol_suptitle=12
 lw=1.5
+ls_method={'Tmatrix':'-',
+           'Rayleigh':'--',
+           }
+nameHydrometeors = {'ii':'Pristine ice',
+                    'ss':'Dry Snow',
+                    'gg':'Dry Graupel',
+                    'cl':'Cloud Water (over land)',
+                    'cs':'Cloud Water (over sea)',
+                    'rr':'Rain',
+                    'wg':'Wet Graupel',
+                    'hh':'Dry Hail',
+                    'wh':'Wet Hail',
+                    }
+# Selected number concentration for primary ice (ICE3)
+Nii=1000 # 10**2.9 ~ 794
 
+# Plot axes/units
 pltX={'D':'Deq',
       'M':'M',
       }
@@ -23,35 +40,30 @@ pltunit={'D':'mm',
 dmax_dict={'ii':5, # in mm
            'ss':10,
            'gg':50,
-           'cc':2,
+           'cl':2,
+           'cs':2,
            'rr':10,
            'wg':50,
            'hh':100,
            'wh':100,
            }
+unit={'Zh':'dBZ',
+      'Zdr':'dB',
+      'Kdp':u'\u00B0'+r' km$^{-1}$',
+      'Rhohv':'/',
+      }
+# Table selection
 T_dict = {'ii':-30,
           'ss':-10,
           'gg':0,
-          'cc':5,
+          'cl':5,
+          'cs':5,
           'rr':10,
           'wg':10,
           'hh':1,
           'wh':10,
           }
-nameHydrometeors = {'ii':'Pristine ice',
-                    'ss':'Dry Snow',
-                    'gg':'Dry Graupel',
-                    'cc':'Cloud Water',
-                    'rr':'Rain',
-                    'wg':'Wet Graupel',
-                    'hh':'Dry Hail',
-                    'wh':'Wet Hail',
-                    }
-unit={'Zh':'dBZ',
-        'Zdr':'dB',
-        'Kdp':u'\u00B0'+r' km$^{-1}$',
-        'Rhohv':'/',
-        }
+# Base configuration
 base_cfg = {'ii':{'SIGBETA':0.0,
                   'ARfunc':'CNST',
                   'ARvalue':1.0,
@@ -61,7 +73,7 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   },
             'ss':{'SIGBETA':0.0,
                   'ARfunc':'AUds',
-                  'ARvalue':0.8,
+                  'ARvalue':0.75,
                   'DSTYfunc':'RHOX',
                   'Frim':1.0,
                   'DIEL':'RY19dry',
@@ -87,7 +99,14 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   'Frim':1.0,
                   'DIEL':'Liebe91',
                   },
-            'cc':{'SIGBETA':0.0,
+            'cl':{'SIGBETA':0.0,
+                  'ARfunc':'CNST',
+                  'ARvalue':1.0,
+                  'DSTYfunc':'RHOX',
+                  'Frim':1.0,
+                  'DIEL':'Liebe91',
+                  },
+            'cs':{'SIGBETA':0.0,
                   'ARfunc':'CNST',
                   'ARvalue':1.0,
                   'DSTYfunc':'RHOX',
@@ -109,9 +128,6 @@ base_cfg = {'ii':{'SIGBETA':0.0,
                   'DIEL':'LBwetgr',
                   },
             }
-ls={'Tmatrix':'-',
-    'Rayleigh':'--',
-    }
 
 
 
@@ -120,20 +136,20 @@ def get_Y_min_max(var,hydro,xAxis):
     ymin_dict,ymax_dict={},{}
     for dpol in ['Zh','Zdr','Kdp','Rhohv']: ymin_dict[dpol],ymax_dict[dpol]={'D':{},'M':{}},{'D':{},'M':{}}
     # ZH
-    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
-    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 80,'cc': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
-    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-40,'cc':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
-    ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cc': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
+    ymin_dict["Zh"]['M'] = {'ii':-30,'ss':-30,'gg':-20,'cs':-60,'cl':-60,'rr':0,'wg':-20,'hh': 20,'wh': 20}
+    ymax_dict["Zh"]['M'] = {'ii': 50,'ss': 50,'gg': 60,'cs':20,'cl': 20,'rr': 70,'wg': 60,'hh':100,'wh':100}
+    ymin_dict["Zh"]['D'] = {'ii':-40,'ss':-60,'gg':-10,'cs':-60,'cl':-60,'rr':-20,'wg':-10,'hh': 20,'wh': 20}
+    ymax_dict["Zh"]['D'] = {'ii': 30,'ss': 30,'gg': 80,'cs':20,'cl': 20,'rr': 70,'wg': 80,'hh':100,'wh':100}
     # ZDR
-    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
-    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-2,'cc':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-    ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cc':1,'rr':10,'wg':10,'hh':2,'wh':10}
+    ymin_dict["Zdr"]['M'] = {'ii':-0.5,'ss':-0.5,'gg':-0.5,'cs':0,'cl':0,'rr':-0.5,'wg':-0.5,'hh':-2,'wh':-4}
+    ymax_dict["Zdr"]['M'] = {'ii':6,'ss':4,'gg':2,'cl':1,'cs':1,'rr':6,'wg':4,'hh':2,'wh':10}
+    ymin_dict["Zdr"]['D'] = {'ii':0,'ss':0,'gg':-0.5,'cl':0,'cs':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
+    ymax_dict["Zdr"]['D'] = {'ii':6,'ss':0.5,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
     # KDP
-    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
-    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.2,'cc':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.2,'cc':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymin_dict["Kdp"]['M'] = {'ii':-0.04,'ss':-0.01,'gg':-0.05,'cl':0,'cs':0,'rr':-0.25,'wg':-0.05,'hh':-30,'wh':-30}
+    ymax_dict["Kdp"]['M'] = {'ii':0.5,'ss':0.08,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
+    ymin_dict["Kdp"]['D'] = {'ii':0,'ss':0,'gg':-0.1,'cl':0,'cs':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
+    ymax_dict["Kdp"]['D'] = {'ii':0.05,'ss':0.2,'gg':0.4,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
     # RHOHV
     ymin_dict["Rhohv"]['M'][hydro]=0.9
     ymax_dict["Rhohv"]['M'][hydro]=1.0
@@ -144,9 +160,9 @@ def get_Y_min_max(var,hydro,xAxis):
 
 
 
-def get_table_name(axeX,band,hydro,micro='ICE3'):
+def get_table_name(axeX,band,hydro,micro='ICE3',moment=1):
     tableName={'D':f'TmatCoefDiff_{band}{hydro}',
-               'M':f'TmatCoefInt_{micro}_{band}{hydro}',
+               'M':f'TmatCoefInt_{micro}_{str(moment)}M_{band}{hydro}',
                }
     delim={'D':r"\s+",
            'M':';',
@@ -260,6 +276,12 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
     if DSTYfunc == 'RHOX': DSTYfunc = 'AROME (1M)'
     if DSTYfunc == 'ICON': DSTYfunc = 'ICON-D2 (1M)'
     
+    # Specific case for ice in ICE3 and ICJW
+    #  Nc==0 means no Nc provided when running the script
+    #  --> implies that the species is considered 1-moment
+    if hydro=='ii' and axeX=='M' and Nc==0 :
+        Nc = Nii
+    
     subfig_title = {'canting_angle' : r'$\sigma_{\beta}=$'+str(SIGBETA)+u'\u00B0',
                     'axis_ratio_func' : f'ARfunc: {ARfunc}',
                     'axis_ratio' : f'AR={ARcnst}',
@@ -283,7 +305,7 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
                 subfig_title.pop(lgd_elmt)
                            
     if axeX == 'D' : subfig_title.pop('number_concentration')
-    elif axeX == 'M' : subfig_title.pop('liquid_water_fraction')
+    #elif axeX == 'M' : subfig_title.pop('liquid_water_fraction')
     
     for subfigElement in subfig_title.values() :
         common_elements += '\n- '+subfigElement
@@ -292,8 +314,8 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
 
 
 def plot_table(h:str, axeX:str, param:dict,
-               which_dpolVar:list, figAx:str,
-               method:str, color:str,
+               which_dpolVar:list, figAx,
+               method:str, color:str, moment:int,
                legend:str|None, subfigRow:str|None,
                Fw:float, Nc:int, P3col:np.ndarray,
                Tcol:np.ndarray, ELEVcol:np.ndarray,
@@ -311,9 +333,6 @@ def plot_table(h:str, axeX:str, param:dict,
         and base_cfg[h]['DIEL'] == DIEL
         and base_cfg[h]['Frim'] == Frim
         ):
-        # if h[0:1] == 'w' and subfigRow == None :
-        #     legendItem = legend
-        # else :
         isRef = True
         if nbRef == 1 :
             color='k'
@@ -323,7 +342,13 @@ def plot_table(h:str, axeX:str, param:dict,
     if axeX == 'D' :
         rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
     elif axeX == 'M' :
-        rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
+        if moment == 1 :
+            if h=='ii':
+                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nii))
+            else :
+                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
+        elif moment == 2 :
+            rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
     lgd_label = set_legend(whichLegend=legend, SIGBETA=SIGBETA,
                            ARfunc=ARfunc, ARcnst=ARcnst,
                            DSTYfunc=DSTYfunc, Frim=Frim,
@@ -337,15 +362,20 @@ def plot_table(h:str, axeX:str, param:dict,
                                     )
     for ivar,varName in enumerate(which_dpolVar) :
         ymin,ymax=get_Y_min_max(varName,h,axeX)
-        if method == 'Both': listMethod = ['Tmatrix','Rayleigh']
-        else : listMethod = [method]
+        if method == 'Both':
+            listMethod = ['Tmatrix','Rayleigh']
+            ls_plot = ls_method
+        else : 
+            listMethod = [method]
+            ls_plot = ls_method
+            if isRef and (legend=='liquid_water_fraction' or legend=='number_concentration'): ls_plot = {method:'--'}
         for m in listMethod :
             yaxis = dpolDict[m][varName]
             figAx[ivar].plot(xaxis[rows],yaxis[rows],
                              label=lgd_label+f'\n{m}',
                              linewidth=lw,
                              color=color,
-                             ls=ls[m],
+                             ls=ls_plot[m],
                              alpha=alpha,
                              )
         if axeX == 'D' :
@@ -365,7 +395,7 @@ def plot_table(h:str, axeX:str, param:dict,
 
 
 
-def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
+def analyse_dict(dictParam:dict,hydrometeor:str,combine:list,invertCol_and_Legend:bool) :
     
     if len(combine)==1:
         print('No legend combination possible with combine =',combine) ; sys.exit()
@@ -384,7 +414,10 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
     if len(dictParam['liquid_water_fraction'])<1 :
         dictParam['liquid_water_fraction'] += [0.0]
     if len(dictParam['number_concentration'])<1 :
-        dictParam['number_concentration'] += [0.0]
+        if hydrometeor=='ii':
+            dictParam['number_concentration'] += [1000]
+        else:
+            dictParam['number_concentration'] += [0]
     
     nb_keys = len(dictParam.keys())
     nb_items = np.sum([len(dictParam[key]) for key in dictParam.keys()])
@@ -422,6 +455,12 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list) :
                 else :
                     variation_legend = variations[0]
                     variation_columns = variations[1]
+            if invertCol_and_Legend :
+                print('Inverting what is shown in the legend with what is displayed columnwise.')
+                new_variation_columns = variation_legend
+                new_variation_legend = variation_columns
+                variation_legend = new_variation_legend
+                variation_columns = new_variation_columns
             nrows = len(dictParam[variation_columns])
         else :
             print('')
@@ -448,7 +487,7 @@ def get_colors(dictParam:dict,
     elif type(asLegend) is list :
         nb_colors = 0
         for arf, ar, cant, dsty, Frim, diel in combinations :
-            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
+            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
                 nb_colors += 1
         nb_colors = nb_colors * len(Fw) * len(Nc)
     
@@ -475,7 +514,7 @@ def get_combinations(dictParam:dict,
                         )
     final_combinations = []
     for arf, ar, cant, dsty, Frim, diel in combinations :
-        filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
+        filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
         if os.path.isfile(filepath):
             final_combinations += [(arf, ar, cant, dsty, Frim, diel)]
     if len(final_combinations) < 1 : sys.exit()
