@@ -25,11 +25,11 @@ Path_tables = "../tables_generator/tables"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg']#,'wg']
 #band,color_list,typeh_list ='C',['b','c','gray'],['rr','hh','gg']
 
 listplot=['M'] #,'M']
-TmatOption={'C':'cloe2','K':'default','W':'default'}
+TmatOption={'C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh','Zdr','Kdp'] #,'Rhohv','Ah','Av']
@@ -170,7 +170,7 @@ for plot in listplot:
     micron=micro
     if (plot=='D'):
         micron=''
-    nomfig=dir_fig +'DistTmat'+band+micro+"T"+str(T_dict['rr'])+varpol+types+'_'+plot+'varpol_alltypes.png'      
+    nomfig=dir_fig +'DistTmat'+band+micro+"T"+str(T_dict['rr'])+varpol+types+'_'+plot+'varpol_alltypes'+TmatOption[band]+'.png'      
  
     fig.savefig(nomfig,dpi=200, bbox_inches='tight')
     plt.clf()

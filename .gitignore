@@ -9,5 +9,6 @@ tables_generator/param/tmp_config
 !tables_generator/tables/.gitkeep
 tables_generator/src/Tmat
 tables_generator/src/TmatInt
+tables_generator/src/libFortran/
 plot_tools/IMG/
 plot_tools/nohupOUT/
