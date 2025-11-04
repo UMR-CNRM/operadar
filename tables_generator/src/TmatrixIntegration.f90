@@ -950,20 +950,20 @@ DO idTc=0,nTcloop
           RRint = RRint+1000*(P/6)*(Deqrrec**3)*N*vtm*3600*(Deqrmrecsup-Deqrmrecinf)/2            
           RRint2 = RRint2+1000*(P/6)*(Deqrrec**3)*N2*vtm*3600*(Deqmrecsup-Deqmrecinf)/2            
           
-          sighhint=sighhint+sighh*N*(Deqrmrecsup-Deqrmrecinf)/2
-          sigvvint=sigvvint+sigvv*N*(Deqrmrecsup-Deqrmrecinf)/2
-          kdpint=kdpint+kdp*N*(Deqrmrecsup-Deqrmrecinf)/2
-          Ahint=Ahint+Ah*N*(Deqrmrecsup-Deqrmrecinf)/2
-          Avint=Avint+Av*N*(Deqrmrecsup-Deqrmrecinf)/2
-          sighhRint=sighhRint+sighhR*N*(Deqrmrecsup-Deqrmrecinf)/2
-          sigvvRint=sigvvRint+sigvvR*N*(Deqrmrecsup-Deqrmrecinf)/2
-          kdpRint=kdpRint+kdpR*N*(Deqrmrecsup-Deqrmrecinf)/2
-          AhRint=AhRint+AhR*N*(Deqrmrecsup-Deqrmrecinf)/2
-          AvRint=AvRint+AvR*N*(Deqrmrecsup-Deqrmrecinf)/2
+          sighhint=sighhint+sighh*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          sigvvint=sigvvint+sigvv*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          kdpint=kdpint+kdp*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          Ahint=Ahint+Ah*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          Avint=Avint+Av*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          sighhRint=sighhRint+sighhR*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          sigvvRint=sigvvRint+sigvvR*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          kdpRint=kdpRint+kdpR*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          AhRint=AhRint+AhR*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          AvRint=AvRint+AvR*N2*(Deqrmrecsup-Deqrmrecinf)/2
           deltaco=cmplx(REdeltaco,IMdeltaco)
-          deltacoint=deltacoint+deltaco*N*(Deqrmrecsup-Deqrmrecinf)/2
+          deltacoint=deltacoint+deltaco*N2*(Deqrmrecsup-Deqrmrecinf)/2
           deltacoR=cmplx(REdeltacoR,IMdeltacoR)
-          deltacoRint=deltacoRint+deltacoR*N*(Deqrmrecsup-Deqrmrecinf)/2           
+          deltacoRint=deltacoRint+deltacoR*N2*(Deqrmrecsup-Deqrmrecinf)/2           
   
           !WRITE(0,*) Fw,N*((Dmrecsup+Dmrec)/2-(Dmrec+Dmrecinf)/2),M,M_liq,Mint,Mint2,M/Mint,M/Mint2
 
