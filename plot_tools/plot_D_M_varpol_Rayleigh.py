@@ -14,7 +14,12 @@ import math
 import os
 
 
-micro="ICJW_1M" # ICE3_1M or ICJW_1M
+micro="ICE3" # ICE3_1M or ICJW_1M
+moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
+         "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
+         "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"2M"},
+         "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"1M"}
+         }
 plotR=True #True 
 
 Path_tables = "../tables_generator/tables"
@@ -29,10 +34,10 @@ color={'S':'k','C':'blue','X':'green','K':'gray','W':'green' }#'lightgray'}
 style={'S':'-','C':'-','X':'-','K':'-','W':'-'}
 
 listplot=['M'] #,'M']
-TmatOption={'C':'default','K':'default','W':'default'}
+TmatOption={'C':'cloe2','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
-listvar=['Zh','Ah']
+listvar=['Zh']
 unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/','Ah':'dB'+r' km$^{-1}$','Av':'dB'+r' km$^{-1}$'}
 vn={}
 vn_R={}
@@ -49,14 +54,18 @@ ymin_dict,ymax_dict={},{}
 for var in ['Zh','Zdr','Rhohv','Kdp','Ah','Av']:
     ymin_dict[var],ymax_dict[var]={},{}
 
-ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'cl':-60,'cc':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
-ymax_dict["Zh"] = {'ii':30,'ss':30,'gg':80,'cl':20,'cc':20,'rr':70,'wg':80,'hh':100,'wh':100}
+#ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'cl':-60,'cc':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
+#ymax_dict["Zh"] = {'ii':30,'ss':30,'gg':80,'cl':20,'cc':20,'rr':70,'wg':80,'hh':100,'wh':100}
+ymin_dict["Zh"] = {'ii':-20,'ss':-20,'gg':-20,'cl':-20,'rr':-20,'wg':-20,'hh':-20,'wh':-20}
+ymax_dict["Zh"] = {'ii':70,'ss':70,'gg':70,'cl':70,'rr':70,'wg':70,'hh':70,'wh':70}
 
 ymin_dict["Zdr"] = {'ii':0,'ss':-2,'gg':-2,'cl':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
 ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'cl':1,'rr':10,'wg':10,'hh':2,'wh':10}
 
+
 ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'cl':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
 ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'cl':1,'rr':5,'wg':4,'hh':20,'wh':20}
+
 
 ymin_dict["Ah"] = {'ii':0,'ss':0,'gg':0,'cl':0,'rr':0,'wg':0,'hh':0,'wh':0}
 ymax_dict["Ah"] = {'ii':10,'ss':10,'gg':10,'cl':10,'rr':10,'wg':10,'hh':10,'wh':10}
@@ -71,14 +80,18 @@ for typeh in typeh_list:
 
 dmax_dict={'ii':10,'ss':20,'gg':50,'cl':2,'cc':2,'rr':10,'wg':50,'hh':100,'wh':100}
 
-Fwchoix=0
-ELEVchoix=0 #0 pour radars sol, 90 pour rasta
-Nii=800 #selected number concentration for primary ice
-T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':5,'cc':5,'rr':10,'wg':10,'hh':1,'wh':10}
+Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe can be wet in ICE3/LIMA)
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
+ELEVsel=0 #0 for ground radars, 90 for RASTA or BASTA
+Nii=800 #selected number concentration for primary ice
+expNmin,expNmax=1,8
+nexpN=expNmax-expNmin+1
+expN_list,color_list= np.arange(expNmin,expNmax+1), plt.cm.jet(np.linspace(0,1,nexpN))
+T_dict = {'ii':0,'ss':-10,'gg':0,'cl':5,'cc':5,'rr':10,'wg':10,'hh':1,'wh':10}
+
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'cc':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
-begtable={'D':'TmatCoefDiff_','M':'TmatCoefInt_'+micro+'_'}
+
 delim={'D':r"\s+",'M':';'}
 
 for var in listvar:
@@ -87,12 +100,11 @@ for var in listvar:
         fig,axes = plt.subplots(nrows= 2,ncols=3,figsize=(24,12))
         ax = axes.flat
         for itypeh,typeh in enumerate(typeh_list):
-            print("type : "+typeh)  
-            
-            
+            print("type : "+typeh)
+            begtable={'D':'TmatCoefDiff_','M':'TmatCoefInt_'+micro+'_'+moments[micro][typeh]+'_'}
+                        
             for iband,band in enumerate(band_list): 
                 print("band : "+band)
-                #table=Path_tables+"/"+typeh+"/"+begtable[plot]+band+typeh
                 table=Path_tables+"/"+TmatOption[band]+"/"+begtable[plot]+band+typeh
                 
                 # reading table options (from config file)
@@ -104,11 +116,12 @@ for var in listvar:
                 # reading table variables
                 df=pd.read_csv(table, sep=delim[plot],skiprows =2,engine='python')
                 Tcol=df['Tc'].to_numpy()
-                ELEV=df['ELEV'].to_numpy()
+                ELEV=df['ELEV'].to_numpy()                
                 if (plot=='M'):
-                    Fwcol=df['P3'].to_numpy()                            
+                    P3col=df['P3'].to_numpy()                                               
                 else:
-                    Fwcol=df['Fw'].to_numpy()
+                    P3col=df['Fw'].to_numpy()
+
                 vn['Zh'],vn['Zdr']=df['zhh'].to_numpy(),df['zdr'].to_numpy()
                 vn['Rhohv'],vn['Kdp']=df['rhohv'].to_numpy(),df['kdp'].to_numpy()
                 vn['Ah'],vn['Av']=df['Ah'].to_numpy(),df['Av'].to_numpy()
@@ -119,19 +132,23 @@ for var in listvar:
                 
                 if (typeh=='wg' or typeh=='wh'):
                     for iFw,Fw in enumerate(Fw_list):
-                        ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == Fw)) 
+                        ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fw)) 
                         label=band_name[band]+" Fw="+str(Fw)
                         ax[itypeh].plot(x[ind],vn[var][ind],label = label,color=color[band],ls=Fw_ls[iFw],linewidth=lw)#,s=0.5)
                     if (iband==0):
                         ax[itypeh].legend(loc = 'best',fontsize=pol_legend)   
                 else:
-                    if (typeh=='ii' and plot=='M') :
-                        id=np.argmin(np.abs(Fwcol-math.log10(Nii))) # position of closest concentration to Nii
-                        P3choix=Fwcol[id]
-                        ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == P3choix))           
-                        ax[itypeh].plot(x[ind],vn[var][ind],label = band_name[band],color=color[band],linewidth=lw)#,s=0.5)  
+                    if ((typeh=='ii' and plot=='M') or (plot =='M' and moments[micro][typeh]=="2M")) :
+                        expNcol=np.log10(P3col) 
+                        for iN,expN in enumerate(expN_list):
+                            id=np.argmin(np.abs(expNcol-expN)) # position of closest concentration to expN
+                            expNsel=expNcol[id]
+                            ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(expNcol == expNsel))  
+                            label=" expN="+str(expNsel)
+                            ax[itypeh].plot(x[ind],vn[var][ind],label = label,color=color_list[iN],linewidth=lw)#,s=0.5)
+                            ax[itypeh].legend(loc = 'best',fontsize=pol_legend) 
                     else:
-                        ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVchoix)*(Fwcol == Fwchoix))           
+                        ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fwsel))           
                         ax[itypeh].plot(x[ind],vn[var][ind],label = band_name[band],color=color[band],linewidth=lw)#,s=0.5)
                         if (plotR):
                             ax[itypeh].plot(x[ind],vn_R[var][ind],label = band_name[band]+', Rayleigh',color=color[band],linewidth=lw,ls='--')
@@ -140,7 +157,7 @@ for var in listvar:
             # end loop over bands
             title1= typeName[typeh]+" T="+str(int(T_dict[typeh]))+u'\u00B0C'+'\n'
             title2= r'$\sigma_{\beta}=$'+str(SIGBETA)+u'\u00B0'
-            title3=" AR="+str(ARcnst)+" elev="+str(ELEVchoix)
+            title3=" AR="+str(ARcnst)+" elev="+str(ELEVsel)
             if (typeh=="rr"):
                 title3=" AR="+ARfunc
             ax[itypeh].set_title(title1+title2+title3,fontsize=pol_title)
@@ -162,7 +179,7 @@ for var in listvar:
             ax[itypeh].grid()
         # end loop over typeh    
         
-        figtitle=var+"("+unit[var]+") as a function of "+plot+"("+pltunit[plot]+") - ELEV="+str(ELEVchoix)+u'\u00B0'+" - "+micro
+        figtitle=var+"("+unit[var]+") as a function of "+plot+"("+pltunit[plot]+") - ELEV="+str(ELEVsel)+u'\u00B0'+" - "+micro
         fig.suptitle(figtitle,fontsize=pol_suptitle)
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         bandtit=''
@@ -173,7 +190,7 @@ for var in listvar:
         if (plot=='D'):
             micron=''
 
-        nomfig=dir_fig +'DistTmat'+bandtit+micron+'_'+plot+var
+        nomfig=dir_fig +'DistTmat'+bandtit+micron+'_'+plot+var+TmatOption[band]
         if (plotR):
             nomfig+="_R"
         
