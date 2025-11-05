@@ -34,7 +34,7 @@ color={'S':'k','C':'blue','X':'green','K':'gray','W':'green' }#'lightgray'}
 style={'S':'-','C':'-','X':'-','K':'-','W':'-'}
 
 listplot=['M'] #,'M']
-TmatOption={'C':'cloe2','K':'default','W':'default'}
+TmatOption={'C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh']

@@ -131,7 +131,7 @@ REAL :: LAM,FREQ
 REAL :: ELEV,ELEVmin,ELEVmax,ELEVstep !,ELEVrecinf,ELEVrecsup
 REAL :: Tc,Tcmin,Tcmax,Tcstep,Tk !,Tcrecinf,Tcrecsup
 REAL :: Fwmin, Fwstep, Fwmax,Fw !,Fwrecinf,Fwrecsup
-REAL :: D,expD,expDmin,expDmax,expDstep
+REAL :: expDmin,expDmax,expDstep
 REAL :: Frim ! degree of riming factor
 
 ! Sup and inf born for diameter parameters
@@ -143,7 +143,6 @@ INTEGER :: idELEV,idTc,idD,idM,iLine,idP3,idFw !,ispecies
 INTEGER :: nELEV,nTc,nD,nM,nFw,nLines
 INTEGER :: nP3 !nCC,
 INTEGER :: nELEVloop, nTcloop, nP3loop, nMloop
-INTEGER :: record !,recordinf, recordsup, pour lecture table
 
 ! Density and dielectric constants
 REAL :: RHOLW,QMW !RHOX,Vpart,Mpart,
@@ -390,34 +389,37 @@ ENDIF
 
 !=================================
 !Output file
-nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
-PRINT *,' Creation of ',trim(nomfileCoefInt)
 
-OPEN (6,FILE=trim(nomfileCoefInt))
-
-! ==== Description part of the output file ====
-! Parameters values
-WRITE (6,1000)              
-1000 FORMAT ('micro;canting;SIGBETA;DIEL;ARfunc;ARcnst;DSTYfunc;LAM;' &
-              'Frim;ELEVmin;ELEVstep;ELEVmax;Tcmin;Tcstep;Tcmax;' &
-              'expMmin;expMstep;expMmax;expCCmin;expCCstep;expCCmax;' &
-              'Fwmin;Fwstep;Fwmax')
-WRITE (6,1002) CCLOUD,canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
-                Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
-                expMmin,expMstep,expMmax,expCCmin,expCCstep,expCCmax, &
-                Fwmin,Fwstep,Fwmax
-1002 FORMAT (A4,';',A6,';',F4.1,';',A7,';',A4,';',F4.2,';',A4,';',F6.2,';', &
-              F5.1,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
-              F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
-              F6.2,';',F6.2,';',F6.2)               
+IF (.not. testMode) THEN
+    nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
+    PRINT *,' Creation of ',trim(nomfileCoefInt)
     
-! Variables names
-WRITE (6,5003)
-5003 FORMAT ('Tc;ELEV;P3;M;RR;' &
-              'sighh;sigvv;REdeltaco;IMdeltaco;' &
-              'zhh;zdr;kdp;rhohv;Ah;Av;' &
-              'sighhR;sigvvR;REdeltacoR;IMdeltacoR;' &
-              'zhhR;zdrR;kdpR;rhohvR;AhR;AvR')
+    OPEN (6,FILE=trim(nomfileCoefInt))
+    
+    ! ==== Description part of the output file ====
+    ! Parameters values
+    WRITE (6,1000)              
+    1000 FORMAT ('micro;canting;SIGBETA;DIEL;ARfunc;ARcnst;DSTYfunc;LAM;' &
+                  'Frim;ELEVmin;ELEVstep;ELEVmax;Tcmin;Tcstep;Tcmax;' &
+                  'expMmin;expMstep;expMmax;expCCmin;expCCstep;expCCmax;' &
+                  'Fwmin;Fwstep;Fwmax')
+    WRITE (6,1002) CCLOUD,canting,SIGBETA,DIEL,ARfunc,ARcnst,DSTYfunc,LAM, &
+                    Frim,ELEVmin,ELEVstep,ELEVmax,Tcmin,Tcstep,Tcmax, &
+                    expMmin,expMstep,expMmax,expCCmin,expCCstep,expCCmax, &
+                    Fwmin,Fwstep,Fwmax
+    1002 FORMAT (A4,';',A6,';',F4.1,';',A7,';',A4,';',F4.2,';',A4,';',F6.2,';', &
+                  F5.1,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
+                  F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';',F6.2,';', &
+                  F6.2,';',F6.2,';',F6.2)               
+        
+    ! Variables names
+    WRITE (6,5003)
+    5003 FORMAT ('Tc;ELEV;P3;M;RR;' &
+                  'sighh;sigvv;REdeltaco;IMdeltaco;' &
+                  'zhh;zdr;kdp;rhohv;Ah;Av;' &
+                  'sighhR;sigvvR;REdeltacoR;IMdeltacoR;' &
+                  'zhhR;zdrR;kdpR;rhohvR;AhR;AvR')
+ENDIF
 
 !WRITE(0,*) '================== LAM=',LAM
 LAM=LAM*1E-3
@@ -466,9 +468,9 @@ DO idTc=0,nTcloop
     ENDIF
     
     nP3loop=nP3-1  
-!      IF (testMode) THEN
-!        nP3loop=0
-!      ENDIF
+    !IF (testMode) THEN
+    !  nP3loop=0
+    !ENDIF
     DO idP3=0,nP3loop
       IF (Nmoments==2) THEN
         expP3=P3min+idP3*P3step
@@ -485,13 +487,12 @@ DO idTc=0,nTcloop
       !=============== Loop over hydromet content M ============
       nM=nint((expMmax-expMmin)/expMstep)+1
       nMloop=nM-1
-!        IF (testMode) THEN
-!          nMloop=0
-!        ENDIF
+      IF (testMode) THEN
+        nMloop=0
+      ENDIF
 
       DO idM=0,nMloop
         expM=expMmin+idM*expMstep
-        !IF(expM .EQ. -3.0) THEN    
         M=10**(expM)         
         sighhint=0
         sigvvint=0
@@ -522,7 +523,7 @@ DO idTc=0,nTcloop
         ! M_integral = M_Riemman + delta
         
         IF (testMode) THEN
-          WRITE(0,*) " "
+          WRITE(0,*) '---- Step 0, M=',M
         ENDIF
         
                   
@@ -530,11 +531,7 @@ DO idTc=0,nTcloop
         Mint2=0
         !============= Loop over diameters ==============
         DO idD=0,nD-1
-        
-          expD=expDmin+idD*expDstep
-          D=0.01*10**expD
-          D=D*1E-3 ! conversion from mm to m
-          
+               
           kTmat=idTc*nELEV*nFw*nD+idELEV*nFw*nD+idFw*nD+idD+1
           
           Tcrec=Tctab(kTmat)
@@ -609,7 +606,11 @@ DO idTc=0,nTcloop
             Deqmrecsup=Deqmrec+(Deqmrec-Deqmrecinf)
           ENDIF
           
-          ! Distribution of the solid part of the hydrometeor  
+          ! Distribution of the solid part of the hydrometeor
+          IF (testMode) THEN
+            WRITE(0,*) "----"
+            WRITE(0,*) "Deqrmrec,Dmrec=",Deqrmrec,Dmrec
+          ENDIF 
           IF((1-Fw)*M .GT. 0) THEN
             CALL PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
               aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
@@ -634,7 +635,7 @@ DO idTc=0,nTcloop
           M_ss2=M_ss2+(aj*Dmrec**bj)*N_ss*(Dmrecsup-Dmrecinf)/2      
           M_rr2=M_rr2+(aj_rr*Deqrmrec**bj_rr)*N_rr*(Deqrmrecsup-Deqrmrecinf)/2          
 
-          
+          if (testMode) WRITE(0,*) "N_ss,N_rr = ",N_ss,N_rr          
                     
         ENDDO !===== End loop over diameters step 0
         
@@ -662,11 +663,6 @@ DO idTc=0,nTcloop
         
         !============= Loop over diameters step 1==============
         DO idD=0,nD-1
-
-          expD=expDmin+idD*expDstep
-          D=0.01*10**expD
-          D=D*1E-3 ! conversion from mm to m
-          !D=expDmin+idD*expDstep
   
           kTmat=idTc*nELEV*nFw*nD+idELEV*nFw*nD+idFw*nD+idD+1
 
@@ -746,9 +742,9 @@ DO idTc=0,nTcloop
           vts=ccj*(Drec**ddj)
           vtm=phi*vtr+(1-phi)*vts
           
-          IF (testMode) THEN
-              WRITE(0,*) " Drec,Deqrrec,Dmrec,Deqrmrec",Drec,Deqrrec,Dmrec,Deqrmrec
-          ENDIF
+!           IF (testMode) THEN
+!               WRITE(0,*) " Drec,Deqrrec,Dmrec,Deqrmrec",Drec,Deqrrec,Dmrec,Deqrmrec
+!           ENDIF
   
           ! Distribution of the solid part of the hydromet content
           IF((1-Fw)*M .GT. 0) THEN
@@ -792,9 +788,9 @@ DO idTc=0,nTcloop
           Mint=Mint+1000*(P/6)*(Deqrrec**3)*N*(Deqrmrecsup-Deqrmrecinf)/2
           Mint2=Mint2+(aj_rr*Deqrmrec**bj_rr)*N2*(Deqmrecsup-Deqmrecinf)/2
           
-          IF (testMode) THEN
-              WRITE(0,*) " N_ss,N_ss2,N_rr,N_rr2, N, N2",N_ss, N_ss2, N_rr, N_rr2,N,N2
-          ENDIF
+!           IF (testMode) THEN
+!               WRITE(0,*) " N_ss,N_ss2,N_rr,N_rr2, N, N2",N_ss, N_ss2, N_rr, N_rr2,N,N2
+!           ENDIF
 
 
         ENDDO !===== End loop over diameters step 1
@@ -818,13 +814,9 @@ DO idTc=0,nTcloop
         RRint2=0
         !============= Loop over diameters  step 2==============
         DO idD=0,nD-1
-          expD=expDmin+idD*expDstep
-          D=0.01*10**expD
-          D=D*1E-3
     
           !Position dans le fichier tmat des coefs de diffusion
           kTmat=idTc*nELEV*nFw*nD+idELEV*nFw*nD+idFw*nD+idD+1
-          record=kTmat
 
           Tcrec=Tctab(kTmat)
           ELEVrec=ELEVtab(kTmat)
@@ -950,20 +942,20 @@ DO idTc=0,nTcloop
           RRint = RRint+1000*(P/6)*(Deqrrec**3)*N*vtm*3600*(Deqrmrecsup-Deqrmrecinf)/2            
           RRint2 = RRint2+1000*(P/6)*(Deqrrec**3)*N2*vtm*3600*(Deqmrecsup-Deqmrecinf)/2            
           
-          sighhint=sighhint+sighh*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          sigvvint=sigvvint+sigvv*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          kdpint=kdpint+kdp*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          Ahint=Ahint+Ah*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          Avint=Avint+Av*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          sighhRint=sighhRint+sighhR*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          sigvvRint=sigvvRint+sigvvR*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          kdpRint=kdpRint+kdpR*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          AhRint=AhRint+AhR*N2*(Deqrmrecsup-Deqrmrecinf)/2
-          AvRint=AvRint+AvR*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          sighhint=sighhint+sighh*N2*(Deqmrecsup-Deqmrecinf)/2          
+          sigvvint=sigvvint+sigvv*N2*(Deqmrecsup-Deqmrecinf)/2         
+          kdpint=kdpint+kdp*N2*(Deqmrecsup-Deqmrecinf)/2
+          Ahint=Ahint+Ah*N2*(Deqmrecsup-Deqmrecinf)/2
+          Avint=Avint+Av*N2*(Deqmrecsup-Deqmrecinf)/2
+          sighhRint=sighhRint+sighhR*N2*(Deqmrecsup-Deqmrecinf)/2
+          sigvvRint=sigvvRint+sigvvR*N2*(Deqmrecsup-Deqmrecinf)/2
+          kdpRint=kdpRint+kdpR*N2*(Deqmrecsup-Deqmrecinf)/2
+          AhRint=AhRint+AhR*N2*(Deqmrecsup-Deqmrecinf)/2
+          AvRint=AvRint+AvR*N2*(Deqmrecsup-Deqmrecinf)/2
           deltaco=cmplx(REdeltaco,IMdeltaco)
-          deltacoint=deltacoint+deltaco*N2*(Deqrmrecsup-Deqrmrecinf)/2
+          deltacoint=deltacoint+deltaco*N2*(Deqmrecsup-Deqmrecinf)/2
           deltacoR=cmplx(REdeltacoR,IMdeltacoR)
-          deltacoRint=deltacoRint+deltacoR*N2*(Deqrmrecsup-Deqrmrecinf)/2           
+          deltacoRint=deltacoRint+deltacoR*N2*(Deqmrecsup-Deqmrecinf)/2           
   
           !WRITE(0,*) Fw,N*((Dmrecsup+Dmrec)/2-(Dmrec+Dmrecinf)/2),M,M_liq,Mint,Mint2,M/Mint,M/Mint2
 
@@ -996,25 +988,28 @@ DO idTc=0,nTcloop
           IMdeltacoRint=0
         ENDIF
         
+        
         ! ----- Dual-pol variables with T-matrix
         CALL COMPUTE_VARPOL(sighhint,sigvvint,radar_cnst,P,deltacoint,zhhint,& 
                             zdrint,rhohvint)
-        
+                                    
         ! ----- Dual-pol variables with Rayleigh
         CALL COMPUTE_VARPOL(sighhRint,sigvvRint,radar_cnst,P,deltacoRint,& 
                             zhhRint,zdrRint,rhohvRint)
 
-        !-----  Writing PSD integrated coefficients + variables           
-        WRITE (6,5006) Tc,ELEV,P3,M,RRint,sighhint,sigvvint,REAL(deltacoint),&
-        IMAG(deltacoint),zhhint,zdrint,kdpint,rhohvint,Ahint,Avint,& 
-        sighhRint,sigvvRint,REAL(deltacoRint),IMAG(deltacoRint),& 
-        zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint
-
-        5006 FORMAT (F5.1,';',F4.1,';',E9.3,';',E10.4,';',E10.4,';',E10.4,';',&
-                      E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
-                      E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&  
-                      E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
-                      E10.4,';',E10.4,';',E10.4,';',E10.4)                 
+        if (.not. testMode) THEN
+            !-----  Writing PSD integrated coefficients + variables           
+            WRITE (6,5006) Tc,ELEV,P3,M,RRint,sighhint,sigvvint,REAL(deltacoint),&
+            IMAG(deltacoint),zhhint,zdrint,kdpint,rhohvint,Ahint,Avint,& 
+            sighhRint,sigvvRint,REAL(deltacoRint),IMAG(deltacoRint),& 
+            zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint
+    
+            5006 FORMAT (F5.1,';',F4.1,';',E9.3,';',E10.4,';',E10.4,';',E10.4,';',&
+                          E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
+                          E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&  
+                          E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
+                          E10.4,';',E10.4,';',E10.4,';',E10.4)
+        ENDIF                 
 
 
         IF (testMode) THEN
@@ -1158,15 +1153,15 @@ ELSE
   nu=nuconst
 ENDIF
 
-IF (CCLOUD=='ICE3') THEN
-  lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+! ---- Compute No and lambda -----
+IF (CCLOUD=='ICE3') THEN  
   IF (typeh=='ii') THEN
     No = P3
+    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b) !PSD LIMA
   ELSE
     No   = c*(lamb**x)
+    lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b)) ! PSD ICE3
   ENDIF
-  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
-      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
 ELSE IF (CCLOUD=='ICJW') THEN
   IF (typeh=='ss') THEN 
@@ -1180,15 +1175,14 @@ ELSE IF (CCLOUD=='ICJW') THEN
                   /(GAMMA(nu+1/alpha)*GAMMA(nu+3/alpha))) ! eq8 Wurtz 2023
     No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
   ELSE
-    lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
     IF (typeh=='ii') THEN
       No = P3
+      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
     ELSE
+      lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
       No   = c*(lamb**x)
     ENDIF
   ENDIF
-  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
-      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 
 ELSE IF (CCLOUD=='LIMA') THEN
   IF (Nmoments==1) THEN
@@ -1198,8 +1192,7 @@ ELSE IF (CCLOUD=='LIMA') THEN
     No=P3
     lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
   ENDIF
-  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
-      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
 
 ELSE IF (CCLOUD=='LIMC') THEN
   IF (typeh=='ss') THEN 
@@ -1214,16 +1207,25 @@ ELSE IF (CCLOUD=='LIMC') THEN
     No = (M*GAMMA(nu)*lamb**b)/(a*GAMMA(nu+b/alpha)) ! eq III.7 these J. Wurtz
   ELSE
     IF (Nmoments==1) THEN
-      lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
-      No   = c*(lamb**x)
+      IF (typeh=='ii') THEN
+        No = P3
+        lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+      ELSE
+        lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
+        No   = c*(lamb**x)
+      ENDIF
     ELSE IF (Nmoments==2) THEN
       No=P3
       lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
     ENDIF
   ENDIF
-  N = EXP(-(lamb*D)**alpha)/GAMMA(nu)*(D**(alpha*nu-1)) &
-      *No*alpha*(lamb**(alpha*nu))
+
 ENDIF    
+
+! Compute N from N0 and lambda
+N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
+      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
 RETURN
 END
         

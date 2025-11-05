@@ -14,7 +14,7 @@ import math
 import os
 
 
-micro="ICE3" # ICE3_1M or ICJW_1M
+micro="ICJW" # ICE3_1M or ICJW_1M
 moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
          "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
          "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"2M"},
@@ -25,7 +25,7 @@ Path_tables = "../tables_generator/tables"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg']#,'wg']
+band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
 #band,color_list,typeh_list ='C',['b','c','gray'],['rr','hh','gg']
 
 listplot=['M'] #,'M']
