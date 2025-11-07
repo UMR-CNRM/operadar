@@ -148,7 +148,6 @@ generate_tables() {
         echo "=========================================="
         echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_*_default files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
-        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
         echo ""
     else
@@ -157,7 +156,6 @@ generate_tables() {
         echo "=========================================="
         echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_* files."
         echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
-        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
         echo "/!\ Table generation is time-consuming and can take several hours."
         echo ""
     fi
