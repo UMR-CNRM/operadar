@@ -7,18 +7,21 @@ Trace distributions D-Zhh et M-Zhh (ou Zdr, Kdp, Rhohv ou Ah)
 pour bandes de frequence specifiee dans band_list
 """
 import numpy as np
-import matplotlib; matplotlib.use('Agg')
+import matplotlib;
+matplotlib.use('Agg')
+#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+
 import pandas as pd
 import math
 import os
 
 
-micro="ICE3" # ICE3_1M or ICJW_1M
-moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
-         "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
-         "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"2M"},
-         "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"1M"}
+micro="LIMC" # ICE3_1M or ICJW_1M
+moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
+         "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
+         "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","ii":"2M"},
+         "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","ii":"1M"}
          }
 plotR=True #True 
 
@@ -49,22 +52,22 @@ pol_suptitle=30
 lw=3
 
 
-typeName = {'ii':'Pristine ice','ss':'Dry Snow','gg':'Dry Graupel','cl':'Cloud Water','cc':'Cloud Water','rr':'Rain','wg':'Wet Graupel','hh':'Dry Hail','wh':'Wet Hail'}
+typeName = {'ii':'Pristine ice','ss':'Dry Snow','gg':'Dry Graupel','cl':'Cloud Water','cs':'Cloud Water','rr':'Rain','wg':'Wet Graupel','hh':'Dry Hail','wh':'Wet Hail'}
 ymin_dict,ymax_dict={},{}
 for var in ['Zh','Zdr','Rhohv','Kdp','Ah','Av']:
     ymin_dict[var],ymax_dict[var]={},{}
 
 #ymin_dict["Zh"] = {'ii':-50,'ss':-60,'gg':-40,'cl':-60,'cc':-60,'rr':-20,'wg':-10,'hh':20,'wh':20}
 #ymax_dict["Zh"] = {'ii':30,'ss':30,'gg':80,'cl':20,'cc':20,'rr':70,'wg':80,'hh':100,'wh':100}
-ymin_dict["Zh"] = {'ii':-20,'ss':-20,'gg':-20,'cl':-20,'rr':-20,'wg':-20,'hh':-20,'wh':-20}
-ymax_dict["Zh"] = {'ii':70,'ss':70,'gg':70,'cl':70,'rr':70,'wg':70,'hh':70,'wh':70}
+ymin_dict["Zh"] = {'ii':-20,'ss':-20,'gg':-20,'cl':-20,'cs':-20,'rr':-20,'wg':-20,'hh':-20,'wh':-20}
+ymax_dict["Zh"] = {'ii':70,'ss':70,'gg':70,'cl':70,'cs':70,'rr':70,'wg':70,'hh':70,'wh':70}
 
-ymin_dict["Zdr"] = {'ii':0,'ss':-2,'gg':-2,'cl':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
-ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'cl':1,'rr':10,'wg':10,'hh':2,'wh':10}
+ymin_dict["Zdr"] = {'ii':0,'ss':-2,'gg':-2,'cl':0,'cs':0,'rr':-4,'wg':-4,'hh':-2,'wh':-4}
+ymax_dict["Zdr"] = {'ii':6,'ss':2,'gg':2,'cl':1,'cs':1,'rr':10,'wg':10,'hh':2,'wh':10}
 
 
-ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'cl':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
-ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'cl':1,'rr':5,'wg':4,'hh':20,'wh':20}
+ymin_dict["Kdp"] = {'ii':0,'ss':0,'gg':-0.2,'cl':0,'cs':0,'rr':-2,'wg':-4,'hh':-30,'wh':-30}
+ymax_dict["Kdp"] = {'ii':0.2,'ss':0.2,'gg':0.2,'cl':1,'cs':1,'rr':5,'wg':4,'hh':20,'wh':20}
 
 
 ymin_dict["Ah"] = {'ii':0,'ss':0,'gg':0,'cl':0,'rr':0,'wg':0,'hh':0,'wh':0}
@@ -78,7 +81,7 @@ for typeh in typeh_list:
     ymax_dict["Rhohv"][typeh]=1.0
 
 
-dmax_dict={'ii':10,'ss':20,'gg':50,'cl':2,'cc':2,'rr':10,'wg':50,'hh':100,'wh':100}
+dmax_dict={'ii':10,'ss':20,'gg':50,'cl':2,'cs':2,'rr':10,'wg':50,'hh':100,'wh':100}
 
 Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe can be wet in ICE3/LIMA)
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
@@ -87,7 +90,7 @@ Nii=800 #selected number concentration for primary ice
 expNmin,expNmax=1,8
 nexpN=expNmax-expNmin+1
 expN_list,color_list= np.arange(expNmin,expNmax+1), plt.cm.jet(np.linspace(0,1,nexpN))
-T_dict = {'ii':0,'ss':-10,'gg':0,'cl':5,'cc':5,'rr':10,'wg':10,'hh':1,'wh':10}
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':5,'cs':5,'rr':10,'wg':10,'hh':1,'wh':10}
 
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'cc':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
@@ -202,6 +205,10 @@ for var in listvar:
         print("Figure saved in: "+nomfig)
     #end loop over plot (D or M - var)
 #end loop over var
-  
+
+# # Histogram zh
+# fig, ax = plt.subplots( nrows=1, ncols=1 )  
+# plt.hist(vn["Zh"])
+# fig.savefig(nomfig+"zh_hist.png")
 
     

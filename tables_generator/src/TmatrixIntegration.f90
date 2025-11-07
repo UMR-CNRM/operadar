@@ -250,7 +250,7 @@ WRITE (0,*) '    microphysics=',CCLOUD
 WRITE (0,*) '    type=',typeh,' (',MOMENT,')'
 WRITE (0,*) '    band=',bande
 
-IF (typeh=='ii' .AND. (CCLOUD=='ICE3' .OR. CCLOUD=='ICJW')) THEN
+IF (typeh=='ii') THEN
   Nmoments=2
 ELSE
   IF (MOMENT=='1M') THEN 

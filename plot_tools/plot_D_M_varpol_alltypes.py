@@ -160,7 +160,7 @@ for plot in listplot:
         ax[ivar].grid()
   
     # end loop over var        
-    figtitle="Zh, Zdr, Kdp as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+"1-moment PSD (ICE3)"
+    figtitle="Zh, Zdr, Kdp as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+micro
     fig.suptitle(figtitle,fontsize=pol_suptitle)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
