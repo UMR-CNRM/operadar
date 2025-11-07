@@ -16,7 +16,7 @@ DIEL=""
 HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
 BAND_LIST=("C" "S" "X" "K" "W")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
-DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
+DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05" "MO17" "ICON")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
 MICRO_LIST=("ICE3" "ICJW" "LIMA" "LIMC")
 
