@@ -184,11 +184,11 @@ REAL :: expCCmin, expCCstep, expCCmax !,CC ! rain and ice concentration for LIMA
 REAL :: aj,bj,nuj,alphaj,Cj,Xj,ccj,ddj ! ICE3 param
 REAL :: aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,ccj_rr,ddj_rr ! ICE3 param (rain)
 REAL :: P3min, P3step, P3max,P3,expP3
-REAL :: lamj           ! slope param and DSP 
-REAL :: mumax !max mu for LIMA with diagnostic mu (Taufour et al 2018)
-REAL :: N, radar_cnst !,N_inf
-REAL :: N_rr,N_ss !,N_rr_inf,N_s2r,N_r2s,N_ss,N_ss_inf,N_d ! rain
-REAL :: N2, N_rr2,N_ss2
+REAL*8 :: lamj           ! slope param and DSP 
+REAL :: mumax,radar_cnst !max mu for LIMA with diagnostic mu (Taufour et al 2018)
+REAL*8 :: N
+REAL*8 :: N_rr,N_ss !,N_rr_inf,N_s2r,N_r2s,N_ss,N_ss_inf,N_d ! rain
+REAL*8 :: N2, N_rr2,N_ss2
 REAL :: vtr,vts,vtm,M_liq,M_ss,M_rr,Mint,phi,RRint !,KAPPA
 REAL :: M_rr2, M_ss2,Mint2,RRint2
 
@@ -230,9 +230,9 @@ mumax=15.0 !6.0
 testMode=.FALSE. !.TRUE.
 
 ! min/step/max values for the exponant of the hydromet content M (kg/m3):
-expMmin=-7.0
+expMmin=-7.0 !-7.0
 expMstep=0.01 
-expMmax=-1.5
+expMmax=-1.5 !-1.5
 
 ! min/step/max values for the exponant of 2-moment species concentration(/m3)
 expCCmin=0.0 
@@ -453,6 +453,7 @@ DO idTc=0,nTcloop
     ELEV=ELEVmin+idELEV*ELEVstep
 
     !============= Loop over the 3d parameter of the Tmatrix table : P3 ====
+    !WRITE(0,*) 'Nmoments=',Nmoments 
     IF (Nmoments==2) THEN  ! if (LIMA + rain or cloud water) or ice : P3=concentration CC
       nP3=nint((expCCmax-expCCmin)/expCCstep)+1
       P3max=expCCmax 
@@ -468,9 +469,11 @@ DO idTc=0,nTcloop
     ENDIF
     
     nP3loop=nP3-1  
-    !IF (testMode) THEN
+    IF (testMode) THEN
+      WRITE(0,*) 'nP3loop=',nP3loop," nP3=",nP3," expCCmax=",expCCmax," expCCmin=",expCCmin
     !  nP3loop=0
-    !ENDIF
+    ENDIF
+    
     DO idP3=0,nP3loop
       IF (Nmoments==2) THEN
         expP3=P3min+idP3*P3step
@@ -608,8 +611,8 @@ DO idTc=0,nTcloop
           
           ! Distribution of the solid part of the hydrometeor
           IF (testMode) THEN
-            WRITE(0,*) "----"
-            WRITE(0,*) "Deqrmrec,Dmrec=",Deqrmrec,Dmrec
+             WRITE(0,*) "----"
+             WRITE(0,*) "Deqrmrec,Dmrec,Nmoments=",Deqrmrec,Dmrec,Nmoments
           ENDIF 
           IF((1-Fw)*M .GT. 0) THEN
             CALL PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
@@ -1021,7 +1024,6 @@ DO idTc=0,nTcloop
             WRITE (0,*) "Ahint=",Ahint
             WRITE (0,*) "Avint=",Avint
             WRITE (0,*) "RRint, RRint2=",RRint, RRint2
-            STOP
         ENDIF
 
       ENDDO !fin boucle sur M
@@ -1131,9 +1133,9 @@ REAL,INTENT(in)  :: a,b,nuconst,alpha,c,x,mumax
 REAL,INTENT(in)  :: D,M,P3,Tk ! temperature in Kelvin for Wurtz parameterization of snow
 CHARACTER*2,INTENT(in)  ::typeh
 CHARACTER*4,INTENT(in)  ::CCLOUD
-REAL,INTENT(out) :: lamb,N
+REAL*8,INTENT(out) :: lamb,N
 
-REAL :: No,mucalc,mu,Dm,nu,lambMP
+REAL*8 :: No,mucalc,mu,Dm,nu,lambMP
 
 ! LIMA is 2-moments for cloud droplets, rain drops and pristine ice crystals
 ! For these 3 species, the number concentration N is prognostic
@@ -1142,22 +1144,22 @@ REAL :: No,mucalc,mu,Dm,nu,lambMP
 !  before looking for the scattering coef in the T-matrix table
 
 ! LIMA Marie Taufour with diagnostic mu  
-IF (CCLOUD=='LIMT' .AND. typeh=='rr'.AND. Nmoments==2) THEN
-  Dm=(M/(a*No))**(1/b)  ! Mean volume diameter for spherical drops (b = 3)
-                        ! obtained if we consider that all drops have the same size 
-                        ! (MesoNH 5.4 Physics doc eq 7.30 p 146)   
-  mucalc=38.66*exp(-1.59*(Dm*10**3)) ! adapted from eq (7) of Taufour et al 2018 (Dm in mm!)
-  mu=max(min(mucalc,mumax),0.0) ! mu is borned: 0 <= mu <= 15
-  nu=mu+1
-ELSE
-  nu=nuconst
-ENDIF
+! IF (CCLOUD=='LIMT' .AND. typeh=='rr'.AND. Nmoments==2) THEN
+!   Dm=(M/(a*No))**(1/b)  ! Mean volume diameter for spherical drops (b = 3)
+!                         ! obtained if we consider that all drops have the same size 
+!                         ! (MesoNH 5.4 Physics doc eq 7.30 p 146)   
+!   mucalc=38.66*exp(-1.59*(Dm*10**3)) ! adapted from eq (7) of Taufour et al 2018 (Dm in mm!)
+!   mu=max(min(mucalc,mumax),0.0) ! mu is borned: 0 <= mu <= 15
+!   nu=mu+1
+! ELSE
+nu=nuconst
+!ENDIF
 
 ! ---- Compute No and lambda -----
 IF (CCLOUD=='ICE3') THEN  
   IF (typeh=='ii') THEN
     No = P3
-    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b) !PSD LIMA
+    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b) !PSD LIMA
   ELSE
     No   = c*(lamb**x)
     lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b)) ! PSD ICE3
@@ -1177,7 +1179,7 @@ ELSE IF (CCLOUD=='ICJW') THEN
   ELSE
     IF (typeh=='ii') THEN
       No = P3
-      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b)
     ELSE
       lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
       No   = c*(lamb**x)
@@ -1190,7 +1192,7 @@ ELSE IF (CCLOUD=='LIMA') THEN
     No   = c*(lamb**x)
   ELSE IF (Nmoments==2) THEN
     No=P3
-    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+    lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b)
   ENDIF
 
 
@@ -1209,22 +1211,32 @@ ELSE IF (CCLOUD=='LIMC') THEN
     IF (Nmoments==1) THEN
       IF (typeh=='ii') THEN
         No = P3
-        lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+        lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b)
       ELSE
         lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b))
         No   = c*(lamb**x)
       ENDIF
     ELSE IF (Nmoments==2) THEN
       No=P3
-      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1/b)
+      lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b)
     ENDIF
   ENDIF
 
 ENDIF    
 
+  
+
 ! Compute N from N0 and lambda
-N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu)) &
-      *(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+
+! !IF (testMode) THEN
+!   WRITE (0,*) "lamb,D,alpha, nu, No,N=",lamb,D,alpha,nu,No,N
+!   WRITE (0,*) "No*alpha/GAMMA(nu)",No*alpha/GAMMA(nu)
+!   WRITE (0,*) "lamb**(alpha*nu)",lamb**(alpha*nu)
+!   WRITE (0,*) "(D**(alpha*nu-1))",(D**(alpha*nu-1))
+!   WRITE (0,*) "EXP(-(lamb*D)**alpha)",EXP(-(lamb*D)**alpha)
+!   WRITE (0,*) "Ncalc=",No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+! !ENDIF      
 
 RETURN
 END
