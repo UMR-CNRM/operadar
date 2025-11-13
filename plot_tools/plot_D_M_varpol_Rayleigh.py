@@ -17,7 +17,7 @@ import math
 import os
 
 
-micro="LIMC" # ICE3_1M or ICJW_1M
+micro="LIMA" # ICE3_1M or ICJW_1M
 moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
          "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
          "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","ii":"2M"},
