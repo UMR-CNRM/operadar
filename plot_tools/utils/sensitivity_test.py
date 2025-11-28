@@ -239,7 +239,7 @@ def sensitivity_test(hydrometeor:str,
     if asLegend != None :
         ncol = count
         if ref : ncol += count_ref
-        if ncol > 5 : ncol = int(np.ceil(ncol/2))
+        if ncol > 6 : ncol = int(np.ceil(ncol/2))
         handles, labels = axes[-1].get_legend_handles_labels()
         fig.legend(handles=handles,
                   labels=labels,

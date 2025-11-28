@@ -336,8 +336,8 @@ def plot_table(h:str, axeX:str, param:dict,
         isRef = True
         if nbRef == 1 :
             color='k'
-        else :
-            alpha=0.6
+        #else :         | si ajout de ref pour Fw ou Nc, la ref est tracé 
+        #    alpha=0.6  | en pointillé. alpha pas vraiment nécessaire (?)
         
     if axeX == 'D' :
         rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
@@ -494,7 +494,12 @@ def get_colors(dictParam:dict,
     if addRef :
         colors = mpl.colormaps['binary'](np.linspace(0.3, 1, nb_colors))
     else :
-        colors = [colorName for colorName in mpl.colors.TABLEAU_COLORS.keys()][0:nb_colors]
+        if len(Nc)>1 :
+            colors = mpl.colormaps['jet'](np.linspace(0,1,nb_colors))
+        elif len(Fw)>1 :
+            colors = mpl.colormaps['gist_rainbow'](np.linspace(0,1,nb_colors))
+        else :
+            colors = [colorName for colorName in mpl.colors.TABLEAU_COLORS.keys()][0:nb_colors]
     return colors
 
 

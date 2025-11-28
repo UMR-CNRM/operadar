@@ -11,8 +11,6 @@ from plot_tools.utils.sensitivity_test import *
 Path_tables = "/home/davidcl/Programmation/operadar/tables_generator/tables/"
 dir_fig="/home/davidcl/Programmation/operadar/plot_tools/sensitivity_study/"
 
-Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
-Fwchoix=0
 ELEVchoix=0 #0 pour radars sol, 90 pour rasta
 
 
@@ -61,7 +59,7 @@ if __name__ == '__main__':
                         help='Axis ratio function : AUds, CNST, BR02, RYdg, RYwg. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--Fw", type=float, nargs='*', default=[],
                         help='Liquid water fraction (only applies to wet hydrometeors) : provide as many values as wanted. If not provided, will use the value stored in the base configuration.')
-    parser.add_argument("--Nc", type=float, nargs='*', default=[],
+    parser.add_argument("--Nc", type=int, nargs='*', default=[],
                         help='Number concentration (only if --axe M) : provide any number of particles per m3. If not provided, will use the value stored in the base configuration.')
     parser.add_argument("--DSTYfunc", type=str, nargs='*', default=[],
                         help='Density function : BR07, RHOX. If not provided, will use the value stored in the base configuration.')
