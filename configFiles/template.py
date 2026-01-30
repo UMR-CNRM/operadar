@@ -26,7 +26,7 @@ real_case=False
 # ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
 #       Note : only the four first characters are used to select the right table
-microphysics_scheme = 'LIMA_exp_GNZR'
+microphysics_scheme = 'ICE3'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 #       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
@@ -65,7 +65,7 @@ scattering_method = "Tmatrix"
 
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)
-distmax_rad = 255.*1000             # maximum radius of the radar data to compute pseudo-observations
+distmax_rad = 1000.*1000             # maximum radius of the radar data to compute pseudo-observations
 radarloc=None                       # radar location: 'center' or [lat_radar,lon_radar] or None (None will not simulate radar beams)
-cnst_angle=90                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
+cnst_angle=0                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
                                     #  or a vertical (cnst_angle=90°) pointing radar at each grid point
