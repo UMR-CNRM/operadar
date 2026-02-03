@@ -37,14 +37,6 @@ Installation (short)
 - Recommended: use the provided `environment.yml` (conda-forge) that installs binary dependencies (ecCodes, proj, geos, etc.) and then pip-installs Python packages (including `epygram`).
 - Alternate: use `requirements.txt` with a Python virtualenv, but ensure ecCodes and system geospatial libs are installed first.
 
-Files added by the env/installation PR
-- `requirements.txt` — pip dependency list (includes `epygram`)
-- `environment.yml` — conda environment (Python 3.11) with ecCodes and system libs
-- `Dockerfile` — example container using mambaforge
-- `.github/workflows/ci.yml` — CI smoke test that builds env and runs a basic import
-- `README_INSTALLATION.md` — detailed install instructions (conda + pip)
-- `TROUBLESHOOTING.md` — FAQ/troubleshooting (epygram / ecCodes / cartopy)
-
 Testing
 - After installing environment, run:
 ```bash
