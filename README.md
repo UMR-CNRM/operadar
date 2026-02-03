@@ -40,6 +40,13 @@ Steps to create the tables are available in [Generation of the lookup tables](ht
 # Contributing
 If you wish to contribute to the project, first, fork the code to create your own copy of the project (see https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#creating-your-own-copy-of-a-project).
 
+#Testing
+- After installing environment, run:
+```bash
+python -c "import operadar; import epygram; print('operadar OK, epygram', getattr(epygram,'__version__','unknown'))"
+```
+
+
 Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch. Then, install operadar as a package with the aforementioned procedure.
 To ask for integration of your modifications, please open a pull request following https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#making-a-pull-request.
 
