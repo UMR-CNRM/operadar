@@ -1,0 +1,24 @@
+name: operadar
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=1.24
+  - xarray
+  - pandas
+  - netcdf4
+  - matplotlib
+  - cartopy
+  - dask
+  - scipy
+  - pip
+  # geospatial/system libs (install these from conda-forge)
+  - proj
+  - geos
+  - hdf5
+  - libgfortran
+  # ecCodes (C library) provides the binary dependency required by epygram's runtime
+  - eccodes
+  - pip:
+    - -r requirements.txt
