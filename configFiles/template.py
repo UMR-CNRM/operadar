@@ -30,7 +30,7 @@ microphysics_scheme = 'ICE3'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 #       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
-hydrometeors_moments = {'cc':2,'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
+hydrometeors_moments = {'cc':1,'rr':1,'ss':1,'gg':1,'ii':1,'wg':1}
 cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land) or cs (sea) lookup table
 
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case

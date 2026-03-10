@@ -7,7 +7,7 @@ real_case=True
 
 Example
 -------
-python3 plot_2Dmaps.py --dataDir ../modelFiles/AROME/20250831/ --vars Zh Zdr Kdp --levels 89 80 75
+python3 plot_2Dmaps.py --dataDir ../modelFiles/AROME/20250831/ --outputDir ../modelFiles/AROME/20250831/ --vars Zh Zdr Kdp --levels 89
 """
 import os
 import sys
@@ -15,6 +15,7 @@ import argparse
 import numpy as np
 import xarray as xr
 import pandas as pd
+import glob
 import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
@@ -82,7 +83,7 @@ def plot_map(var, lon, lat, data, bounds, cmap, lev,
 # ------------------------------------------------------------------
 # Processing loop
 # ------------------------------------------------------------------
-def main(data_dir, variables, levels):
+def main(data_dir, out_dir, variables, levels):
     """Loop over NetCDF files and create maps."""
 
     # domain
@@ -96,12 +97,11 @@ def main(data_dir, variables, levels):
     cmap.set_under("white")
     cmap.set_over("deeppink")
 
-    for root, _, files in os.walk(data_dir):
-        for fname in files:
-            if not fname.lower().endswith(".nc"):
-                continue
-            fpath = os.path.join(root, fname)
+    for fpath in glob.glob(data_dir + "//*.nc"):
+        if os.path.isfile(fpath):
+            fname=os.path.basename(fpath)
             print(f"Processing: {fpath}")
+            print(f"Filename: {fname}")
             ds = xr.open_dataset(fpath)
 
             for var in variables:
@@ -118,14 +118,14 @@ def main(data_dir, variables, levels):
                     print(f"  Plot {var} at level {lev}")
                     fld = ds[var].sel(level=lev)
                     plot_map(var, fld.lon, fld.lat, fld, bounds, cmap, lev,
-                             root, fname, ds.model, ds.microphysics, ds.time,
-                             lon_min, lon_max, lat_min, lat_max)
+                             out_dir, fname, ds.model, ds.microphysics,
+                             ds.time, lon_min, lon_max, lat_min, lat_max)
 
                 # column maximum
                 print(f"  Plot {var} max")
                 fld_max = ds[var].max(dim="level")
                 plot_map(var, fld_max.lon, fld_max.lat, fld_max, bounds,
-                         cmap, -1, root, fname,
+                         cmap, -1, out_dir, fname,
                          ds.model, ds.microphysics, ds.time,
                          lon_min, lon_max, lat_min, lat_max)
 
@@ -134,11 +134,14 @@ def main(data_dir, variables, levels):
 # ------------------------------------------------------------------
 # Command-line interface
 # ------------------------------------------------------------------
-if __name__ == "__main__":
+if __name__ == "__main__":  
+    
     parser = argparse.ArgumentParser(
         description="Generate PNG maps of radar variables from AROME NetCDF files.")
     parser.add_argument("--dataDir", required=True,
-                        help="Directory containing NetCDF files (walked recursively)")
+                        help="Directory containing NetCDF files")
+    parser.add_argument("--outputDir", required=True,
+                        help="Directory containing output images")
     parser.add_argument("--vars", nargs="+", default=["Zh"],
                         help="Variables to plot (space-separated)")
     parser.add_argument("--levels", nargs="+", type=int,
@@ -149,4 +152,4 @@ if __name__ == "__main__":
     if not os.path.isdir(args.dataDir):
         sys.exit(f"Error: directory '{args.dataDir}' does not exist.")
 
-    main(args.dataDir, args.vars, args.levels)
+    main(args.dataDir, args.outputDir, args.vars, args.levels)
