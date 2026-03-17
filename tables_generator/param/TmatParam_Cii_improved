@@ -1,5 +1,5 @@
 type:ii
-band:S
+band:C
 canting:analyt
 sigbeta:10.0
 DIEL:RY19dry
@@ -7,7 +7,7 @@ ARfunc:CNST
 ARcnst:0.2
 DSTYfunc:RHOX
 Frim:1.0
-LAM:106.2
+LAM:53.2
 ELEVmin:0.0
 ELEVmax:90.0
 ELEVstep:90.0

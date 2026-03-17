@@ -1,5 +1,5 @@
 type:hh
-band:L
+band:C
 canting:nocant
 sigbeta:0.0
 DIEL:RY19dry
@@ -7,7 +7,7 @@ ARfunc:RYdg
 ARcnst:0.80
 DSTYfunc:RHOX
 Frim:1.0
-LAM:190.4
+LAM:53.2
 ELEVmin:0.0
 ELEVmax:90.0
 ELEVstep:90.0

@@ -14,22 +14,22 @@ import math
 import os
 
 
-micro="ICJW" # ICE3_1M or ICJW_1M
+micro="ICE3" # ICE3_1M or ICJW_1M
 moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
          "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
          "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"2M"},
          "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"1M"}
          }
 
-Path_tables = "../tables_generator/tables"
+Path_tables = "../tables_generator/tables/"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,typeh_list ='S',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
 #band,color_list,typeh_list ='C',['b','c','gray'],['rr','hh','gg']
 
 listplot=['M'] #,'M']
-TmatOption={'C':'default','K':'default','W':'default'}
+TmatOption={'L':'improved','C':'improved','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh','Zdr','Kdp'] #,'Rhohv','Ah','Av']
@@ -72,7 +72,7 @@ Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe ca
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 ELEVsel=0 #0 for ground radars, 90 for RASTA or BASTA
 Nii=800 #selected number concentration for primary ice
-T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':5,'rr':10,'wg':0,'hh':1,'wh':0}
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':10,'rr':10,'wg':0,'hh':1,'wh':0}
 Fw_list,Fw_ls=[0.1,0.6,0.9],['-.',':','--']
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'tt':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
