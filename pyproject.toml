@@ -21,11 +21,6 @@ authors = [
     {name = "C. David"},
 ]
 
-# URL for the home‑page / source repository
-project.urls = {
-    Homepage = "https://github.com/UMR-CNRM/operadar.git",
-}
-
 # Runtime dependencies (the same list you had in install_requires)
 dependencies = [
     "pyproj",
@@ -38,10 +33,15 @@ dependencies = [
     "tqdm",
     "pyyaml",
     "matplotlib",
+    "epygram",
 
     # Note: cartopy and epygram are intentionally omitted – they should be
     # installed via conda / pip separately as you indicated.
 ]
+
+# URL for the home‑page / source repository
+[project.urls]
+Homepage = "https://github.com/UMR-CNRM/operadar.git"
 
 # ------------------------------------------------------------
 # Setup‑tools specific configuration

@@ -7,7 +7,7 @@ real_case=True
 
 Example
 -------
-python3 plot_2Dmaps.py --dataDir ../modelFiles/AROME/20250831/ --outputDir ../modelFiles/AROME/20250831/ --vars Zh Zdr Kdp --levels 89
+python3 plot_2Dmaps.py --dataDir ../modelFiles/ --outputDir ../modelFiles/ --vars Zh Zdr Kdp --levels 89
 """
 import os
 import sys

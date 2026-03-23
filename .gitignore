@@ -4,6 +4,8 @@ __pycache__/
 .eggs/
 .vscode
 *.egg-info/
+modelFiles/
+!modelFiles/.gitkeep
 tables_generator/tables/
 tables_generator/param/tmp_config
 !tables_generator/tables/.gitkeep

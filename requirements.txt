@@ -10,7 +10,4 @@ tqdm>=4.65
 pyyaml>=6.0
 matplotlib>=3.6
 cartopy>=0.21
-
-
-# epygram must be installed from pip (installed via conda env's pip step below)
 epygram
