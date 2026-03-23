@@ -11,15 +11,15 @@
 """
 
 # ----- INPUT file path (path to folder containing the files)
-input_filePath  = f"./modelFiles/AROME/"
+input_filePath  = f"./modelFiles/MesoNH/"
 # ----- OUPUT file(s) directory
-output_filePath = f"./modelFiles/AROME/"
+output_filePath = f"./modelFiles/MesoNH/"
 
 # ----- Lookup tables directory path
 path_tables = f"./tables_generator/tables/improved/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
-model = 'Arome'
+model = 'MesoNH'
 real_case=True
 
 # ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
