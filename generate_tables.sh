@@ -14,11 +14,11 @@ DIEL=""
 
 # List of (fixed) parameters
 HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
-BAND_LIST=("C" "S" "X" "K" "W")
+BAND_LIST=("C" "S" "X" "K" "W" "L")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("ICE3" "ICJW" "LIMA" "LIMC")
+MICRO_LIST=("LIMA") #("ICE3" "ICJW" "LIMA" "LIMC")
 
 # Errors storage
 MISSING_FILES=()
@@ -40,7 +40,7 @@ usage() {
     echo "  EDIT MODE    : $0 --hydro <val> --band <val> [--arf <val>] [--arv <val>] [--canting <val>] [--dsty <val>] [--riming <val>] [--diel <val>]"
     echo " "
     echo "Accepted values for :"
-    echo "  --band    (radar band)          : C, K, S, W, X"
+    echo "  --band    (radar band)          : C, K, S, W, X, L"
     echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, hh, cl, cs, wg, wh, ws "
     echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
     echo "  --arv     (axis ratio value)    : any float value."

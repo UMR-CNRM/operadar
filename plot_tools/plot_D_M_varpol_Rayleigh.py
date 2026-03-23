@@ -17,7 +17,7 @@ import math
 import os
 
 
-micro="LIMA" # ICE3_1M or ICJW_1M
+micro="ICE3" # ICE3_1M or ICJW_1M
 moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
          "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","ii":"1M"},
          "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","ii":"2M"},
@@ -30,17 +30,17 @@ Path_tables = "../tables_generator/tables"
 dir_fig="IMG/"
 
 #band_list,typeh_list =['S','C','X','K','W'],['rr','ss','gg','hh','cc','ii','wg','wh']
-band_list,typeh_list =['C'],['rr','ss','gg','cl','ii','wg'] #'rr','ss','gg','cc','ii','wg'] #,'cc','ii','wg'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','cc','ii']
+band_list,typeh_list =['C','S','L'],['rr','ss','gg','cl','ii','wg'] #'rr','ss','gg','cc','ii','wg'] #,'cc','ii','wg'] #,'ss','gg','ii'] #,'gg'] #,'ii'] #,'wg'] #,'gg','wg','cc','ii']
 
-band_name={'S':'S','C':'C','X':'X','K':'Ka','W':'W'}
-color={'S':'k','C':'blue','X':'green','K':'gray','W':'green' }#'lightgray'}
-style={'S':'-','C':'-','X':'-','K':'-','W':'-'}
+band_name={'L':'L','S':'S','C':'C','X':'X','K':'Ka','W':'W'}
+color={'L':'red','S':'k','C':'blue','X':'green','K':'gray','W':'green' }#'lightgray'}
+style={'L':'-','S':'-','C':'-','X':'-','K':'-','W':'-'}
 
 listplot=['M'] #,'M']
-TmatOption={'C':'default','K':'default','W':'default'}
+TmatOption={'S':'improved','C':'improved','K':'default','W':'default','L':'improved'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
-listvar=['Zh']
+listvar=['Zh','Kdp']
 unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/','Ah':'dB'+r' km$^{-1}$','Av':'dB'+r' km$^{-1}$'}
 vn={}
 vn_R={}
@@ -87,10 +87,8 @@ Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe ca
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 ELEVsel=0 #0 for ground radars, 90 for RASTA or BASTA
 Nii=800 #selected number concentration for primary ice
-expNmin,expNmax=1,8
-nexpN=expNmax-expNmin+1
-expN_list,color_list= np.arange(expNmin,expNmax+1), plt.cm.jet(np.linspace(0,1,nexpN))
-T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':5,'cs':5,'rr':10,'wg':10,'hh':1,'wh':10}
+expN_list,N_ls= [2,3,4],['-.','-','--']
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':10,'cs':10,'rr':10,'wg':10,'hh':1,'wh':10}
 
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'cc':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
@@ -148,7 +146,7 @@ for var in listvar:
                             expNsel=expNcol[id]
                             ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(expNcol == expNsel))  
                             label=" expN="+str(expNsel)
-                            ax[itypeh].plot(x[ind],vn[var][ind],label = label,color=color_list[iN],linewidth=lw)#,s=0.5)
+                            ax[itypeh].plot(x[ind],vn[var][ind],label = label,color=color[band],ls=N_ls[iN],linewidth=lw)#,s=0.5)
                             ax[itypeh].legend(loc = 'best',fontsize=pol_legend) 
                     else:
                         ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fwsel))           
