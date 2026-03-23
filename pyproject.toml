@@ -1,0 +1,61 @@
+# pyproject.toml
+# ------------------------------------------------------------
+# Build system – tells pip how to build the package
+# ------------------------------------------------------------
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]   # “wheel” is optional but speeds up install
+build-backend = "setuptools.build_meta"
+
+# ------------------------------------------------------------
+# Project metadata (PEP‑621 style)
+# ------------------------------------------------------------
+[project]
+name = "operadar"
+version = "0.0.1"
+description = "Radar forward operator developed at the National Centre for Meteorological Research, France"
+requires-python = ">=3.10, <3.13"
+
+# Authors – you can list multiple authors if needed
+authors = [
+    {name = "C. Augros"},
+    {name = "C. David"},
+]
+
+# URL for the home‑page / source repository
+project.urls = {
+    Homepage = "https://github.com/UMR-CNRM/operadar.git",
+}
+
+# Runtime dependencies (the same list you had in install_requires)
+dependencies = [
+    "pyproj",
+    "numpy",
+    "xarray",
+    "pandas",
+    "netCDF4",
+    "dask",
+    "scipy",
+    "tqdm",
+    "pyyaml",
+    "matplotlib",
+
+    # Note: cartopy and epygram are intentionally omitted – they should be
+    # installed via conda / pip separately as you indicated.
+]
+
+# ------------------------------------------------------------
+# Setup‑tools specific configuration
+# ------------------------------------------------------------
+[tool.setuptools]
+# This flag makes setuptools also pull in the files listed in MANIFEST.in
+include-package-data = true
+
+# ------------------------------------------------------------
+# Package discovery
+# ------------------------------------------------------------
+# The equivalent of:
+#   find_packages(exclude=("tests", "plot_tools", "docs"))
+[tool.setuptools.packages.find]
+where = ["."]           # top‑level directory
+include = ["operadar*"] # include the main package (adjust if your package lives under src/)
+exclude = ["tests*", "plot_tools*", "docs*"]   # the same exclusions you had
