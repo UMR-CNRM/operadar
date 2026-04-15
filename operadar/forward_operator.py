@@ -20,6 +20,8 @@ from operadar.radar.geometry import compute_radar_geometry
 from operadar.save.append_dpolvar import append_in_input_file
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
+from operadar.radar.attenuation import compute_extinction
+from operadar.radar.attenuation import compute_attenuated_zh_3D
 from operadar.read.lookup_tables import read_and_extract_tables_content
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.save.save_dpolvar import create_tree_structure_outFiles, save_netcdf
@@ -42,6 +44,8 @@ class Config:
     save_netcdf_single_hydrometeor: bool
     dpol2add: List[str]
     scattering_method: str
+    compute_attenuation: bool
+    radar_altitude: float
     radar_band: str
     distmax_rad: float
     radarloc: Optional[str]
@@ -78,6 +82,8 @@ def operadar(filename: str,
              save_netcdf_single_hydrometeor=None,
              dpol2add=None,
              scattering_method=None,
+             compute_attenuation=None,
+             radar_altitude=None,
              radar_band=None,
              distmax_rad=None,
              radarloc=None,
@@ -92,7 +98,7 @@ def operadar(filename: str,
         filename (str): Only the name of the file.
         modelname (str): Defaults to cf.model.
         read_tables (bool, optional): Option to save computing time within a loop.
-                Need to be set to True at least for the first iteration.
+                Needs to be set to True at least for the first iteration.
                 Defaults to True.
         in_dir_path (str, optional): Path where the input files are stored.
                 Defaults to cf.input_filePath.
@@ -104,7 +110,9 @@ def operadar(filename: str,
         hydrometeorMoments (dict of form {str : int}), optional): dict containing the number of moments
                 for each hydrometeor of the microphysics scheme.
                 Defaults to cf.hydrometeors_moments
-        radar_band (str, optional): Defaults to cf.radar_band.
+        compute_attenuation (bool, optional) : Defaults to cf.compute_attenuation
+        radar_altitude (float, optional): Defaults to cf.radar_altitude
+        radar_band (str, optional): Defaults to cf.radar_band
         radarloc (str | list | None) : location of the radar for simulation.
                 Either 'center' (i.e. center of the grid) or a [lat_radar,lon_radar]
                 coordinate or None. Defaults to cf.radarloc.
@@ -132,8 +140,11 @@ def operadar(filename: str,
                                  hydrometeors_moments=hydrometeorMoments, cloud_water_over=cloud_water_over,
                                  subDomain=subDomain, mixed_phase_parametrization=mixed_phase_parametrization,
                                  save_netcdf_single_hydrometeor=save_netcdf_single_hydrometeor, 
-                                 dpol2add=dpol2add, scattering_method=scattering_method, radar_band=radar_band,
-                                 distmax_rad=distmax_rad, radarloc=radarloc, cnst_angle=cnst_angle)
+                                 dpol2add=dpol2add, scattering_method=scattering_method,
+                                 compute_attenuation=compute_attenuation,
+                                 radar_altitude=radar_altitude, radar_band=radar_band,
+                                 distmax_rad=distmax_rad, radarloc=radarloc,
+                                 cnst_angle=cnst_angle)
     
     
     if append_in_file and subDomain != None :
@@ -171,7 +182,7 @@ def operadar(filename: str,
                                                              verbose=get_more_details,
                                                             )
         # Read model variables
-        [X, Y, Alt, lon, lat, M, Nc, Tc] = read_model_file(filePath=input_file_path,
+        [X, Y, Alt, lon, lat, M, Nc, Tc, p, qv] = read_model_file(filePath=input_file_path,
                                                            modelname=conf.model,
                                                            micro_scheme=conf.microphysics_scheme,
                                                            real_case=conf.real_case,
@@ -218,9 +229,28 @@ def operadar(filename: str,
                                              config=conf,
                                              )
         
+        # Attenuation for vertical pointing radar (ground radar or aircraft radar)
+        if (compute_attenuation):
+            kext=compute_extinction(temperature=Tc,
+                                    pressure=p,
+                                    qv=qv,
+                                    radar_lam=tables_content['LAM']["rr"],
+                                    ah=dpolDict['Ah'])
+            
+            zh_att=compute_attenuated_zh_3D(kext=kext,
+                                            zh=dpolDict['Zh'],
+                                            model_altitude=Alt,
+                                            radar_altitude=conf.radar_altitude)
+            dpolDict['Zh_att']=zh_att
+
+
+            
         # Saving file or reinjecting fields into the input file
         if append_in_file :
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations
+            var2add=conf.dpol2add
+            if (compute_attenuation):
+                var2add+=['Zh_att']
             append_in_input_file(complete_input_path=input_file_path,
                                  dpolVar=dpolDict,
                                  var2add=conf.dpol2add,

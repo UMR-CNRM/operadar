@@ -54,11 +54,22 @@ def get_geometry(epygram_file,
 
 
 
-def get_contents_T_and_R(epygram_file,
+def get_contents_T_R_qv(epygram_file,
                          pressure:np.ndarray,
                          hydrometeors: list,
-                         )-> tuple[dict[str,np.ndarray],np.ndarray,np.ndarray]:
-    """Retrieve the 3D temperature field, the 3D content fields and compute the gas constant."""
+                         )-> tuple[dict[str,np.ndarray],np.ndarray,np.ndarray,np.ndarray]:
+    """Extract the 3D temperature, contents, specific humidity and compute the gas constant R.
+    Args: 
+       epygram_file: loaded epygram file
+       pressure: extracted 3D pressure field (Pa)
+       hydrometeors: list of hydrometeors types (['rr', 'ss',...])
+    
+    Returns:
+        M dict (ndarray): dictionnary of 3D hydrometeor contents (kg/m3)
+        T (ndarray): temperature (Kelvin)
+        R (ndarray): gaz constant
+        qv (ndarray): specific humidity
+    """
     # 3D kelvin temperature T
     T = np.zeros(pressure.shape)
     temperature_all_levels = epygram_file.readfields('S0*TEMPERATURE')
@@ -84,8 +95,9 @@ def get_contents_T_and_R(epygram_file,
     
     # Transformation of specific content to contents (M in kg/m3)
     M  = {h:q[h]*pressure/(R*T) for h in hydrometeors}
+    qv=q["vv"]
 
-    return M,T,R
+    return M,T,R,qv
 
 
 

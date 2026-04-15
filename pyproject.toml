@@ -3,7 +3,7 @@
 # Build system – tells pip how to build the package
 # ------------------------------------------------------------
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]   # “wheel” is optional but speeds up install
+requires = ["setuptools>=61.0,<80", "wheel"]   # “wheel” is optional but speeds up install
 build-backend = "setuptools.build_meta"
 
 # ------------------------------------------------------------
@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 name = "operadar"
 version = "0.0.1"
 description = "Radar forward operator developed at the National Centre for Meteorological Research, France"
-requires-python = ">=3.10, <3.13"
+requires-python = ">=3.10, <3.12"
 
 # Authors – you can list multiple authors if needed
 authors = [
@@ -33,10 +33,9 @@ dependencies = [
     "tqdm",
     "pyyaml",
     "matplotlib",
+    "cartopy",
+    "pyMPM",
     "epygram",
-
-    # Note: cartopy and epygram are intentionally omitted – they should be
-    # installed via conda / pip separately as you indicated.
 ]
 
 # URL for the home‑page / source repository

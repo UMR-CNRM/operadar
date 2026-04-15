@@ -12,7 +12,7 @@ from pathlib import Path
 from netCDF4 import Dataset
 from typing import Sequence
 
-from operadar.read.with_netCDF4 import *
+import operadar.read.with_netCDF4 as readnc
 from operadar.utils.make_links import link_keys_with_available_hydrometeors, link_varname_with_mesonh_name
 
 
@@ -28,6 +28,8 @@ def read_mesonh(filePath:Path,
                          np.ndarray,
                          dict[str,np.ndarray],
                          dict[str,np.ndarray],
+                         np.ndarray,
+                         np.ndarray,
                          np.ndarray,
                          ]:
     """Read and extract data from an MesoNH.nc file
@@ -49,6 +51,8 @@ def read_mesonh(filePath:Path,
         M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
         Nc (dict[ndarray]): dictionary of 3D number concentrations for each hydrometeor
         Tc (ndarray) : 3D temperature in Celsius
+        p (ndarray): 3D pressure (Pa)
+        qv (ndarray): 3D specific humidity (kg/kg)
     """
 
     print("\tMesoNH .nc file:",filePath)
@@ -68,34 +72,34 @@ def read_mesonh(filePath:Path,
         i_min, i_max, j_min, j_max = 0, -1, 0, -1
         if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
 
-    X, Y, Z, LAT, LON = get_geometry(mnhFile=mnh_file,
+    X, Y, Z, LAT, LON = readnc.get_geometry(mnhFile=mnh_file,
                                      real_case=real_case,
                                      i_min=i_min, i_max=i_max,
                                      j_min=j_min, j_max=j_max,
                                      )    
     if verbose : print('\t\tGot geometry in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    Tc, rho3D = get_temperature_and_density(mnhFile=mnh_file,
+    p, Tc, rho3D = readnc.get_pressure_temperature_density(mnhFile=mnh_file,
                                             i_min=i_min, i_max=i_max,
                                             j_min=j_min, j_max=j_max,
                                             )
-    if verbose : print('\t\tGot temperature and dry air density in',round(tm.time()-deb,6),'seconds');deb=tm.time()
+    if verbose : print('\t\tGot pressure, temperature and dry air density in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
     hydromet_list = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments, datatype='model')
     name_hydro = link_varname_with_mesonh_name()
     
-    M = get_contents(mnhFile=mnh_file, hydrometeors=hydromet_list,
+    M, qv = readnc.get_contents(mnhFile=mnh_file, hydrometeors=hydromet_list,
                      name_var_hydro=name_hydro, temperature=Tc, rho3D=rho3D,
                      i_min=i_min, i_max=i_max,
                      j_min=j_min, j_max=j_max,
                      )
     if verbose : print('\t\tGot 3D contents in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    Nc = get_concentrations(mnhFile=mnh_file, microphysics_scheme=micro,
+    Nc = readnc.get_concentrations(mnhFile=mnh_file, microphysics_scheme=micro,
                             hydrometeors=hydromet_list, temperature=Tc, rho3D=rho3D,
                             i_min=i_min, i_max=i_max,
                             j_min=j_min, j_max=j_max,
                             )
     if verbose : print('\t\tGot 3D number concentrations in',round(tm.time()-deb,6),'seconds');deb=tm.time()
 
-    return X, Y, Z, LON, LAT, M, Nc, Tc
+    return X, Y, Z, LON, LAT, M, Nc, Tc, p, qv

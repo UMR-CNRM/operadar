@@ -47,7 +47,7 @@ save_netcdf_single_hydrometeor = False
 
 # ----- Dual-pol variables to add in the output file : provide a list of at least one element 
 #                                                      in ['Zh','Zdr','Kdp','Rhohv', 'Ah', 'Av'] 
-dpol2add = ['Zh','Zdr','Kdp']
+dpol2add = ['Zh','Zdr','Kdp','Ah']
 
 # ----- Scattering method (TO COME)
 #       The user can specify if one method ('Tmatrix' or 'Rayleigh') or 'both' methods are employed to 
@@ -61,6 +61,12 @@ dpol2add = ['Zh','Zdr','Kdp']
 #                             --> will create a unique file with the polarimetric fields resulting from the combinations
 #                                 of the chosen methods in this dictionnary
 scattering_method = "Tmatrix"
+
+# ---- Compute attenuation for vertical pointing radar
+# If compute_attenuation = True, Ah must be included in dpol2add
+
+compute_attenuation = True # True
+radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
 
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)

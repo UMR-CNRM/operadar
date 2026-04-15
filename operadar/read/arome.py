@@ -10,7 +10,7 @@ import time as tm
 import numpy as np
 from pathlib import Path
 
-from operadar.read.with_epygram import *
+import operadar.read.with_epygram as readep
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 from operadar.utils.formats_data import get_lat_lon_from_subdomain
 
@@ -19,7 +19,15 @@ def read_arome(filePath:Path,
                hydrometeorMoments:dict[int],
                subDomain:list[float]|None,
                verbose:bool,
-               )-> tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray,dict[np.ndarray],dict[np.ndarray],np.ndarray]:   
+               )-> tuple[np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         np.ndarray,
+                         dict[np.ndarray],
+                         dict[np.ndarray],
+                         np.ndarray,
+                         np.ndarray]:   
     """Read and extract data from an AROME.fa file
     
     Args:
@@ -37,6 +45,8 @@ def read_arome(filePath:Path,
         M (dict[ndarray]): dictionary of 3D contents for each hydrometeor 
         Nc (dict[ndarray]): dictionary of 3D number concentrations for each hydrometeor
         Tc (ndarray) : 3D temperature in Celsius
+        p (ndarray) : 3D pressure field in Pa
+        qv (ndarray) : 3D specific humidity (kg/kg)
     """
     
     epygram.init_env() # mandatory
@@ -78,23 +88,23 @@ def read_arome(filePath:Path,
         if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
     
     # Extract 2D lon and lat fields only once if multiple iterations over the same (sub)domain
-    [lon, lat] = get_2D_lat_lon_epygram(epygram_file=arome_file)
+    [lon, lat] = readep.get_2D_lat_lon_epygram(epygram_file=arome_file)
     if verbose : print('\t\tGot 2D lat/lon fields in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    [p, psurf, pdep, geosurf] = get_geometry(epygram_file=arome_file,
+    [p, psurf, pdep, geosurf] = readep.get_geometry(epygram_file=arome_file,
                                              hybrid_pressure_coefA=A,
                                              hybrid_pressure_coefB=B,
                                              )
     if verbose : print('\t\tGot 3D pressure departure, surface pressure, and geopotential in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    [M, T, R]  = get_contents_T_and_R(epygram_file=arome_file,
+    [M, T, R, qv]  = readep.get_contents_T_R_qv(epygram_file=arome_file,
                                       pressure=p,
                                       hydrometeors=hydromet_list,
                                       )
-    del p
+    
     if verbose : print('\t\tGot 3D contents (kg/m3) and temperature in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    Nc = get_concentrations(epygram_file=arome_file,
+    Nc = readep.get_concentrations(epygram_file=arome_file,
                             hydrometeorsConfig=hydrometeorMoments,
                             content=M,
                             temperature=T,
@@ -103,7 +113,7 @@ def read_arome(filePath:Path,
     
     X = X_res*np.arange(T.shape[2]).astype('i4')
     Y = Y_res*np.arange(T.shape[1]).astype('i4')
-    Alt = get_altitude(hybrid_pressure_coefA=A,
+    Alt = readep.get_altitude(hybrid_pressure_coefA=A,
                        hybrid_pressure_coefB=B,
                        temperature=T,
                        pressure_departure=pdep,
@@ -116,4 +126,4 @@ def read_arome(filePath:Path,
     
     loaded_epygram_file.close()
     arome_file.close()
-    return  X, Y, Alt, lon, lat, M, Nc, T
+    return  X, Y, Alt, lon, lat, M, Nc, T, p, qv

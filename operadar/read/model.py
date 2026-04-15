@@ -24,6 +24,8 @@ def read_model_file(filePath:Path,
                               dict[str,ndarray],
                               dict[str,ndarray],
                               ndarray,
+                              ndarray,
+                              ndarray,
                               ]:
     """Read model file (either Arome or MesoNH)"""
     
@@ -32,7 +34,7 @@ def read_model_file(filePath:Path,
     
     if (modelname=="MesoNH"):
         from operadar.read.mesonh import read_mesonh
-        [X, Y, Alt, lon, lat, M, Nc, Tc] = read_mesonh(filePath=filePath,
+        [X, Y, Alt, lon, lat, M, Nc, Tc, p, qv] = read_mesonh(filePath=filePath,
                                                          micro=micro_scheme,
                                                          subDomain=domain,
                                                          hydrometeorMoments=hydrometeorMoments,
@@ -40,7 +42,7 @@ def read_model_file(filePath:Path,
                                                          verbose = verbose)
     elif (modelname=="Arome"):
         from operadar.read.arome import read_arome
-        [X, Y, Alt, lon, lat, M, Nc, Tc] = read_arome(filePath=filePath,
+        [X, Y, Alt, lon, lat, M, Nc, Tc, p, qv] = read_arome(filePath=filePath,
                                                       hydrometeorMoments=hydrometeorMoments,
                                                       subDomain=domain,
                                                       verbose=verbose,
@@ -53,4 +55,4 @@ def read_model_file(filePath:Path,
     
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")
     
-    return [X, Y, Alt, lon, lat, M, Nc, Tc]
+    return [X, Y, Alt, lon, lat, M, Nc, Tc, p, qv]

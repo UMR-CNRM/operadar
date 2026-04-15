@@ -69,13 +69,14 @@ def get_subdomain_indices(mnhFile:Dataset,
 
 
 
-def get_temperature_and_density(mnhFile:Dataset,
+def get_pressure_temperature_density(mnhFile:Dataset,
                                 i_min:int, i_max:int,
                                 j_min:int, j_max:int,
                                 ):
-    # Temperature
+    # Pressure
     p=mnhFile.variables['PABST'][0,:,:,:][:,i_min:i_max,j_min:j_max]
     p[np.where(p==999.)] = float('nan')
+    # Temperature
     Th=mnhFile.variables['THT'][0,:,:,:][:,i_min:i_max,j_min:j_max]
     Th[np.where(Th==999.)] = float('nan')
     temperature_celsius = Th*((p/100000)**(0.4/1.4))-273.15
@@ -85,7 +86,7 @@ def get_temperature_and_density(mnhFile:Dataset,
     IKE = temperature_celsius.shape[0]
     for k in range(IKE):    
         density_3D[k,:,:]=rhodref[k]
-    return temperature_celsius, density_3D
+    return p, temperature_celsius, density_3D
 
 
 
@@ -96,13 +97,15 @@ def get_contents(mnhFile:Dataset,
                  rho3D:np.ndarray,
                  i_min:int, i_max:int,
                  j_min:int, j_max:int,
-                 )->dict[str,np.ndarray]:
+                 )->tuple(dict[str,np.ndarray],np.ndarray):
     contents = {}
     for key in hydrometeors:
         contents[key] = np.empty(temperature.shape)
         contents[key] = mnhFile.variables[name_var_hydro[key]][0,:,:,:][:,i_min:i_max,j_min:j_max]*rho3D[:,:,:] # kg/kg of dry air
         contents[key][contents[key]==999.] = float('nan')
-    return contents
+    qv=np.empty(temperature.shape)
+    mnhFile.variables[name_var_hydro['vv']][0,:,:,:][:,i_min:i_max,j_min:j_max]
+    return contents,qv
 
 
 

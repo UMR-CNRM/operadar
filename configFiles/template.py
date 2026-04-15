@@ -16,7 +16,7 @@ input_filePath  = f"./modelFiles/"
 output_filePath = f"./modelFiles/"
 
 # ----- Lookup tables directory path
-path_tables = "./tables_generator/tables/default/"
+path_tables = f"./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
@@ -61,6 +61,13 @@ dpol2add = ['Zh','Zdr','Kdp']
 #                             --> will create a unique file with the polarimetric fields resulting from the combinations
 #                                 of the chosen methods in this dictionnary
 scattering_method = "Tmatrix"
+
+# ---- Compute attenuation for vertical pointing radar
+# If compute_attenuation = True, Ah must be included in dpol2add
+
+compute_attenuation = False # True
+radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
+
 
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)
