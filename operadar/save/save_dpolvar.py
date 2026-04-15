@@ -16,6 +16,7 @@ def save_netcdf(X:np.ndarray,
                  lon:np.ndarray,
                  datetime:pd.Timestamp|int,
                  dpolDict:dict[str,np.ndarray],
+                 var2add:list,
                  contentsDict:dict[str,np.ndarray],
                  concentrationsDict:dict[str,np.ndarray],
                  temperature:np.ndarray,
@@ -32,6 +33,7 @@ def save_netcdf(X:np.ndarray,
         lon (np.ndarray): 2D longitude coordinates
         datetime (pd.Timestamp): date and time coordinate
         dpolDict (dict[np.ndarray]): dictionary containing the synthetic 3D radar fields
+        var2add (list): list of the variables to add in the netcdf output file
         contentsDict (dict[np.ndarray]): dictionary containing the 3D model's content fields
         concentrationsDict (dict[np.ndarray]): dictionary containing the 3D model's concentration fields
         temperature (np.ndarray): 3D model's temperature field

@@ -242,22 +242,22 @@ def operadar(filename: str,
                                             model_altitude=Alt,
                                             radar_altitude=conf.radar_altitude)
             dpolDict['Zh_att']=zh_att
-
-
             
         # Saving file or reinjecting fields into the input file
+        var2add=conf.dpol2add
+        if (compute_attenuation):
+            var2add+=['Zh_att']
+
         if append_in_file :
             del M, Nc, Fw, Alt, lat, lon, Tc, elevations
-            var2add=conf.dpol2add
-            if (compute_attenuation):
-                var2add+=['Zh_att']
+
             append_in_input_file(complete_input_path=input_file_path,
                                  dpolVar=dpolDict,
-                                 var2add=conf.dpol2add,
+                                 var2add=var2add,
                                  )
         else :
             save_netcdf(X=X, Y=Y, Z=Alt, lat=lat, lon=lon, datetime=temporal_variable,
-                        dpolDict=dpolDict, contentsDict=M, concentrationsDict=Nc,
+                        dpolDict=dpolDict, var2add=var2add, contentsDict=M, concentrationsDict=Nc,
                         temperature=Tc, outfile=outFilePath, config=conf,
                         )
         # For multiple iterations over different time but with the same settings, save time by
