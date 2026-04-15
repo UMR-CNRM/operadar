@@ -30,6 +30,7 @@ epygram.init_env()
 # ------------------------------------------------------------------
 VAR_DICT = {
     "Zh": {"name": "Reflectivity", "min": 8, "max": 64, "step": 4, "unit": "dBZ"},
+    "Zh_att": {"name": "Attenuated Reflectivity", "min": 8, "max": 64, "step": 4, "unit": "dBZ"},
     "Zdr": {"name": "Differential Reflectivity", "min": 0, "max": 6, "step": 0.5, "unit": "dB"},
     "Kdp": {"name": "Specific Differential Phase", "min": 0, "max": 6, "step": 0.5, "unit": "°/km"},
 }
