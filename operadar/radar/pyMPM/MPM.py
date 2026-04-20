@@ -6,7 +6,8 @@ Created on Fri Mar 20 13:20:49 2015
 """
 
 import numpy as np
-from pkg_resources import resource_filename
+#from pkg_resources import resource_filename
+from importlib.resources import files
 
 def MPM(f, P, T, U, wa, wae, R, output_type='ref'):
     """
@@ -169,13 +170,19 @@ def dryairmodule(f_vec, e, pd, th):
     
     """
     
-    # Make sure f_vec is an iterabel array
-    if type(f_vec) == float or type(f_vec) == int:
-        f_vec = np.array([f_vec,])
+    # # Make sure f_vec is an iterabel array
+    # if type(f_vec) == float or type(f_vec) == int:
+    #     f_vec = np.array([f_vec,])
+    # Make sure f_vec is an iterable array (handles both standard types and numpy.float64)
+    f_vec = np.atleast_1d(f_vec)
     
     ND = []
-    oxygen_lines = np.loadtxt(resource_filename('pyMPM',
-                                                'oxygen93.txt'))
+    # Note: We use the full package path 'operadar.radar.pyMPM', not just 'pyMPM'
+    package_path = files('operadar.radar.pyMPM')
+    with package_path.joinpath('oxygen93.txt').open('r') as f:
+        oxygen_lines = np.loadtxt(f)
+        #oxygen_lines = np.loadtxt(resource_filename('pyMPM',
+        #                                        'oxygen93.txt'))
     
     for f in f_vec:
         # Non dispersive part
@@ -218,13 +225,20 @@ def watervapormodule(f_vec, e, pd, th):
         
     """
     
-    # Make sure f_vec is an iterabel array
-    if type(f_vec) == float or type(f_vec) == int:
-        f_vec = np.array([f_vec,])
+    # # Make sure f_vec is an iterabel array
+    # if type(f_vec) == float or type(f_vec) == int:
+    #     f_vec = np.array([f_vec,])
+    # Make sure f_vec is an iterable array (handles both standard types and numpy.float64)
+    f_vec = np.atleast_1d(f_vec)
     
     NV = []
-    water_lines = np.loadtxt(resource_filename('pyMPM',
-                                               'water93.txt'))
+    #water_lines = np.loadtxt(resource_filename('pyMPM',
+    #                                           'water93.txt'))
+    # Note: We use the full package path 'operadar.radar.pyMPM', not just 'pyMPM'
+    package_path = files('operadar.radar.pyMPM')
+    with package_path.joinpath('water93.txt').open('r') as f:
+        water_lines = np.loadtxt(f)
+    
     # Loop over frequencies
     for f in f_vec:
         nv = (4.163*th + 0.239)*e*th

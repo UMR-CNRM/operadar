@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 name = "operadar"
 version = "0.0.1"
 description = "Radar forward operator developed at the National Centre for Meteorological Research, France"
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.10"
 
 # Authors – you can list multiple authors if needed
 authors = [

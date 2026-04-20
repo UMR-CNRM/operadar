@@ -16,7 +16,7 @@ input_filePath  = f"./modelFiles/AROME/"
 output_filePath = f"./modelFiles/AROME/"
 
 # ----- Lookup tables directory path
-path_tables = f"./tables_generator/tables/improved/"
+path_tables = f"./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'

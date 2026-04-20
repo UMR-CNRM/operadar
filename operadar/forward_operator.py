@@ -238,8 +238,8 @@ def operadar(filename: str,
                                     ah=dpolDict['Ah'])
             
             zh_att=compute_attenuated_zh_3D(kext=kext,
-                                            zh=dpolDict['Zh'],
                                             model_altitude=Alt,
+                                            zh=dpolDict['Zh'],                                            
                                             radar_altitude=conf.radar_altitude)
             dpolDict['Zh_att']=zh_att
             

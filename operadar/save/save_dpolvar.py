@@ -104,6 +104,7 @@ def add_dualPol_variables(ds_variables:dict,dpolDict:dict,dpolvar2add:list):
              'Rhohv' : {"units": "1"    },
              'Ah'    : {"units": "dB/km"},
              'Av'    : {"units": "dB/km"},
+             'Zh_att': {"units": "dBZ"},
              }
     for var in dpolvar2add :
         ds_variables[var] = (["level","y","x"],dpolDict[var].astype('f4'), units[var])
