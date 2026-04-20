@@ -35,7 +35,7 @@ cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land)
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
 #                           or as [i_min,i_max,j_min,j_max] for an idealized case
 #                           or None (will use all the points in the file)
-subDomain = None
+subDomain = [2.0,4.0,45.0,46.5]
 
 # ----- Mixed phase simulation : can be 'T_pos' or 'Fw_pos' or 'Fw_posg'.
 #                                Please, have a look at the README beforehand.

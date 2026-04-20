@@ -28,7 +28,7 @@ def compute_gaz_attenuation(temperature, pressure, qv, LAM):
     -------
     kext_gaz : 3D array
         Gas extinction coefficient
-    """
+i    """
 
     # Convert specific humidity -> mixing ratio rv
     rv = qv / (1 - qv)
@@ -38,6 +38,7 @@ def compute_gaz_attenuation(temperature, pressure, qv, LAM):
 
     # Frequency in Hz (c / λ)
     freq = 3e8 / LAM  # Hz
+    #freq_array= np.array([freq,])
 
     # Call pyMPM (requires frequency in GHz, pressure in hPa, temperature in °C)
     kext_gaz = (

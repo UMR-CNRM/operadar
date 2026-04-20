@@ -34,7 +34,6 @@ dependencies = [
     "pyyaml",
     "matplotlib",
     "cartopy",
-    "pyMPM",
     "epygram",
 ]
 

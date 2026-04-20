@@ -230,7 +230,7 @@ def operadar(filename: str,
                                              )
         
         # Attenuation for vertical pointing radar (ground radar or aircraft radar)
-        if (compute_attenuation):
+        if (conf.compute_attenuation==True):
             kext=compute_extinction(temperature=Tc,
                                     pressure=p,
                                     qv=qv,
@@ -245,7 +245,7 @@ def operadar(filename: str,
             
         # Saving file or reinjecting fields into the input file
         var2add=conf.dpol2add
-        if (compute_attenuation):
+        if (conf.compute_attenuation==True):
             var2add+=['Zh_att']
 
         if append_in_file :
