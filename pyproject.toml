@@ -35,6 +35,7 @@ dependencies = [
     "matplotlib",
     "cartopy",
     "epygram",
+    "h5py",
 ]
 
 # URL for the home‑page / source repository

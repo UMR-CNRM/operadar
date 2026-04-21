@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Apr 26 13:17:47 2018
-@author: augrosc & lebastardt & montangonm & sinhorin & davidcl
+@author: augrosc & davidcl
 """
 
 # External modules
@@ -231,7 +231,7 @@ def operadar(filename: str,
         
         # Attenuation for vertical pointing radar (ground radar or aircraft radar)
         if (conf.compute_attenuation==True):
-            kext=compute_extinction(temperature=Tc,
+            kext=compute_extinction(temperatureC=Tc,
                                     pressure=p,
                                     qv=qv,
                                     radar_lam=tables_content['LAM']["rr"],

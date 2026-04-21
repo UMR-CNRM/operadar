@@ -137,14 +137,21 @@ def read_and_extract_tables_content(band:str,
             hfile = h
         nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{moments[h]}M_{band}{hfile}'
         
-        if verbose : print("\tReading min/step/max for",h)
+        if verbose : print("\tReading min/step/max for",h," in",nomfileCoefInt)
         df_params = pd.read_csv(nomfileCoefInt, sep=";",nrows = 1)
         for value in parameters_to_retrieve :
             table_dict[value][h] = np.copy(df_params[value])[0]
         del df_params
         
         if verbose : print("\tRetrieving necessary columns in the table for",h)
-        df_columns = pd.read_csv(nomfileCoefInt, sep=";",skiprows = [0, 1])
+        df_columns = pd.read_csv(
+            nomfileCoefInt, 
+            sep=";", 
+            skiprows=[0, 1], 
+            na_values=["Infinity", "-Infinity"],
+            low_memory=False
+            #dtype=float # <--- Forces all columns to be float
+        )
         df_columns = df_columns.astype(float)
 
         for columnName in columns_to_retrieve :

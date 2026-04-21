@@ -69,14 +69,14 @@ BG_PROFILE = "#0f0f23"    # profile panel background
 # Gas attenuation
 # ======================================================================
 
-def compute_gaz_attenuation(temperature, pressure, qv, LAM):
+def compute_gaz_attenuation(temperatureC, pressure, qv, LAM):
     """
     Computes gaz attenuation using pyMPM
 
     Parameters
     ----------
-    temperature : 3D array
-        Temperature [K]
+    temperatureC : 3D array
+        Temperature [C]
     pressure : 3D array
         Pressure [Pa]
     qv : 3D array
@@ -93,7 +93,7 @@ def compute_gaz_attenuation(temperature, pressure, qv, LAM):
     rv = qv / (1 - qv)
 
     # Compute relative humidity
-    rh = compute_relative_humidity(temperature, rv, pressure)
+    rh = compute_relative_humidity(temperatureC, rv, pressure)
 
     # Frequency in Hz (c / λ)
     freq = 3e8 / LAM  # Hz
@@ -105,7 +105,7 @@ def compute_gaz_attenuation(temperature, pressure, qv, LAM):
         * MPM(
             freq * 1e-9,
             pressure * 1e-2,
-            temperature - 273.15,
+            temperatureC,
             rh,
             wa='None',
             wae='None',
@@ -116,15 +116,15 @@ def compute_gaz_attenuation(temperature, pressure, qv, LAM):
 
     # MPM prepends a frequency axis when called with a scalar frequency;
     # remove it so kext_gaz has the same shape as temperature.
-    kext_gaz = np.squeeze(kext_gaz_raw, axis=0) if kext_gaz_raw.ndim == temperature.ndim + 1 else kext_gaz_raw
+    kext_gaz = np.squeeze(kext_gaz_raw, axis=0) if kext_gaz_raw.ndim == temperatureC.ndim + 1 else kext_gaz_raw
 
     return kext_gaz
 
 
-def compute_relative_humidity(temperature_K, rv, pressure_Pa):
+def compute_relative_humidity(temperatureC, rv, pressure_Pa):
     """
     Computes relative humidity (%) from:
-        - temperature in Kelvin
+        - temperature in Celcius
         - water vapor mixing ratio rv (kg/kg)
         - pressure in Pascals
 
@@ -135,8 +135,8 @@ def compute_relative_humidity(temperature_K, rv, pressure_Pa):
 
     Parameters
     ----------
-    temperature_K : array-like or float
-        Air temperature [K]
+    temperatureC : array-like or float
+        Air temperature [C]
     rv : array-like or float
         Water vapor mixing ratio [kg/kg]
     pressure_Pa : array-like or float
@@ -147,11 +147,9 @@ def compute_relative_humidity(temperature_K, rv, pressure_Pa):
     rh : array-like or float
         Relative humidity in %
     """
-    # Convert temperature to Celsius
-    temperature_C = temperature_K - 273.15
 
     # Saturation vapor pressure (hPa)
-    Psat = 6.107 * np.power(10., (7.5 * temperature_C) / (237.3 + temperature_C))
+    Psat = 6.107 * np.power(10., (7.5 * temperatureC) / (237.3 + temperatureC))
 
     # Partial vapor pressure (hPa)
     Pe = (rv * pressure_Pa / (rv + 0.622)) / 100.0
@@ -162,7 +160,7 @@ def compute_relative_humidity(temperature_K, rv, pressure_Pa):
     return rh
 
 
-def compute_extinction(temperature: np.ndarray,
+def compute_extinction(temperatureC: np.ndarray,
                        pressure: np.ndarray,
                        qv: np.ndarray,
                        radar_lam: float,
@@ -171,7 +169,7 @@ def compute_extinction(temperature: np.ndarray,
     """Computes gaz and hydrometeor extinction cross-section
 
     Args:
-        temperature (np.ndarray): 3D array (K)
+        temperature (np.ndarray): 3D array (deg Celcius)
         pressure (np.ndarray): 3D array (Pa)
         qv (np.ndarray): 3D array specific humidity (kg/kg)
         radar_lam: radar wavelength (m)
@@ -181,7 +179,7 @@ def compute_extinction(temperature: np.ndarray,
         kext (np.ndarray): 3D array of total extinction coefficient (m⁻¹)
     """
     # Gas extinction cross-section
-    kext_gaz = compute_gaz_attenuation(temperature, pressure, qv, radar_lam)
+    kext_gaz = compute_gaz_attenuation(temperatureC, pressure, qv, radar_lam)
 
     # Hydrometeor extinction cross-section
     kext_hydro = 1e-3 * ah / 4.343

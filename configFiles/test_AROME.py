@@ -69,7 +69,7 @@ compute_attenuation = True # True
 radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
 
 # ----- Radar simulation options 
-radar_band = 'C'                    # radar band (C, X, S, W or K)
+radar_band = 'W'                    # radar band (C, X, S, W or K)
 distmax_rad = 1000.*1000             # maximum radius of the radar data to compute pseudo-observations
 radarloc=None                       # radar location: 'center' or [lat_radar,lon_radar] or None (None will not simulate radar beams)
 cnst_angle=0                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)

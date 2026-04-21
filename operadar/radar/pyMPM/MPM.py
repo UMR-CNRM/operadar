@@ -70,43 +70,56 @@ def MPM(f, P, T, U, wa, wae, R, output_type='ref'):
 def inputconv(P, T, U):
     """
     Convert input parameters P, T, U to e, pd, th
-    
+
     Parameters
     ----------
-    
-    P : float
+    P : float or numpy.ndarray
         Air pressure in mbar
-    T : float
+    T : float or numpy.ndarray
         Air temperature in degree Celcius
-    U : float
+    U : float or numpy.ndarray
         Relative humidity in %
-    
+
     Returns
     -------
-    
     a : namedtuple
-        Namedtuple of 
+        Namedtuple of
          * e (Partial water vapor pressure)
          * pd (Partial pressure of dry air)
          * th (Reciprocal temperature)
     """
-    
+
     from collections import namedtuple
     a = namedtuple('a', ['e', 'pd', 'th'])
-    
+
+    # Convert to numpy array if they aren't already
+    P = np.asarray(P)
+    T = np.asarray(T)
+    U = np.asarray(U)
+
+    # Check for invalid temperatures
+    if np.any((T + 273.15) <= 0):
+        raise ValueError("Absolute temperature must be positive (T > -273.15°C)")
+
     TK = T + 273.15
     # Reciprocal temperature theta
     th = 300.0/TK
-    # Water wapor saturation pressure
-    es = 2.408e11*th**5*np.exp(-22.644*th)
-    # Partial pressuer of water vapor
-    e = es*U/100.0;
+    # Calculate log of water vapor saturation pressure
+    log_es = np.log(2.408e11) + 5*np.log(th) - 22.644*th
+
+    # Handle potential underflow in exp() calculation
+    es = np.zeros_like(log_es)
+    underflow_mask = log_es < -700  # exp(-700) ~ 1e-304, near underflow
+    es[~underflow_mask] = np.exp(log_es[~underflow_mask])
+
+    # Partial pressure of water vapor
+    e = es * U / 100.0
     # Partial pressure of dry air
     pd = P - e
     # water vapor density in g/m3
-    Rs = 461.25; # Specifice gas constant for water vapor (Stöcker, Taschenbuch der Physik)
-    rhogas = 100000*e/(Rs*TK)
-    
+    Rs = 461.25  # Specific gas constant for water vapor (Stöcker, Taschenbuch der Physik)
+    rhogas = 100000 * e / (Rs * TK)
+
     return a(e=e, pd=pd, th=th)
     
 def outconv(f, N, output_type):
@@ -260,3 +273,87 @@ def watervapormodule(f_vec, e, pd, th):
             nv = nv + S*F
         NV.append(nv)
     return np.array(NV)
+
+# ======================================================================
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # -------------------------------
+    # Demo: Ground radar vertical cross-section
+    # -------------------------------
+
+    # Grid dimensions: (height_levels, range_gates)
+    Nz = 50      # height levels (up to ~10 km)
+    Nx = 100     # range gates (up to 50 km)
+    Ny = 1       # single azimuth (2D cross-section); we'll squeeze later
+
+    # Height grid (meters) – exponential spacing or linear
+    z = np.linspace(0, 10000, Nz)  # 0 to 10 km
+
+    # Range grid (meters)
+    r = np.linspace(0, 50000, Nx)  # 0 to 50 km
+
+    # Create 2D mesh (Nz, Nx), then expand to (Nz, 1, Nx) for 3D compatibility
+    Z, R = np.meshgrid(z, r, indexing='ij')  # Z[z_idx, r_idx], R[z_idx, r_idx]
+
+    # --- Build atmospheric profiles ---
+    # Standard atmosphere: temperature decreases with height (~6.5 K/km)
+    T_K = 288.15 - 0.0065 * Z  # K
+    T_C = T_K - 273.15          # °C
+
+    # Pressure: barometric formula (approx)
+    P_Pa = 101325 * (T_K / 288.15) ** (9.80665 * 0.0289644 / (8.31447 * 0.0065))
+    P_mbar = P_Pa / 100.0       # Convert Pa → mbar (1 mbar = 100 Pa)
+
+    # Relative humidity: decreases with height (e.g., 80% at surface, 20% at 5 km)
+    RH = 80.0 * np.exp(-Z / 2000.0)  # %
+    RH = np.clip(RH, 1.0, 100.0)     # Avoid <1%
+
+    # Expand to 3D: (Nz, Ny=1, Nx)
+    pressure_3d = P_mbar[:, np.newaxis, :]      # (Nz, 1, Nx)
+    temperature_3d = T_K[:, np.newaxis, :]      # in K → will convert to °C in call
+    rh_3d = RH[:, np.newaxis, :]
+
+    # Radar frequency (GHz)
+    freq_ghz = 94.0  # W-band cloud radar
+
+    # Compute attenuation as in your usage
+    try:
+        kext_gaz_raw = (
+            1e-3 / 4.343
+            * MPM(
+                freq_ghz,
+                pressure_3d * 1e-2,           # Pa → hPa (since P_mbar = Pa/100, this gives hPa = mbar)
+                temperature_3d - 273.15,      # K → °C
+                rh_3d,
+                wa='None',
+                wae='None',
+                R='None',
+                output_type='att'             # dB/km
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ MPM failed: {e}")
+        print("Make sure 'oxygen93.txt' and 'water93.txt' are in the package data directory.")
+        exit(1)
+
+    # Squeeze out the singleton dimension (Nz, Nx)
+    kext = np.squeeze(kext_gaz_raw)  # (Nz, Nx)
+
+    # Convert from dB/km to dB (for 1 km path) – or keep as dB/km for plotting
+    # We'll plot dB/km
+
+    # --- Plotting ---
+    plt.figure(figsize=(10, 5))
+    im = plt.pcolormesh(r / 1000, z / 1000, kext, shading='auto', cmap='viridis', vmin=0)
+    plt.colorbar(im, label='Gaseous attenuation (dB/km)')
+    plt.xlabel('Range (km)')
+    plt.ylabel('Height (km)')
+    plt.title(f'W-band ({freq_ghz} GHz) Gaseous Attenuation – Ground Radar Cross-Section')
+    plt.ylim(0, 10)
+    plt.xlim(0, 50)
+    plt.grid(True, color='white', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
