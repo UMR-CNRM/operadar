@@ -15,26 +15,25 @@ from operadar.read.lookup_tables import retrieve_needed_columns
 from operadar.utils.make_links import link_keys_with_available_hydrometeors
 
 
-
-def compute_dualpol_variables(temperature:np.ndarray,
-                              mask_precip_dist:np.ndarray,
-                              elev:np.ndarray,
-                              Fw:np.ndarray,
-                              contents:dict[str,np.ndarray],
-                              concentrations:dict[str,np.ndarray],
-                              tables_dict:dict,
-                              X:np.ndarray,
-                              Y:np.ndarray,
-                              Z:np.ndarray,
-                              lon:np.ndarray,
-                              lat:np.ndarray,
-                              date_time:Timestamp,
-                              output_file_path:Path,
-                              append_in_fa:bool,
+def compute_dualpol_variables(temperature: np.ndarray,
+                              mask_precip_dist: np.ndarray,
+                              elev: np.ndarray,
+                              Fw: np.ndarray,
+                              contents: dict[str, np.ndarray],
+                              concentrations: dict[str, np.ndarray],
+                              tables_dict: dict,
+                              X: np.ndarray,
+                              Y: np.ndarray,
+                              Z: np.ndarray,
+                              lon: np.ndarray,
+                              lat: np.ndarray,
+                              date_time: Timestamp,
+                              output_file_path: Path,
+                              append_in_fa: bool,
                               config,
-                              )-> dict[str,np.ndarray] :
-    """Compute synthetic radar dual-polarimetrization variables for a given wavelength,
-    microphysics, and mixed phase parametrization.
+                              ) -> dict[str, np.ndarray]:
+    """Compute synthetic radar dual-polarimetrization variables
+    for a given wavelength, microphysics, and mixed phase parametrization.
 
     Args:
         temperature (np.ndarray): 3D array.
@@ -42,9 +41,11 @@ def compute_dualpol_variables(temperature:np.ndarray,
         elev (np.ndarray): 3D array.
         Fw (np.ndarray): 3D array.
         contents (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
-        concentrations (dict[np.ndarray]): dict of 3D array (one per hydrometeor).
-        tables_dict (dict): dict containing the tables parameters and required columns.
-        hydrometeorMoments (dict of form {str : int})): dict containing the number of moments for each hydrometeor of the microphysics scheme.
+        concentrations (dict[np.ndarray]): dict of 3D array (one per hydrom.)
+        tables_dict (dict): dict containing the tables parameters
+                            and required columns.
+        hydrometeorMoments (dict of form {str : int})): dict containing the
+        number of moments for each hydrometeor of the microphysics scheme.
         X (np.ndarray): 1D array of horizontal grid coordinates.
         Y (np.ndarray): 1D array of horizontal grid coordinates.
         Z (np.ndarray): vertical coordinates.
@@ -52,14 +53,16 @@ def compute_dualpol_variables(temperature:np.ndarray,
         lat (np.ndarray): 2D array.
         date_time (Timestamp): temporal variable.
         output_file_path (Path): out file path.
-        append_in_fa (bool): if True, delete contents and concentrations field when used in the calculation of the dpol variables to save space.
+        append_in_fa (bool): if True, delete contents and concentrations field
+        when used in the calculation of the dpol variables to save space.
 
     Returns:
-        dict[np.ndarray]: dictionary containing all the dual-polarimetrization fields.
+        dict[np.ndarray]: dictionary containing all the dual-polarimetrization
+        fields.
     """
-        
-    hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=config.hydrometeors_moments,
-                                                         datatype='tables'
+    hydrometeors = link_keys_with_available_hydrometeors(
+                                hydrometeorMoments=config.hydrometeors_moments,
+                                datatype='tables'
                                                          )
     print("Computation of",config.dpol2add,"for :") ; deb_timer = tm.time()
     
