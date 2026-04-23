@@ -3,7 +3,7 @@
 """
 Created on Tue Mar 31 14:59:47 2026
 
-@author: augros
+@author: augrosc, borderiesm
 
 Radar attenuation module.
 =========================
@@ -275,7 +275,9 @@ def compute_attenuated_zh_3D(
     d_tau     = kext_mean * dz                                         # (Nz-1, Ny, Nx)
 
     cum_tau          = np.zeros((Nz, Ny, Nx))
-    cum_tau[1:, ...] = np.cumsum(d_tau, axis=0)                        # (Nz, Ny, Nx)
+    #cum_tau[1:, ...] = np.cumsum(d_tau, axis=0)                        # (Nz, Ny, Nx)
+    # Where d_tau is NaN, use 0, otherwise use d_tau
+    cum_tau[1:, ...] = np.cumsum(np.where(np.isnan(d_tau), 0, d_tau), axis=0)
 
     # ------------------------------------------------------------------
     # 5. Find the level closest to the radar altitude in each column
