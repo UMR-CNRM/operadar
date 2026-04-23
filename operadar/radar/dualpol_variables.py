@@ -69,32 +69,36 @@ def compute_dualpol_variables(temperature: np.ndarray,
     print("Computation of",config.dpol2add,"for :") ; deb_timer = tm.time()
     
     initialize_dict = 0
-    for h in hydrometeors :
-        print('\t- hydrometeor :',h)
-        
-        # Mask single hydrometeor type
-        mask_content = mask_hydrometeor(content = contents[h],
-                                        expMmin = tables_dict['expMmin'][h]
-                                        )
-        mask_tot = (mask_precip_dist & mask_content) 
+    mask_any = np.zeros(temperature.shape, dtype=bool)
+    
+    for h in hydrometeors:
+        print('\t- hydrometeor :', h)
+    
+        mask_content = mask_hydrometeor(content=contents[h],
+                                        expMmin=tables_dict['expMmin'][h])
+        mask_tot = mask_precip_dist & mask_content
+    
+        dpolDict = compute_scatcoeffs_single_hydrometeor(
+            hydrometeor=h,
+            dpol2add=config.dpol2add,
+            mask_tot=mask_tot,
+            Tc=temperature,
+            el=elev,
+            Fw=Fw,
+            content_h=contents[h],
+            concentration_h=concentrations[h],
+            tables_dict=tables_dict,
+            columns_to_retrieve=columns_to_retrieve,
+            hydrometeorMoments=config.hydrometeors_moments,
+            micro=config.microphysics_scheme,
+        )
 
-        dpolDict = compute_scatcoeffs_single_hydrometeor(hydrometeor=h,
-                                                         dpol2add=config.dpol2add,
-                                                         mask_tot=mask_tot,
-                                                         Tc=temperature,
-                                                         el=elev, Fw=Fw,
-                                                         content_h=contents[h],
-                                                         concentration_h=concentrations[h],
-                                                         tables_dict=tables_dict,
-                                                         columns_to_retrieve=columns_to_retrieve,
-                                                         hydrometeorMoments=config.hydrometeors_moments,
-                                                         micro=config.microphysics_scheme,
-                                                    ) 
-        
-        # Addition of scattering coef for all hydrometeor
-        if initialize_dict == 0 :
-            fields2sum = {var:np.zeros(temperature.shape) for var in dpolDict.keys()} 
+        if initialize_dict == 0:
+            fields2sum = {var: np.zeros(temperature.shape) for var in dpolDict.keys()}
             initialize_dict = 1
+    
+        mask_any |= mask_tot
+
         for var in dpolDict.keys():
             fields2sum[var][mask_tot]+=dpolDict[var]
         
@@ -125,7 +129,7 @@ def compute_dualpol_variables(temperature: np.ndarray,
         if append_in_fa : del concentrations[h],contents[h]
         
     for var in fields2sum.keys():
-        fields2sum[var][~mask_precip_dist] = np.nan 
+        fields2sum[var][~mask_any] = np.nan 
         
     # Dpol var calculation over the sum of scatering coefficients and linear Z
     fields2sum = compute_dpol_var(dpolDict=fields2sum,dpol2add=config.dpol2add)
@@ -221,10 +225,12 @@ def compute_dpol_var(dpolDict:dict[str,np.ndarray],dpol2add:list) -> dict[str,np
     if 'Zh' in dpol2add :
         finalDict["Zh"] = np.copy(dpolDict["Zhhlin"])
         finalDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(finalDict["Zh"][dpolDict["Zhhlin"]>0])
-    if 'Zdr' in dpol2add :
-        finalDict["Zdr"] = dpolDict["Zhhlin"]/dpolDict["Zvvlin"]
-        mask_Zdr = (dpolDict["Zhhlin"]>0) & (dpolDict["Zvvlin"]>0)
-        finalDict["Zdr"][mask_Zdr] = linear_to_dBZ(finalDict["Zdr"][mask_Zdr])
+    if 'Zdr' in dpol2add :       
+        finalDict["Zdr"] = np.full_like(dpolDict["Zhhlin"], np.nan, dtype=float)
+        mask_Zdr = (dpolDict["Zhhlin"] > 0) & (dpolDict["Zvvlin"] > 0)
+        finalDict["Zdr"][mask_Zdr] = linear_to_dBZ(
+        dpolDict["Zhhlin"][mask_Zdr] / dpolDict["Zvvlin"][mask_Zdr]
+        )
     if "Kdp" in dpol2add :
         finalDict["Kdp"] = np.copy(dpolDict["Kdp"])
     if 'Rhohv' in dpol2add :
