@@ -39,13 +39,17 @@ def compute_mixed_phase(contents:dict[str,np.ndarray],
     hydrometeors = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeorMoments,
                                                          datatype='tables',
                                                          )
-    wet_species = [key for key in hydrometeors if (key[0:1]=="w") and (key[1:2]*2 in hydrometeors)]
+   # More robust way to find the dry counterpart (e.g., 'wg' -> 'gg')
+    wet_species = [k for k in hydrometeors if k.startswith('w') and (k[1] * 2)
+                   in hydrometeors]
     
-    Fw = compute_liquid_water_fraction(contents,mask_BB,wet_species)
+    Fw = compute_liquid_water_fraction(contents, mask_BB, wet_species)
     
-    for wspec in wet_species :
-        contents[wspec] = np.copy(contents[wspec[1:2]*2])
-        concentrations[wspec] = np.copy(concentrations[wspec[1:2]*2])
+    for wspec in wet_species:
+        dry_spec = wspec[1] * 2  # Converts 'wg' to 'gg'
+        contents[wspec] = np.copy(contents[dry_spec])
+        concentrations[wspec] = np.copy(concentrations[dry_spec])
+    
     
     contents = apply_mixed_phase_parametrization(contents, Fw, mask_BB, wet_species,parametrization) 
     
@@ -60,8 +64,19 @@ def compute_liquid_water_fraction(contents:dict[str,np.ndarray],
                                   ) -> np.ndarray:
     """Computing the liquid water fraction depending on the wet species in the config file."""
     print("\tComputing the liquid water fraction for wet species :",wet_species)
-    Fw = np.zeros(np.shape(contents["rr"]))
-    Fw[mask_BB] = (contents["rr"]/ (contents["rr"]+np.sum(contents[key[1:2]*2] for key in wet_species) ))[mask_BB]
+
+    Fw = np.zeros_like(contents["rr"])
+    
+    # Sum the dry species element-wise
+    sum_dry = np.zeros_like(contents["rr"])
+    for wspec in wet_species:
+        sum_dry += contents[wspec[1] * 2]
+    
+    # Prevent division by zero by adding a tiny epsilon or using a mask
+    denominator = contents["rr"] + sum_dry
+    denominator[denominator == 0] = 1e-12 
+    
+    Fw[mask_BB] = contents["rr"][mask_BB] / denominator[mask_BB]
     return Fw
 
 
@@ -84,16 +99,19 @@ def apply_mixed_phase_parametrization(contents:dict[str,np.ndarray],
     #    contents["wh"][Tc < 0] = 0
     #    contents["hh"][Tc >= 0] = 0
      
-    if parametrization == "Fw_pos" :
+    if parametrization == "Fw_pos":
         contents["wg"][Fw == 0] = 0
-        contents["wg"][BB] = contents["gg"][BB]+contents["rr"][BB] # If contents["rr"] > 10**expMmin) & (contents["gg"]> 10**expMmin)
-                                   # the rainwater is added to the wet graupel content         
-        contents["rr"][BB] = 0        # and removed from the rain content  
+        # 1. Calculate the new wet species FIRST, while 'rr' and 'gg' still have their values
+        if ('wh' in wet_species) and ('hh' in wet_species):
+            denom = contents["hh"][BB] + contents["gg"][BB]
+            denom[denom == 0] = 1e-12 # Safety
+            contents["wh"][BB] = contents["hh"][BB] + ((contents["rr"][BB] * contents["hh"][BB]) / denom[BB])
+        
+        # 2. Now perform the transfers/zeroing
+        contents["wg"][BB] = contents["gg"][BB] + contents["rr"][BB]
+        contents["rr"][BB] = 0        
         contents["gg"][BB] = 0
-       
-        if ('wh' in wet_species) and ('hh' in wet_species) :
-            contents["wh"] = contents["hh"] + ( (contents["rr"]*contents["hh"])/(contents["hh"]+contents["gg"]) )	# d'après Wolfensberger, 2018
-
+        
     if parametrization == "Fw_posg" :
         contents["wg"][Fw == 0] = 0
         contents["wg"][BB] = contents["gg"][BB]
