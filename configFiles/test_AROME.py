@@ -72,5 +72,5 @@ radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for 
 radar_band = 'W'                    # radar band (C, X, S, W or K)
 distmax_rad = 1000.*1000             # maximum radius of the radar data to compute pseudo-observations
 radarloc=None                       # radar location: 'center' or [lat_radar,lon_radar] or None (None will not simulate radar beams)
-cnst_angle=0                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
+cnst_angle=90                       # will be used when radarloc=None to simulate either a horizontal (cnst_angle=0°)
                                     #  or a vertical (cnst_angle=90°) pointing radar at each grid point
