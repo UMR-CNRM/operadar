@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 # ------------------------------------------------------------
 [project]
 name = "operadar"
-version = "0.0.1"
+version = "1.0.1"
 description = "Radar forward operator developed at the National Centre for Meteorological Research, France"
 requires-python = ">=3.10"
 
@@ -21,22 +21,45 @@ authors = [
     {name = "C. David"},
 ]
 
-# Runtime dependencies (the same list you had in install_requires)
+# Runtime dependencies
+# Installed with pip install -e .
 dependencies = [
     "pyproj",
     "numpy",
-    "xarray",
+    "xarray>=2023.2",
     "pandas",
     "netCDF4",
-    "dask",
+    "dask>=2023.2",
     "scipy",
-    "tqdm",
+    "tqdm>=4.65",
     "pyyaml",
-    "matplotlib",
-    "cartopy",
+    "matplotlib>=3.6",
+    "cartopy>=0.21",
+    "contourpy",
     "epygram",
     "h5py",
 ]
+
+# Runtime dependencies with fixed package version for belenos
+# Installed with pip install -e ".[belenos]"
+[project.optional-dependencies]
+belenos = [
+    "pyproj==3.7.1",
+    "numpy==2.2.6",
+    "xarray==2025.12.0",
+    "pandas==2.3.2",
+    "netCDF4==1.7.2",
+    "dask==2026.3.0",
+    "scipy==1.15.3",
+    "tqdm==4.67.3",
+    "pyyaml==6.0.3",
+    "matplotlib==3.9.0",
+    "cartopy==0.24.1",
+    "contourpy==1.3.2",
+    "epygram==2.0.7",
+    "h5py==3.14.0",     
+]
+
 
 # URL for the home‑page / source repository
 [project.urls]

@@ -28,7 +28,7 @@ It currently requires a repository of lookup tables. These tables contain the sc
 * dataset attributes such as the horizontal resolution, the options used to compute the mixed-phase or simulate the radar data.
 
 # How to install
-The installation of `operadar` should be preferred in a virtual environment. The procedure is detailled [in the Wiki](https://github.com/UMR-CNRM/operadar/wiki/Installation-tutorial).
+Install `operadar` in a dedicated virtual environment: [Installation-tutorial](https://github.com/UMR-CNRM/operadar/wiki/Installation-tutorial).
 
 
 # How to run
