@@ -35,6 +35,13 @@ def format_temporal_variable(filePath:Path,
         mnh_file = Dataset(filePath,'r')
         date_time_file = mnh_file.variables['time'][:]
         return date_time_file[0]
+    elif model_type=='WRF' and real_case : #ChangeEB: Adding option to work with the WRF output (preprocessed)
+        epygram.init_env()
+        epygram_file = epygram.formats.resource(filename=filePath, openmode = 'r',fmt='netCDF') 
+        field = epygram_file.readfield('BATHYMETRY_FLAG')
+        date_time_file = field.validity.get()
+        epygram_file.close()
+        return Timestamp(date_time_file)        
 
 
 

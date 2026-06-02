@@ -19,6 +19,12 @@ def link_varname_with_mesonh_name ()-> dict[str,str]:
     name_hydro_linked={t:model_name[it] for it,t in enumerate(model_hydrometeors)}
     return name_hydro_linked
 
+def link_varname_with_wrf_name ()-> dict[str,str]: #ChangeEB_toWRF - Adapt names to WRF mixing ratio variables
+    """Make the correspondance between the hydrometeor keys and the variable names commonly used in MesoNH."""
+    model_hydrometeors=['vv','cc','rr','ii','ss','gg','hh']
+    model_name=['QVAPOR','QCLOUD','QRAIN','QICE','QSNOW','QGRAUP','QHAIL']
+    name_hydro_linked={t:model_name[it] for it,t in enumerate(model_hydrometeors)}
+    return name_hydro_linked
 
 
 def link_keys_with_available_hydrometeors(hydrometeorMoments:dict[str,int],

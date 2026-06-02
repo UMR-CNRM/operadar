@@ -47,6 +47,16 @@ def read_model_file(filePath:Path,
                                                       subDomain=domain,
                                                       verbose=verbose,
                                                       )   
+    #ChangeEB_addWRF : Adding a function for reading WRF
+    elif (modelname=='WRF'): 
+        from operadar.read.wrf import read_wrfthom
+        [X, Y, Alt, lon, lat, M, Nc, Tc, p, qv] = read_wrfthom(filePath=filePath,
+                                                               micro=micro_scheme,
+                                                               hydrometeorMoments=hydrometeorMoments,
+                                                               subDomain=domain,
+                                                               real_case=real_case,
+                                                               verbose=verbose,
+                                                               )
     
     else :
         print('_____________')
