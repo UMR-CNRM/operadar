@@ -155,6 +155,11 @@ def operadar(filename: str,
     create_tree_structure_outFiles(output_dir=Path(conf.output_filePath))
     # Format temporal variable and output file name
     input_file_path = Path(os.path.join(conf.input_filePath,filename))
+
+    if conf.model == "WRF": #ChangeEB_ReadWRF - If the model is WRF, first apply the preprocess and use its result as filePath
+        from operadar.read.wrf import preprocess_wrf
+        input_file_path = preprocess_wrf(filePath=input_file_path)
+
     temporal_variable = format_temporal_variable(filePath=input_file_path,
                                                  model_type=conf.model,
 						                         real_case=conf.real_case,

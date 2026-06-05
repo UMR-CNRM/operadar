@@ -90,7 +90,6 @@ def define_output_path(out_dir_path:str,
                        radar_band:str,
                        temporal_variable:Timestamp|int):
     """Define output path depending on the temporal variable type."""
-
     if type(temporal_variable) is pd.Timestamp :
         outName = f"dpolvar_{model}_{scheme}_{radar_band}band_{temporal_variable.strftime('%Y%m%d_%H%M')}"
     else :
