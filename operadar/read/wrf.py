@@ -20,6 +20,8 @@ from netCDF4 import Dataset
 import pyproj
 import xarray as xr
 import os
+import uuid
+import shutil
 
 def preprocess_wrf(filePath:Path):
 
@@ -103,7 +105,15 @@ def preprocess_wrf(filePath:Path):
     print('renaming time...')
     xa_cf = xa.rename({'Time':'time'}) #I need to rename Time, to follow the CF1.6-compliant temporal unit
 
-    output_file = Path("/tmp/preprocessed_WRF.nc") #Save in a temporary directory to avoid writting problems
+    #output_file = Path("/tmp/preprocessed_WRF.nc") #Save in a temporary directory to avoid writting problems
+    #                                               #This may be a problem. However, I belive that the solution is worse. 
+     
+    #Check if the folder modelFiles/WRF/tmp exist. If not, create the dir:
+    dir_tmp = Path("modelFiles/WRF/tmp/") 
+    dir_tmp.mkdir(parents=True, exist_ok=True)
+    
+    output_file = Path(f"modelFiles/WRF/tmp/preprocessed_WRF_{uuid.uuid4().hex}.nc")
+    
     xa_cf.to_netcdf(output_file, mode='w', format='NETCDF4')
     return output_file
 
