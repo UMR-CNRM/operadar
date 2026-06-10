@@ -701,7 +701,7 @@ C ============================================================================
           IF (DSTYfunc .EQ. "BR07") THEN 
             CALL BR07RHOX(D,RHOP)
           ! ----- density Zawadzki et al. 2005
-          ELSE IF (DSTYfunc .EQ. "ZA05") THEN
+          ELSE IF (DSTYfunc .EQ. "ZA05") THEN  
             CALL ZA05RHOX(D,Frim,RHOP)
           ! ----- density Leinonen and Szyrmer (2015)
           ELSE IF (DSTYfunc .EQ. "LS15") THEN
@@ -717,7 +717,7 @@ C ============================================================================
             CALL ICOND2_1M_RHOX(aSnow,bSnow,D,Dm,P,RHOP)
           ! ----- m-D relationship ICE3/LIMA
           ELSE IF (DSTYfunc .EQ. "DSTH") THEN !ChangeEB_rho: Introducing new function for rhos at thom
-            CALL THOMROX(D,RHOP)
+            CALL THOMRHOX(D,RHOP)
           ELSE 
             CALL QRHOX(aj,bj,D,Dm,P,RHOP)
           ENDIF ! RHOP
@@ -1460,23 +1460,23 @@ C     ###################################
       !END FUNCTION MO17RHOX
 
 C     ###################################
-      SUBROUTINE THOMROX(D, RHOX) !ChangeEB_rho: Defining a new subroutine for snow dens
+      SUBROUTINE THOMRHOX(D, RHOX) !ChangeEB_rho: Defining a new subroutine for snow dens
 C     ###################################
       ! Calculation of snow density of Thomspon scheme in WRF model 
       ! Thompson scheme defined at Thompson et al., (2008)
       ! From fortran code (in WRF src code /phys/module_Thompson):
-      !     rho_s = MAX(rho_g(1), MIN(0.13/xDs, rho_i-100.)) (line 2248)
+      !     rho_s = MAX(rho_g(1), MIN(0.13/xDs, rho_i-100.)) (line 2248), where xDs is in m
       !     where:     
-      !     rho_g(1)=50 ; rho_i=890
+      !     rho_g(1)=50 ; rho_i=890 
       
       REAL*8 D
       REAL*8 RHOX
       
-      RHOX=MAX(50., MIN(0.13/D, 890.-100.))
+      RHOX=MAX(50., MIN(0.13/(D*1000), 890.-100.))
       
       RETURN
       END
-      !END FUNCTION THOMROX
+      !END FUNCTION THOMRHOX
 
 c     ###################################
       SUBROUTINE QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSX) 
