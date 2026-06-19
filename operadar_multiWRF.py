@@ -25,9 +25,8 @@ for filename in os.listdir(dir_tmp):
         print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-# stratiforme case with 0Z run and convective case with 12Z run
-cases = ['241025'] # ('strat','2024-11-19 06:00','2024-11-19 22:00'),
-microphysics_schemes = ['WRFICE3'] # 'ICE3','ICJW','LIMASG','LIMC'
+cases = ['241025'] 
+microphysics_schemes = ['WRFICE3'] # 'ICE3',
 
 files = sorted(glob.glob("modelFiles/WRF/split_files/wrfout_t*.nc"))
 files = [os.path.basename(f) for f in files]

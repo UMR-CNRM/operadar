@@ -16,15 +16,15 @@ This the conf. file to read the WRF simulation, but assuming ICE3 physics
 """
 
 # ----- INPUT file path (path to folder containing the files)
-input_filePath  = f"./modelFiles/WRF/split_files"
+input_filePath  = f"./modelFiles/AROME"
 # ----- OUPUT file(s) directory
-output_filePath = f"./modelFiles/WRF/split_files"
+output_filePath = f"./modelFiles/AROME"
 
 # ----- Lookup tables directory path
 path_tables = f"./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
-model = 'WRF'
+model = 'Arome'
 real_case=True
 
 # ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
