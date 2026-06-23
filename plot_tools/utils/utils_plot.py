@@ -3,8 +3,6 @@ import os, sys
 import itertools
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
-
 
 
 # ====== BASIC DEFINITIONS ====== #
@@ -496,7 +494,6 @@ def get_colors(dictParam:dict,
     else :
         colors = [colorName for colorName in mpl.colors.TABLEAU_COLORS.keys()][0:nb_colors]
     return colors
-
 
 
 def get_combinations(dictParam:dict,

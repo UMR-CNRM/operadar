@@ -6,7 +6,7 @@ DIEL:RY19dry
 ARfunc:AUds
 ARcnst:0.75
 DSTYfunc:RHOX
-Frim:1
+Frim:1.0
 LAM:53.2
 ELEVmin:0.0
 ELEVmax:10.0

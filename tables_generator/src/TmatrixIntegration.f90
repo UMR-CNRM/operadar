@@ -151,7 +151,7 @@ REAL :: K2 !dielectric factor
 
 ! Variables for input and output files names
 CHARACTER*2 :: typeh
-CHARACTER*1 :: bande
+CHARACTER*2 :: band
 CHARACTER*4  :: CCLOUD ! LIMA ICE3 LIMC ICJW
 CHARACTER*2 :: espece, MOMENT
 CHARACTER*2 :: espece_rr ! rain
@@ -217,7 +217,7 @@ RHOLW=1000.
 call get_command_argument(1, exec_dir)
 call get_command_argument(2, repo)
 call get_command_argument(3, typeh)
-call get_command_argument(4, bande)
+call get_command_argument(4, band)
 call get_command_argument(5, CCLOUD)
 call get_command_argument(6, MOMENT)
 
@@ -248,7 +248,7 @@ WRITE(0,*) ' -----------------------------------------------------------'
 WRITE (0,*) ' Conversion of the table as a function of the diameter into a table as a function of the hydrometeor content.'
 WRITE (0,*) '    microphysics=',CCLOUD
 WRITE (0,*) '    type=',typeh,' (',MOMENT,')'
-WRITE (0,*) '    band=',bande
+WRITE (0,*) '    band=',trim(band)
 
 IF (typeh=='ii') THEN
   Nmoments=2
@@ -283,8 +283,8 @@ close(333)
 
 
 !---- Input Files
-nomfileCoef  = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//bande//typeh
-nomfileCoef_rr = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//bande//'rr'
+nomfileCoef  = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//trim(band)//typeh
+nomfileCoef_rr = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefDiff_'//trim(band)//'rr'
 
 WRITE(0,*) ' Reading ',trim(nomfileCoef)
 
@@ -391,7 +391,7 @@ ENDIF
 !Output file
 
 IF (.not. testMode) THEN
-    nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//bande//typeh
+    nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//trim(band)//typeh
     PRINT *,' Creation of ',trim(nomfileCoefInt)
     
     OPEN (6,FILE=trim(nomfileCoefInt))

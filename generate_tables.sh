@@ -1,4 +1,8 @@
 #!/bin/bash
+#====================================================================
+#  Tmatrix tables generator 
+# @authors: Cloé David and Clotilde Augros
+#====================================================================
 
 # Variables initialization
 MODE=""
@@ -12,13 +16,15 @@ DSTY=""
 RIMING=""
 DIEL=""
 
-# List of (fixed) parameters
+# Parameters list
 HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
-BAND_LIST=("C" "S" "X" "K" "W" "L")
+BAND_LIST=("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("LIMA") #("ICE3" "ICJW" "LIMA" "LIMC")
+MICRO_LIST=("ICE3") #("ICE3" "ICJW" "LIMA" "LIMC")
+
+DEFAULT_MODES=("default" "David2025AMT" "David2026PhD" "vertical")
 
 # Errors storage
 MISSING_FILES=()
@@ -30,55 +36,45 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMAT_DIR="$(dirname "$(realpath ./tables_generator/src/Tmat)")"
 TMATINT_DIR="$(dirname "$(realpath ./tables_generator/src/TmatInt)")"
 
+# Validation functions
+validate_value() {
+    local -n array=$1
+    [[ " ${array[*]} " =~ " ${2} " ]] && return 0
+    return 1
+}
+
+valid_band() { validate_value BAND_LIST "$1"; }
+valid_hydro() { validate_value HYDRO_LIST "$1"; }
+valid_arf() { validate_value ARF_LIST "$1"; }
+valid_dstyf() { validate_value DSTYfunc_LIST "$1"; }
+valid_dielf() { validate_value DIELfunc_LIST "$1"; }
 
 # Help function
 usage() {
-    echo " "
-    echo "How to use :"
-    echo "  DEFAULT MODE : $0 --default --band <val>"
-    echo "  NEWCONF MODE : $0 --newConf <confName> --band <val>"
-    echo "  EDIT MODE    : $0 --hydro <val> --band <val> [--arf <val>] [--arv <val>] [--canting <val>] [--dsty <val>] [--riming <val>] [--diel <val>]"
-    echo " "
-    echo "Accepted values for :"
-    echo "  --band    (radar band)          : C, K, S, W, X, L"
-    echo "  --hydro   (hydrometeor type)    : rr, ii, gg, ss, hh, cl, cs, wg, wh, ws "
-    echo "  --arf     (axis ratio function) : AUds, CNST, BR02, RYdg, RYwg"
-    echo "  --arv     (axis ratio value)    : any float value."
-    echo "  --canting (canting angle)       : any float value."
-    echo "  --dsty    (density function)    : BR07, RHOX, LS15, ZA05"
-    echo "  --riming  (fraction of riming)  : any float value >= 1 (1=unrimed)"
-    echo "  --diel    (dielectric function) : Liebe91, RY19dry, LBwetgr, MGwMA08"
-    echo "Further details are available in the Wiki of the project."
-    echo " "
+    cat <<EOF
+Usage:
+  DEFAULT MODE:     $0 --default --band <value>
+  Specialized MODE: $0 --David2025AMT/--David2026PhD/--vertical --band <value>
+  NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
+  EDIT MODE:        $0 --hydro <value> --band <value> [options]
+
+Options:
+  --arf:     ${ARF_LIST[@]}
+  --arv:     Any float
+  --canting: Any float
+  --dsty:    ${DSTYfunc_LIST[@]}
+  --riming:  Any float >= 1
+  --diel:    ${DIELfunc_LIST[@]}
+EOF
     exit 1
 }
 
-# Checking validity
-valid_band() {
-    [[ "${BAND_LIST[*]}" =~ "$1" ]]
-}
-valid_hydro() {
-    [[ "${HYDRO_LIST[*]}" =~ "$1" ]]
-}
-valid_arf(){
-    [[ "${ARfunc_LIST[*]}" =~ "$1" ]]
-}
-valid_dstyf(){
-    [[ "${DSTYfunc_LIST[*]}" =~ "$1" ]]
-}
-valid_dielf(){
-    [[ "${DIELfunc_LIST[*]}" =~ "$1" ]]
-}
-valid_microphysics(){
-    [[ "${MICRO_LIST[*]}" =~ "$1" ]]
-}
-
-# Reading arguments
+# Argument parsing
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --default)
+        --default|--David2025AMT|--David2026PhD|--vertical)
             [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
-            MODE="default"
+            MODE="$1"
             ;;
         --newConf)
             [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
@@ -127,142 +123,126 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# Checking arguments
-if [[ -z "$MODE" ]]; then
-    echo "/!\ Error: wrong use of the tables_generator. Can only be :"
-    usage
-fi
-
-if [[ -z "$BAND" ]]; then
-    echo "/!\ Error: --band argument is mandatory."
-    usage
-fi
+# Validation checks
+[[ -z "$MODE" || -z "$BAND" || "$MODE" == "edit" && -z "$HYDRO" ]] && usage
 
 
+# Core table generation function
 generate_tables() {
     local output_subfolder="$1"
+    local is_special_mode=false
 
-    if [[ "$output_subfolder" == "default" ]]; then
-        echo "=========================================="
-        echo "               DEFAULT MODE               "
-        echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_*_default files."
-        echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
-        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
-        echo "/!\ Table generation is time-consuming and can take several hours."
-        echo ""
-    else
-        echo "=========================================="
-        echo "               NewConf MODE               "
-        echo "=========================================="
-        echo -e "Tables will be generated for all hydrometeor types with the values given by the tables_generator/param/TmatParam_* files."
-        echo "Tables will be stored under ${TABLE_FOLDER}/${output_subfolder}/"
-        echo "Progression of the table's generation for each hydrometeor is displayed under ./logs/{radarBand}_{hydrometeor}.log"
-        echo "/!\ Table generation is time-consuming and can take several hours."
-        echo ""
+    # Check if special mode
+    if [[ " ${DEFAULT_MODES[@]} " =~ " ${output_subfolder} " ]]; then
+        is_special_mode=true
     fi
 
+    echo "====================================================================="
+    echo "                ${mode_type} MODE - ${output_subfolder}              "
+    echo "====================================================================="
+    echo -e "Generating tables for all hydrometeor types ${mode_desc}"
+    echo "Results will be stored in: ${TABLE_FOLDER}/${output_subfolder}/"
+    echo ""
+    echo "/!\ Table generation may take several hours..."
+
+    # Création des répertoires
+    mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
+
     for H in "${HYDRO_LIST[@]}"; do
+        echo -e "\n================ PROCESSING ${H} ============================="
 
-        echo -e "\n================== START OF THE PROGRAM FOR ${H} =================="
-        
-        if [[ "$output_subfolder" == "default" ]]; then
-            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_default"
-        else
-            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}"
-            cp ${PARAM_FILE} "${PARAM_FILE}_${output_subfolder}"
-        fi
+        # Handle specialized modes (files in param/ with extensions)
+        if [[ $is_special_mode == true ]]; then
+            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}_${output_subfolder}"
 
-        for MICRO in "${MICRO_LIST[@]}"; do
-            MOMENT=$( cat "${PARAM_FILE}"| grep $MICRO |cut -d : -f2 )
-            OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
+            if [[ ! -f "$PARAM_FILE" ]]; then
+                echo "Error: Parameter file not found: $PARAM_FILE"
+                continue
+            fi
 
-            if [[ -f "$OUT_FILE" ]]; then
-                echo "$OUT_FILE exist."
-                
-            else
-                mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
-                mkdir -p "${TABLE_FOLDER}/${H}"
-                if [[ -f "$PARAM_FILE" ]]; then
-                    DIAMETER_TABLE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
-                    if [[ ! -f "$DIAMETER_TABLE" ]]; then
-                        cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
-                        echo "Launching the creation of the tables for a range of diameters."
-                        # Temporary mv into Tmat directory to execute the f77 Tmat binary
-                        pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
-                        ./Tmat
-                        if [[ $? -ne 0 ]]; then
-                            echo "Error: Table creation failed for $H."                        
-                        fi
-                        popd > /dev/null
-                        # Back to the Launching directory
-                        if [ -f "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" ]; then
-                        mv "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" "${DIAMETER_TABLE}"
-                        fi               
-                    else
-                        echo "Table for the range of diameters exists."
-                    fi
-                    
-                    echo "Integrating over the ${H} PSD for ${MICRO} microphysics (${MOMENT})"
-                    if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$output_subfolder" "$H" "$BAND" "$MICRO" "$MOMENT"; then
-                        echo "Tables generated for $H with $MICRO microphysics."
-		                # mv "${TABLE_FOLDER}/${H}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}" "$OUT_FILE"
-                    else
-                        echo "Error: Failed integration for $H with $MICRO microphysics."
-                    fi
-                else
-                    echo "Missing or unknown file: $PARAM_FILE"
+            # Generate diameter tables if needed
+            if [[ ! -f "${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}" ]]; then
+                cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
+                pushd "$SCRIPT_DIR/tables_generator/src" > /dev/null
+                ./Tmat
+                popd > /dev/null
+
+                if [[ -f "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" ]]; then
+                    mv "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" \
+                       "${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
                 fi
             fi
+        
+        # Handle custom modes (files in param/ without extension)
+        else
+            PARAM_FILE="${PARAM_FOLDER}/TmatParam_${BAND}${H}"
+            OUTPUT_PARAM_FILE="${PARAM_FILE}_${output_subfolder}"
+
+            if [[ ! -f "$PARAM_FILE" ]]; then
+                echo "Error: Base parameter file not found: $PARAM_FILE"
+                continue
+            fi
+
+            # Create copy with extension for this custom config
+            if [[ ! -f "$OUTPUT_PARAM_FILE" ]]; then
+                cp "$PARAM_FILE" "$OUTPUT_PARAM_FILE"
+            fi
+
+            PARAM_FILE="$OUTPUT_PARAM_FILE"
+        fi
+
+        # Generate integration tables for all microphysics
+        for MICRO in "${MICRO_LIST[@]}"; do
+            MOMENT=$(grep "^${MICRO}" "$PARAM_FILE" | cut -d: -f2)
+            OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
+
+            if [[ ! -f "$OUT_FILE" ]]; then
+                if "$TMATINT_DIR/TmatInt" "$TMATINT_DIR" "$output_subfolder" "$H" "$BAND" "$MICRO" "$MOMENT"; then
+                    echo "Successfully generated tables for ${H} with ${MICRO} microphysics"
+                else
+                    echo "Failed to generate tables for ${H} with ${MICRO}"
+                fi
+            else
+                echo "Using existing table: $OUT_FILE"
+            fi
         done
-
-        echo -e "\n================== END OF THE PROGRAM FOR ${H} =================="
-                
     done
-
-    echo " "
 }
 
+# Main execution
+case "$MODE" in
+    --default|--David2025AMT|--David2026PhD|--vertical)
+        generate_tables "${MODE#--}"  # removes -- to get the name only
+        ;;
+    --newConf)
+        generate_tables "$NEW_CONF"  # Personnalized config
+        ;;
+    *)
+        # Edit mode - create custom config
+        [[ -z "$HYDRO" ]] && { echo "Error: --hydro is required in edit mode"; usage; }
 
-# Mode 1 : default
-if [[ "$MODE" == "default" ]] ; then
-    generate_tables "default"
-
-# Mode 2 : newConf
-elif [[ "$MODE" == "newConf" ]] ; then
-    generate_tables "$NEW_CONF"
-fi
-
-# Mode 3 : edit/modification personnalisée
-if [[ "$MODE" == "edit" ]]; then
-    [[ -z "$HYDRO" ]] && { echo "Erreur : --hydro est requis en mode modification."; usage; }
-
-    FILE="toto_${BAND}.txt"
-    [[ ! -f "$FILE" ]] && { echo "Fichier $FILE introuvable."; exit 1; }
-
-    echo "Génération de config.txt à partir de $FILE avec les paramètres modifiés..."
-
-    cp "$FILE" config.txt
-
-    # Fonction de remplacement dans le fichier
-    update_param() {
-        local key="$1"
-        local value="$2"
-        if grep -q "^$key=" config.txt; then
-            sed -i "s/^$key=.*/$key=$value/" config.txt
-        else
-            echo "$key=$value" >> config.txt
+        if [[ ! -f "toto_${BAND}.txt" ]]; then
+            echo "Error: Configuration file 'toto_${BAND}.txt' not found"
+            exit 1
         fi
-    }
 
-    update_param "hydro" "$HYDRO"
-    [[ -n "$ARF" ]] && update_param "arf" "$ARF"
-    [[ -n "$ARV" ]] && update_param "arv" "$ARV"
-    [[ -n "$CANTING" ]] && update_param "canting" "$CANTING"
-    [[ -n "$DSTY" ]] && update_param "dsty" "$DSTY"
-    [[ -n "$RIMING" ]] && update_param "riming" "$RIMING"
-    [[ -n "$DIEL" ]] && update_param "diel" "$DIEL"
+        echo "Creating custom config.txt..."
+        cp "toto_${BAND}.txt" "config.txt"
 
-    echo "config.txt généré avec modifications personnalisées."
-    exit 0
-fi
+        # Update parameters
+        local config_file="config.txt"
+        {
+            echo "[EDITED]"
+            echo "hydro=${HYDRO}"
+            [[ -n "$ARF" ]] && echo "arf=${ARF}"
+            [[ -n "$ARV" ]] && echo "arv=${ARV}"
+            [[ -n "$CANTING" ]] && echo "canting=${CANTING}"
+            [[ -n "$DSTY" ]] && echo "dsty=${DSTY}"
+            [[ -n "$RIMING" ]] && echo "riming=${RIMING}"
+            [[ -n "$DIEL" ]] && echo "diel=${DIEL}"
+        } | sed -i '/^[[:space:]]*$/d' "$config_file"
+
+        echo "config.txt created successfully with custom parameters"
+        exit 0
+        ;;
+esac

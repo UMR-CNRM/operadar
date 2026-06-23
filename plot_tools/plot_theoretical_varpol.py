@@ -8,8 +8,8 @@ import argparse
 from plot_tools.utils.sensitivity_test import *
 
 
-Path_tables = "/home/davidcl/Programmation/operadar/tables_generator/tables/"
-dir_fig="/home/davidcl/Programmation/operadar/plot_tools/sensitivity_study/"
+Path_tables = "../tables_generator/tables/"
+dir_fig="IMG"
 
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 Fwchoix=0
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument("hydro", type=str, default='rr',
                         help='Chose one hydrometeor type : rr, ss, gg, wg, wh, hh, cs, cl, ii')
     parser.add_argument("band", type=str, default='C',
-                        help='Chose one frequency band : C, S, X, W, K')
+                        help='Chose one frequency band : L, C, S, X, W, K')
     parser.add_argument("--method", type=str, default='Both',
                         help='Which scattering computation method to plot : Tmatrix, Rayleigh, Both. Default : Both')
     parser.add_argument("--micro", type=str, default='ICE3',

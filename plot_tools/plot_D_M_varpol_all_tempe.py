@@ -21,15 +21,17 @@ moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
          "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"1M"}
          }
 
-Path_tables = "../tables_generator/tables/"
+Path_tables = "../tables_generator/tables"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='L',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+#band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,T_list ='C',['k','gray','b','c','g','y','r'],[-80,-70,-60,-10,0,10,30]
+typeh_list=['wg']
+Fw=0.6
 
-listplot=['D','M'] #,'M']
-TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
-#TmatOption={'L':'default','C':'default','K':'default','W':'default'}
+listplot=['M'] #,'M']
+TmatOption={'C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh','Zdr','Kdp'] #,'Rhohv','Ah','Av']
@@ -57,8 +59,8 @@ ymax_dict["Zh"] = 70
 ymin_dict["Zdr"] = -1
 ymax_dict["Zdr"] = 6
 
-ymin_dict["Kdp"] = 0#-1
-ymax_dict["Kdp"] = 0.04 #6
+ymin_dict["Kdp"] = -1
+ymax_dict["Kdp"] = 6
 
 
 for typeh in typeh_list:
@@ -72,7 +74,7 @@ Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe ca
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 ELEVsel=0 #0 for ground radars, 90 for RASTA or BASTA
 Nii=800 #selected number concentration for primary ice
-T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':10,'rr':10,'wg':0,'hh':1,'wh':0}
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':5,'rr':10,'wg':0,'hh':1,'wh':0}
 Fw_list,Fw_ls=[0.1,0.6,0.9],['-.',':','--']
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'tt':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
@@ -119,28 +121,17 @@ for plot in listplot:
             vn['Rhohv'],vn['Kdp']=df['rhohv'].to_numpy(),df['kdp'].to_numpy()
             vn['Ah'],vn['Av']=df['Ah'].to_numpy(),df['Av'].to_numpy()
             x=df[pltX[plot]].to_numpy()
-
             
-            if (typeh=='wg' or typeh=='wh'):
-                for iFw,Fw in enumerate(Fw_list):
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fw)) 
-                    label=legend_list[typeh]+" Fw="+str(Fw)+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],ls=Fw_ls[iFw],linewidth=lw)#,s=0.5)
-                if (ivar==2):
-                    ax[ivar].legend(loc = 'best',fontsize=pol_legend)   
-            else:                
-                if (typeh=='ii' and plot=='M') :
-                    id=np.argmin(np.abs(P3col-Nii)) # position of closest concentration to Nii
-                    P3sel=P3col[id]
-                    label=legend_list[typeh]+" Nii="+str(P3sel)+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == P3sel))           
-                    ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],linewidth=lw)#,s=0.5)  
-                else:
-                    label=legend_list[typeh]+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fwsel))           
-                    ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],linewidth=lw)#,s=0.5)               
-                
-            #end choice wg
+
+            #for itempe,tempe in enumerate(T_list):
+            #    ind = np.where((Tcol == tempe)*(ELEV == ELEVsel)*(P3col == Fw)) 
+            ind2 = np.where((ELEV == ELEVsel)*(Tcol==-40)) 
+            #    label=legend_list[typeh]+" Fw="+str(Fw)+" T="+str(tempe)+u'\u00B0C'
+                #ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itempe],linewidth=lw)#,s=0.5)
+            ax[ivar].scatter(x[ind2],vn[var][ind2])
+            if (ivar==2):
+                ax[ivar].legend(loc = 'best',fontsize=pol_legend)   
+
         # end loop over typeh          
 
         ax[ivar].set_ylabel(var+"("+unit[var]+")",fontsize = pol_label)
@@ -153,14 +144,14 @@ for plot in listplot:
         if plot=="D":
             ax[ivar].set_xlim(0,dmax_dict[typeh])
         if plot=="M":
-            ax[ivar].set_xlim(1e-05,1e-02)
+            ax[ivar].set_xlim(1e-07,1e-02)
             ax[ivar].set_xscale('log')
         if (typeh != 'wg' and typeh!='wh'):
             ax[ivar].legend(loc = 'best',fontsize=pol_legend)
         ax[ivar].grid()
   
     # end loop over var        
-    figtitle="Zh, Zdr, Kdp as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+micro+" "+TmatOption[band]
+    figtitle="Zh, Zdr, Kdp as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+micro
     fig.suptitle(figtitle,fontsize=pol_suptitle)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
@@ -170,7 +161,7 @@ for plot in listplot:
     micron=micro
     if (plot=='D'):
         micron=''
-    nomfig=dir_fig +'DistTmat'+band+micro+TmatOption[band]+"T"+str(T_dict['rr'])+varpol+types+'_'+plot+'varpol_alltypes'+TmatOption[band]+'.png'      
+    nomfig=dir_fig +'DistTmat'+band+micro+"multiTempeFw"+str(Fw*100)+varpol+typeh+'_'+plot+TmatOption[band]+'.png'      
  
     fig.savefig(nomfig,dpi=200, bbox_inches='tight')
     plt.clf()
