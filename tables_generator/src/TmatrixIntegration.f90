@@ -452,7 +452,7 @@ DO idTc=0,nTcloop
   DO idELEV=0,nELEVloop
     ELEV=ELEVmin+idELEV*ELEVstep
 
-    !============= Loop over the 3d parameter of the Tmatrix table : P3 ====
+    !============= Loop over the 3d parameter of the Tmatrix table : P3 ==== !ChangeEB_Pending - I'm not sure I'm understanding this... should I say M=2 for Thom? Even if only it is 2M for rain+ice?
     !WRITE(0,*) 'Nmoments=',Nmoments 
     IF (Nmoments==2) THEN  ! if (LIMA + rain or cloud water) or ice : P3=concentration CC
       nP3=nint((expCCmax-expCCmin)/expCCstep)+1
@@ -487,7 +487,8 @@ DO idTc=0,nTcloop
       
       !WRITE(0,*) '------ Fw=',Fw,'P3=',P3
 
-      !=============== Loop over hydromet content M ============
+      !=============== Loop over hydromet content M ============ !ChangeEB_Pending: So the hydreomet content is not read? Is it a table for all the possibilities?
+                                                                 ! Should I then do the same for the air density / air denisty at the lowest level??
       nM=nint((expMmax-expMmin)/expMstep)+1
       nMloop=nM-1
       IF (testMode) THEN
@@ -737,14 +738,32 @@ DO idTc=0,nTcloop
             Deqmrecsup=Deqmrec+(Deqmrec-Deqmrecinf)
           ENDIF            
   
-  
-          ! Fall velocities: eq 4.15 p 93 PhD Tony Le Bastard
-          ! from Wolfensberger (2018) / Mitra (1990)
-          phi=0.246*Fw+(1-0.246)*(Fw**7)
-          vtr=ccj_rr*(Deqrrec**ddj_rr)
-          vts=ccj*(Drec**ddj)
-          vtm=phi*vtr+(1-phi)*vts
+          !ChangeEB_Pending + ChangeEB_FallVelocity: Here I should add a new equation for the fall velocity in the WRF-Thompson scheme (Equation A3 from Thompson (2008))
+          !In this equation apart from ccj and ddj there's a new term, f, for each hydrometeor. It is "Cj" in the configuration table (used in ICE3 MP)
+          !f_cl:-; f_rr:195; f_ii:0; f_ss:100; f_gg:0
+          !The equation should be: vtr = (RHOAS/RHO)**(1/2)*ccj*D**ddj*exp(Cj*D)
+          !CAUTION: It needs the air density at the surface (RHOAS) and the air denisty (RHO). I still don't know how to call them - loop? 
+          !CAUTION: Cloud water dos not sediement
+          !Note: I have doubts about that part of the code. vtr - for rain, vts - for snow, vtm - for mixed? What happens with graupel? And cloud ice? 
+
+          !In the Thompson MP scheme, vtx = (rho0/rho)**(1/2)*a*D**b*exp(-fD) (Thompson, 2008)
+          !However, as the air density rho is not avaiable, the median of (rho0/rho)**(1/2) for a Study Case in la Cerdanya valley (Pyrinees) has been computed (=1.06778848)
+          !User may want to adapt it. Maybe create a linear regression between temperature and rho?
           
+          IF (CCLOUD=='THOM') THEN
+            phi=0.246*Fw+(1-0.246)*(Fw**7)
+            vtr = 1.06778848 *ccj_rr*Deqrrec**ddj*EXP(-Deqrrec*Cj)
+            vts = 1.06778848 *ccj*Drec**ddj*EXP(-Drec*Cj) 
+            vtm=phi*vtr+(1-phi)*vts !ChangeEB_Pending - I guess that I need to keep this
+          ELSE !ChangeEB_FallVelocity - ICE3/Lima options for fall velocities
+            ! Fall velocities: eq 4.15 p 93 PhD Tony Le Bastard
+            ! from Wolfensberger (2018) / Mitra (1990)
+            phi=0.246*Fw+(1-0.246)*(Fw**7)
+            vtr=ccj_rr*(Deqrrec**ddj_rr)
+            vts=ccj*(Drec**ddj)
+            vtm=phi*vtr+(1-phi)*vts
+          ENDIF
+
 !           IF (testMode) THEN
 !               WRITE(0,*) " Drec,Deqrrec,Dmrec,Deqrmrec",Drec,Deqrrec,Dmrec,Deqrmrec
 !           ENDIF
@@ -1137,6 +1156,33 @@ REAL*8,INTENT(out) :: lamb,N
 
 REAL*8 :: No,mucalc,mu,Dm,nu,lambMP
 
+!ChangeEB_PSD - Parameters for Thompson Snow PSD
+REAL*8 :: M0, M2, M3, oM3, Mrat, loga_, a_, b_, tc_ndth, slam1, slam2
+REAL, PARAMETER:: mu_s = 0.6357
+REAL, PARAMETER:: Kap0 = 490.6
+REAL, PARAMETER:: Kap1 = 17.46
+REAL, PARAMETER:: Lam0 = 20.78
+REAL, PARAMETER:: Lam1 = 3.2
+REAL, PARAMETER:: PI = 3.1415926536
+REAL, PARAMETER:: Nt_c = 100E6 !Units m-3 = 100cm-3
+
+REAL, DIMENSION(10), PARAMETER:: &
+sa = (/ 5.065339, -0.062659, -3.032362, 0.029469, -0.000285, &
+        0.31255,   0.000204,  0.003199, 0.0,      -0.015952/)
+REAL, DIMENSION(10), PARAMETER:: &
+sb = (/ 0.476221, -0.015896,  0.165977, 0.007468, -0.000141, &
+        0.060366,  0.000079,  0.000594, 0.0,      -0.003577/)
+
+!Parameters for Thompson Graupel PSD
+REAL*8 :: ygra1, zans1, N0_exp, lam_exp, lam_prev, ng
+
+!ChangeEB_PSD - Parameters c*e, c*g, o*g:
+REAL*8 :: cre2, crg2, org2
+REAL*8 :: cie2, cie3, cig2, cig3, oig2
+REAL*8 :: cse1
+REAL*8 :: cce1, cce2, cce3, ccg1, ccg2, ccg3
+REAL*8 :: cge1, cge2, cge3, cgg1, cgg2, cgg3, oge1, ogg1, ogg2, ogg3
+
 ! LIMA is 2-moments for cloud droplets, rain drops and pristine ice crystals
 ! For these 3 species, the number concentration N is prognostic
 ! In this code, the unit of No is m-3
@@ -1222,12 +1268,107 @@ ELSE IF (CCLOUD=='LIMC') THEN
     ENDIF
   ENDIF
 
+ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical scheme
+  IF (typeh=='rr') THEN
+    cre2 = nu+1
+    crg2 = GAMMA(cre2)
+    org2 = 1/crg2
+    lamb = (PI*1000/6 * P3/M * GAMMA(nu+3+1)/GAMMA(nu+1))**(1/b)
+    No = P3*org2 * lamb**cre2
+
+  ELSE IF (typeh=='ii') THEN
+    cie2 = nu+1
+    cie3 = nu+b+1
+    cig2 = GAMMA(cie2)
+    cig3 = GAMMA(cie3)
+    oig2 = 1/cig2
+    lamb = (PI*890/6 * P3/M * cig3/cig2)**(1./b)
+    No = P3*oig2*lamb**cie2 
+
+  ELSE IF (typeh=='cl') THEN
+    cce1 = 1 + nu
+    cce2 = nu+1 + nu
+    cce3 = nu+b+1 + nu
+    ccg1 = GAMMA(cce1)
+    ccg2 = GAMMA(cce2)
+    ccg3 = GAMMA(cce3)
+    lamb = (Nt_c*a*ccg2*1/ccg1/M)**(1./b)
+    No = Nt_c/ccg1 * lamb**cce1
+
+  ELSE IF (typeh=='ss') THEN
+    lamb = 0 !In fact, snow in Thom does not havy any lambda/N0. Is lamba necessary for the code/operadar in the future?? 
+    No = 0 
+
+  ELSE IF (typeh=='gg') THEN
+    cge1 = b+1
+    cge2 = nu+1
+    cge3 = b+nu+1
+    cgg1 = GAMMA(cge1)
+    cgg2 = GAMMA(cge2)
+    cgg3 = GAMMA(cge3)
+    oge1 = 1/cge1
+    ogg1 = 1/cgg1
+    ogg2 = 1/cgg2
+    ogg3 = 1/cgg3
+
+    ygra1 = alog10(MAX(1.E-9, M))
+    zans1 = 3.0 + 2./7.*(ygra1+8.)
+    zans1 = MAX(2., MIN(zans1, 6.))
+    N0_exp = 10.**(zans1)
+    lam_exp = (N0_exp*a*cgg1/M)**oge1
+    lam_prev = lam_exp * (cgg3*ogg2*ogg1)**(1/b) !This lambda is used to predict the ng
+    ng = cgg2*ogg3*M*lam_prev**b / a
+    lamb = (a*cgg3*ogg2*ng/M)**(1/b) !Recalculate lambda
+    No = ng*ogg2*1/lamb**cge2
+  ENDIF
 ENDIF    
 
   
 
-! Compute N from N0 and lambda
-N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+! Compute N from N0 and lambda !ChangeEB_PSD: I commented the following line, to adapt the N(D) if it's thom_snow
+!N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+!Extracted from Thompson MP (WRF model) - Thompson (2008)
+
+IF (CCLOUD=='THOM') THEN
+  IF (typeh=='ss') THEN
+    !Add here the Thom Snow PSD. Only for Thompson and snow. 
+
+    !Calculate the second moment (M2)
+    M2 = M * 1/mu_s 
+    
+    !Calculate the third moment (M3)
+
+    cse1 = b+1
+    tc_ndth = MIN(-0.1, Tk-273.15) !tc_ndths is the temperature in celsius - tc_NDTHompsonSnow
+    !The WRF source code is a bit tricky there:
+    loga_ = sa(1) + sa(2)*tc_ndth + sa(3)*cse1 &
+        + sa(4)*tc_ndth*cse1 + sa(5)*tc_ndth*tc_ndth &
+        + sa(6)*cse1*cse1 + sa(7)*tc_ndth*tc_ndth*cse1 &
+        + sa(8)*tc_ndth*cse1*cse1 + sa(9)*tc_ndth*tc_ndth*tc_ndth &
+        + sa(10)*cse1*cse1*cse1
+    a_ = 10.0**loga_
+    b_ = sb(1)+sb(2)*tc_ndth+sb(3)*cse1 + sb(4)*tc_ndth*cse1 &
+        + sb(5)*tc_ndth*tc_ndth + sb(6)*cse1*cse1 &
+        + sb(7)*tc_ndth*tc_ndth*cse1 + sb(8)*tc_ndth*cse1*cse1 &
+        + sb(9)*tc_ndth*tc_ndth*tc_ndth+sb(10)*cse1*cse1*cse1
+    M3 = a_ * M2**b_
+
+    !Simplifications for the Snow PSD
+    oM3 = 1./M3
+    Mrat = M2*(M2*oM3)*(M2*oM3)*(M2*oM3)
+    M0   = (M2*oM3)**mu_s
+    slam1 = M2 * oM3 * Lam0
+    slam2 = M2 * oM3 * Lam1
+
+    !Line 4478 off module_mp_thompson.F of WRF source code - We also could look at line 2087...
+    N = Mrat*(Kap0*DEXP(-slam1*D) + Kap1*M0*D**mu_s * DEXP(-slam2*D))
+  ELSE
+    N = No*D**nu*exp(-lamb*D) !Gamma function for rain, graupel, cloud and ice in WRF_Thompson
+  ENDIF
+ELSE
+  N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
+ENDIF
+
 
 ! !IF (testMode) THEN
 !   WRITE (0,*) "lamb,D,alpha, nu, No,N=",lamb,D,alpha,nu,No,N
