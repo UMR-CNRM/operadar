@@ -1,10 +1,10 @@
 type:ii
 band:C
-canting:nocant
-sigbeta:0.0
+canting:analyt
+sigbeta:10.0
 DIEL:RY19dry
 ARfunc:CNST
-ARcnst:1.0
+ARcnst:0.2
 DSTYfunc:RHOX
 Frim:1.0
 LAM:53.2

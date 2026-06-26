@@ -432,12 +432,12 @@ C     ***********************************************************************
       REAL*8 FVW, Frim ! Frim degree of riming factor
       CHARACTER*2 typeh
       CHARACTER*6 canting
-      CHARACTER*1 bande
+      CHARACTER*2 band
       CHARACTER*4 ARfunc
       CHARACTER*4 DSTYfunc
       CHARACTER*7 DIEL
-      CHARACTER*29 nomfileCoef
-      CHARACTER*25 nomfileResu
+      CHARACTER*30 nomfileCoef
+      CHARACTER*26 nomfileResu
       CHARACTER*26 nomfileParam  
 
       REAL*8 zhh,zvv,zdr,kdp,rhohv,sighh,sigvv,Ah,Av ! Tmatrix
@@ -479,8 +479,8 @@ C     ***********************************************************************
       OPEN (5,FILE=nomfileParam)
       READ (5,1)typeh
     1 FORMAT (5X,A2)
-      READ (5,22)bande
-   22 FORMAT (5X,A1)
+      READ (5,22)band
+   22 FORMAT (5X,A2)
       READ (5,2) canting    
     2 FORMAT (8X,A6)
       READ (5,3) SIGBETA
@@ -526,7 +526,7 @@ C     ***********************************************************************
 
       !============ Verification of the parameters
       WRITE (0,*) '   type=',typeh
-      WRITE (0,*) '   band=',bande
+      WRITE (0,*) '   band=',band
       WRITE (0,*) '   canting=',canting !,"ok"
       WRITE (0,*) '   SIGBETA=',SIGBETA !,"ok"
       WRITE (0,*) '   DIEL=',DIEL !,"ok" options: 
@@ -562,15 +562,17 @@ C     ***********************************************************************
 
       !-- Output files
       WRITE(0,*) 'Output files :'
-      nomfileResu='../tables/'//typeh//'/TmatResu_'//bande//typeh
-      nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//bande//typeh
+      nomfileResu='../tables/'//typeh//'/TmatResu_'//trim(band)
+     & //typeh
+      nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//trim(band)
+     & //typeh
 
 
       WRITE(0,*) '   ',nomfileCoef
       WRITE(0,*) '   ',nomfileResu
 
-      OPEN (4,FILE=nomfileResu) 
-      OPEN (7,FILE=nomfileCoef) 
+      OPEN (4,FILE=trim(nomfileResu)) 
+      OPEN (7,FILE=trim(nomfileCoef)) 
 
       !============================================================
       ! Writing of the description part of the scattering coef

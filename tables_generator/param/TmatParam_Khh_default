@@ -7,7 +7,7 @@ ARfunc:RYdg
 ARcnst:0.80
 DSTYfunc:RHOX
 Frim:1.0
-LAM:8.40
+LAM:15.0
 ELEVmin:0.0
 ELEVmax:90.0
 ELEVstep:90.0

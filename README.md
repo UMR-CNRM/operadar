@@ -28,7 +28,7 @@ It currently requires a repository of lookup tables. These tables contain the sc
 * dataset attributes such as the horizontal resolution, the options used to compute the mixed-phase or simulate the radar data.
 
 # How to install
-The installation of `operadar` should be preferred in a virtual environment. The procedure is detailled [in the Wiki](https://github.com/UMR-CNRM/operadar/wiki/Installation-tutorial).
+Install `operadar` in a dedicated virtual environment: [Installation-tutorial](https://github.com/UMR-CNRM/operadar/wiki/Installation-tutorial).
 
 
 # How to run
@@ -40,7 +40,15 @@ Steps to create the tables are available in [Generation of the lookup tables](ht
 # Contributing
 If you wish to contribute to the project, first, fork the code to create your own copy of the project (see https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#creating-your-own-copy-of-a-project).
 
-#Testing
+# How to cite
+If you use `operadar` in a published work, please cite the following papers:
+* Augros, C., Caumont, O., Ducrocq, V., Gaussiat, N., & Tabary, P. (2016). Comparisons between S, C, and X band polarimetric radar observations and convective-scale simulations of HyMeX first special observing period. Quarterly Journal of the Royal Meteorological Society, 142, Issue S1, 347–362. [https://doi.org/10.1002/qj.2572](https://doi.org/10.1002/qj.2572)
+* David, Cloé, et al. “Improved Simulation of Thunderstorm Characteristics and Polarimetric Signatures with LIMA Two-Moment Microphysics in AROME.” Atmospheric Measurement Techniques, vol. 18, no. 15, Aug. 2025, pp. 3715–45. Copernicus Online Journals, https://doi.org/10.5194/amt-18-3715-2025.
+
+You should also cite the Fortran 77 T-matrix code that is employed to generate the scattering coefficients with the T-matrix method:
+* Mishchenko, M. I., & Travis, L. D. (1994). T-matrix computations of light scattering by large spheroidal particles. Optics Communications, 109(1), 16–21. [http://www.sciencedirect.com/science/article/pii/0030401894907315](http://www.sciencedirect.com/science/article/pii/0030401894907315)
+
+# Testing
 - After installing environment, run:
 ```bash
 python -c "import operadar; import epygram; print('operadar OK, epygram', getattr(epygram,'__version__','unknown'))"

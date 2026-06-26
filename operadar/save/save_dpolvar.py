@@ -78,7 +78,22 @@ def save_netcdf(X:np.ndarray,
                   coords = dataset_coordinates,
                   attrs=dataset_attributes,
                   )
-    ds.to_netcdf(outfile.with_suffix('.nc'))
+    #ds.to_netcdf(outfile.with_suffix('.nc'))
+    encoding = {
+        var: {
+            "zlib": True,
+            "complevel": 4,  # 1-9 (4-5 is usually a good compromise)
+            "shuffle": True,
+        }
+        for var in ds.data_vars
+    }
+
+    ds.to_netcdf(
+        outfile.with_suffix(".nc"),
+        engine="netcdf4",
+        format="NETCDF4",
+        encoding=encoding,
+    )
     ds.close() ; del ds
     print("Model and dpol variables saved at :",outfile.with_suffix('.nc'))
 
