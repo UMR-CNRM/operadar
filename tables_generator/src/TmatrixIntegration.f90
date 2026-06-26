@@ -1316,10 +1316,14 @@ ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical sch
     zans1 = MAX(2., MIN(zans1, 6.))
     N0_exp = 10.**(zans1)
     lam_exp = (N0_exp*a*cgg1/M)**oge1
-    lamb = lam_exp * (cgg3*ogg2*ogg1)**(1/b) !This lambda is used to predict the ng || !ChangeEB_Pending - Not sure about what lambda take... I could try with this
-    ng = cgg2*ogg3*M*lam_prev**b / a
-    !lamb = (a*cgg3*ogg2*ng/M)**(1/b) !Recalculate lambda - Not sure if I would have to do it. 
-    No = ng*ogg2*lamb**cge2
+    lamb = lam_exp * (cgg3*ogg2*ogg1)**(1./b) !This lambda is used to predict the ng || !ChangeEB_Pending - Not sure about what lambda take... I could try with this
+    !! v1 computes No from N0_exp. Is an approach similar to CR-SIM, although not exactly the same
+    No = N0_exp/(cgg2*lam_exp)*lamb**cge2 
+
+    !ChangeEB_Pending - v2 computes No from the diagnostic ng, 
+    !ng = cgg2*ogg3*M*lamb**b / a
+    !!!lamb = (a*cgg3*ogg2*ng/M)**(1./b) !Recalculate lambda - Not in v0 
+    !No = ng*ogg2*lamb**cge2
   ENDIF
 ENDIF    
 
