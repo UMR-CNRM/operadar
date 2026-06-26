@@ -1162,7 +1162,7 @@ REAL, PARAMETER:: mu_s = 0.6357
 REAL, PARAMETER:: Kap0 = 490.6
 REAL, PARAMETER:: Kap1 = 17.46
 REAL, PARAMETER:: Lam0 = 20.78
-REAL, PARAMETER:: Lam1 = 3.2
+REAL, PARAMETER:: Lam1 = 3.29
 REAL, PARAMETER:: PI = 3.1415926536
 REAL, PARAMETER:: Nt_c = 100E6 !Units m-3 = 100cm-3
 
@@ -1316,10 +1316,10 @@ ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical sch
     zans1 = MAX(2., MIN(zans1, 6.))
     N0_exp = 10.**(zans1)
     lam_exp = (N0_exp*a*cgg1/M)**oge1
-    lam_prev = lam_exp * (cgg3*ogg2*ogg1)**(1/b) !This lambda is used to predict the ng
+    lamb = lam_exp * (cgg3*ogg2*ogg1)**(1/b) !This lambda is used to predict the ng || !ChangeEB_Pending - Not sure about what lambda take... I could try with this
     ng = cgg2*ogg3*M*lam_prev**b / a
-    lamb = (a*cgg3*ogg2*ng/M)**(1/b) !Recalculate lambda
-    No = ng*ogg2*1/lamb**cge2
+    !lamb = (a*cgg3*ogg2*ng/M)**(1/b) !Recalculate lambda - Not sure if I would have to do it. 
+    No = ng*ogg2*lamb**cge2
   ENDIF
 ENDIF    
 
@@ -1334,7 +1334,7 @@ IF (CCLOUD=='THOM') THEN
     !Add here the Thom Snow PSD. Only for Thompson and snow. 
 
     !Calculate the second moment (M2)
-    M2 = M * 1/mu_s 
+    M2 = M * 1/a 
     
     !Calculate the third moment (M3)
 
