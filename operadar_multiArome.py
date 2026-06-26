@@ -8,7 +8,7 @@ from operadar.load_config_file import load_configuration_file
 
 
 # stratiforme case with 0Z run and convective case with 12Z run
-cases = [('241025', '2024-10-25 12:00', '2024-10-26 23:00')] # ('strat','2024-11-19 06:00','2024-11-19 22:00'),
+cases = [('250307', '2025-03-07 12:00', '2025-03-09 18:00')] # ('strat','2024-11-19 06:00','2024-11-19 22:00'),
 microphysics_schemes = ['ICE3'] # 'ICE3','ICJW','LIMASG','LIMC'
 
 for case_type,begin,end in cases :
@@ -18,7 +18,7 @@ for case_type,begin,end in cases :
         ech = pd.to_datetime(begin, format="%Y-%m-%d %H:%M")
         end = pd.to_datetime(end, format="%Y-%m-%d %H:%M")
         # Reload the corresponding configuration in the python environment
-        config = load_configuration_file('conf_AROICE3_241025.py')
+        config = load_configuration_file('conf_AROICE3_250307.py')
         begin = pd.to_datetime(begin, format="%Y-%m-%d %H:%M")
 
         # Execute operadar for each arome file

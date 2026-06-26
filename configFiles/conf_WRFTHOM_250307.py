@@ -16,25 +16,25 @@ This the conf. file to read the WRF simulation, but assuming ICE3 physics
 """
 
 # ----- INPUT file path (path to folder containing the files)
-input_filePath  = f"./modelFiles/AROME"
+input_filePath  = f"./modelFiles/WRF/split_files_250307_mp08"
 # ----- OUPUT file(s) directory
-output_filePath = f"./modelFiles/AROME"
+output_filePath = f"./modelFiles/WRF/split_files_250307_mp08"
 
 # ----- Lookup tables directory path
 path_tables = f"./tables_generator/tables/default/"
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
-model = 'Arome'
+model = 'WRF'
 real_case=True
 
 # ----- Microphysics scheme name : can be 'ICE3', 'ICJW', 'LIMA' or 'LIMC'
 #       + a name extension (e.g. 'LIMA_noHail' or 'ICE3_CIBU_moins', optional)
 #       Note : only the four first characters are used to select the right table
-microphysics_scheme = 'ICE3'
+microphysics_scheme = 'THOM'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 #       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
-hydrometeors_moments = {'cc':1,'rr':1,'ss':1,'gg':1,'ii':1,'wg':1}
+hydrometeors_moments = {'cc':1,'rr':2,'ss':1,'gg':1,'ii':2,'wg':1}
 cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land) or cs (sea) lookup table
 
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
@@ -71,7 +71,7 @@ scattering_method = "Tmatrix"
 # If compute_attenuation = True, Ah must be included in dpol2add
 
 compute_attenuation = True # True
-radar_altitude = 1112 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
+radar_altitude = 1088 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
 
 # ----- Radar simulation options 
 radar_band = 'K'                    # radar band (C, X, S, W or K)
