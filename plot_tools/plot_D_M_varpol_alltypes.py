@@ -25,14 +25,15 @@ Path_tables = "../tables_generator/tables/"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='L',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,typeh_list ='W',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+#band,color_list,typeh_list ='W',['b','k'],['rr','ii']
 
-listplot=['D','M'] #,'M']
+listplot=['M'] #,'M']
 TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
 #TmatOption={'L':'default','C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
-listvar=['Zh','Zdr','Kdp'] #,'Rhohv','Ah','Av']
+listvar=['Zh'] #,'Zdr','Kdp'] #,'Rhohv','Ah','Av']
 unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/','Ah':'dB','Av':'dB'}
 vn={}
 
@@ -84,8 +85,8 @@ legend_list = typeName
 
 for plot in listplot:  
     # fig,axes = plt.subplots(nrows= 2,ncols=2,figsize=(15,15))
-    fig,axes = plt.subplots(nrows= 1,ncols=3,figsize=(20,8))
-    #fig,axes = plt.subplots(nrows= 1,ncols=1,figsize=(10,10))
+    #fig,axes = plt.subplots(nrows= 1,ncols=3,figsize=(20,8))
+    fig,axes = plt.subplots(nrows= 1,ncols=1,figsize=(10,10))
     if (len(listvar))>1:
         ax = axes.flat
     else:
@@ -133,7 +134,8 @@ for plot in listplot:
                     id=np.argmin(np.abs(P3col-Nii)) # position of closest concentration to Nii
                     P3sel=P3col[id]
                     label=legend_list[typeh]+" Nii="+str(P3sel)+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == P3sel))           
+                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == P3sel))
+                    vn[var][ind]=np.array(vn[var][ind], dtype=float)
                     ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],linewidth=lw)#,s=0.5)  
                 else:
                     label=legend_list[typeh]+" T="+str(T_dict[typeh])+u'\u00B0C'
@@ -160,12 +162,11 @@ for plot in listplot:
         ax[ivar].grid()
   
     # end loop over var        
-    figtitle="Zh, Zdr, Kdp as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+micro+" "+TmatOption[band]
-    fig.suptitle(figtitle,fontsize=pol_suptitle)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-
     varpol=''.join(listvar)
-    types=''.join(typeh_list)        
+    types=''.join(typeh_list) 
+    figtitle=f"{varpol} as a function of "+plot+" ("+pltunit[plot]+") "+"\n"+band+" band, "+micro+" "+TmatOption[band]
+    fig.suptitle(figtitle,fontsize=pol_suptitle)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])       
    
     micron=micro
     if (plot=='D'):

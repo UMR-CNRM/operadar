@@ -12,11 +12,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-from utils.sample_cmap import sample_cmap
+from utils.utils_plot import sample_cmap
 
 # --- Configuration ---
 micro = "ICE3"
-TmatOption={'S':'improved','C':'elev90','K':'default','Ka':'default','Ku':'default','W':'default','L':'David2026PhD'}
+TmatOption={'S':'improved','C':'vertical','K':'default','Ka':'default','Ku':'default','W':'default','L':'David2026PhD'}
 moments = {
     "ICE3": {"rr": "1M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "1M", "cs": "1M", "ii": "1M"},
     "ICJW": {"rr": "1M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "1M", "cs": "1M", "ii": "1M"},
@@ -24,7 +24,7 @@ moments = {
     "LIMC": {"rr": "2M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "2M", "cs": "2M", "ii": "1M"}
 }
 plotR = True
-band_list = ['C', 'Ku', 'K', 'Ka', 'W']
+band_list = ['C', 'Ku','K', 'Ka', 'W']
 typeh_list = ['rr','ss', 'gg', 'cl', 'ii', 'wg']
 listplot=['M'] #'D','M']
 
@@ -63,7 +63,7 @@ Fwsel = 0
 Fw_list, Fw_ls = [0.0, 0.1, 0.6, 1.0], ['-.', ':', '--', '-']
 ELEVsel = 90
 Nii = 800
-expN_list, N_ls = [2, 3, 4], ['-.', '-', '--']
+expN_list, N_ls = [3], ['-.', '-', '--']
 T_dict = {'ii': -30, 'ss': -10, 'gg': 0, 'cl': 10, 'cs': 10, 'rr': 10, 'wg': 10, 'hh': 1, 'wh': 10}
 delim = {'D': r"\s+", 'M': ';'}
 
@@ -113,6 +113,7 @@ for var in listvar:
                     'Ah': df['Ah'].to_numpy(),
                     'Av': df['Av'].to_numpy()
                 }
+                vn[var]=np.array(vn[var], dtype=float)
 
                 vn_R = {
                     'Zh': df['zhhR'].to_numpy(),
@@ -122,6 +123,7 @@ for var in listvar:
                     'Ah': df['AhR'].to_numpy(),
                     'Av': df['AvR'].to_numpy()
                 }
+                vn_R[var]=np.array(vn_R[var], dtype=float)
 
                 x = df[pltX[plot]].to_numpy()
 

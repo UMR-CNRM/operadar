@@ -98,7 +98,8 @@ def compute_dualpol_variables(temperature: np.ndarray,
             initialize_dict = 1
     
         mask_any |= mask_tot
-
+        
+        # Sum of the contribution of all hydrometeor species
         for var in dpolDict.keys():
             fields2sum[var][mask_tot]+=dpolDict[var]
         
@@ -117,6 +118,7 @@ def compute_dualpol_variables(temperature: np.ndarray,
                         lat=lat, lon=lon,
                         datetime=date_time,
                         dpolDict=dpol_h,
+                        var2add=config.dpol2add,
                         contentsDict={h:contents[h]},
                         concentrationsDict={h:concentrations[h]},
                         temperature=temperature,

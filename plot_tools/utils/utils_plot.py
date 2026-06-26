@@ -3,7 +3,7 @@ import os, sys
 import itertools
 import numpy as np
 import pandas as pd
-
+import matplotlib
 
 # ====== BASIC DEFINITIONS ====== #
 # Plot style
@@ -468,6 +468,24 @@ def analyse_dict(dictParam:dict,hydrometeor:str,combine:list,invertCol_and_Legen
     #print(nrows,'rows:',variation_columns,'legend:',variation_legend) ; sys.exit()
     return nrows, variation_columns, variation_legend
 
+def sample_cmap(cmap_name, n, as_hex=False):
+    """
+    Sample n distinct colors from a matplotlib colormap.
+    
+    Parameters:
+        cmap_name (str): Name of the base colormap (e.g., 'viridis')
+        n (int): Number of samples to take
+        as_hex (bool): If True, return hex codes; otherwise return RGB tuples
+    
+    Returns:
+        list: List of hex strings or RGB tuples
+    """
+    import matplotlib.pyplot as plt
+    cmap = plt.get_cmap(cmap_name)
+    colors = [cmap(i / (n - 1)) if n > 1 else cmap(0) for i in range(n)]
+    if as_hex:
+        return [matplotlib.colors.to_hex(color) for color in colors]
+    return colors
 
 
 def get_colors(dictParam:dict,
