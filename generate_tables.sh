@@ -13,12 +13,12 @@ RIMING=""
 DIEL=""
 
 # List of (fixed) parameters
-HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
-BAND_LIST=("C" "S" "X" "K" "W" "L")
+HYDRO_LIST=("wg") #("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
+BAND_LIST=("K") #("C" "S" "X" "K" "W" "L")
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
-DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05")
+DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05", DSTH)
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("LIMA") #("ICE3" "ICJW" "LIMA" "LIMC")
+MICRO_LIST=("THOM") #("ICE3" "ICJW" "LIMA" "LIMC")
 
 # Errors storage
 MISSING_FILES=()

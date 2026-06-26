@@ -16,9 +16,9 @@ This the conf. file to read the WRF simulation, but assuming ICE3 physics
 """
 
 # ----- INPUT file path (path to folder containing the files)
-input_filePath  = f"./modelFiles/WRF/split_files_241025_mp08/"
+input_filePath  = f"./modelFiles/WRF/split_files_241025_mp08"
 # ----- OUPUT file(s) directory
-output_filePath = f"./modelFiles/WRF/split_files_241025_mp08/THOM_v01"
+output_filePath = f"./modelFiles/WRF/split_files_241025_mp08"
 
 # ----- Lookup tables directory path
 path_tables = f"./tables_generator/tables/default/"

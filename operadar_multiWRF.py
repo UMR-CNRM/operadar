@@ -25,11 +25,11 @@ for filename in os.listdir(dir_tmp):
         print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-cases = ['250307'] 
+cases = ['241025'] 
 microphysics_schemes = ['WRFTHOM'] # 'ICE3',
 
 ##!!!!!!!!!!!!! Change the namee!!
-files = sorted(glob.glob("modelFiles/WRF/split_files_250307_mp08/wrfout_t*.nc"))
+files = sorted(glob.glob("modelFiles/WRF/split_files_241025_mp08/wrfout_t*.nc"))
 files = [os.path.basename(f) for f in files]
 for case_type in cases :
     for micro in microphysics_schemes :
@@ -48,9 +48,9 @@ for case_type in cases :
             
 print('Operadar Finished. Joining files....')
 
-all_files = set(glob.glob("modelFiles/WRF/split_files_250307_mp08/dpolvar*.nc")) #The dpolvar files that I have now
+all_files = set(glob.glob("modelFiles/WRF/split_files_241025_mp08/THOM_v01/dpolvar*.nc")) #The dpolvar files that I have now
 
 new_files = sorted(list(all_files))
 datasets = [xr.open_dataset(f) for f in new_files]
 ds = xr.concat(datasets, dim='time')
-ds.to_netcdf(f'modelFiles/WRF/split_files_250307_mp08/dpolvar_{micro}_Kband_{case_type}joined.nc')
+ds.to_netcdf(f'modelFiles/WRF/split_files_241025_mp08/THOM_v01/dpolvar_{micro}_Kband_{case_type}joined.nc')

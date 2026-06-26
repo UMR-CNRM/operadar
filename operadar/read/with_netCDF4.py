@@ -97,7 +97,7 @@ def get_contents(mnhFile:Dataset,
                  rho3D:np.ndarray,
                  i_min:int, i_max:int,
                  j_min:int, j_max:int,
-                 )->tuple(dict[str,np.ndarray],np.ndarray):
+                 )->tuple[dict[str,np.ndarray],np.ndarray]: #ChangeEB - I changed tuple() for tuple[]
     contents = {}
     for key in hydrometeors:
         contents[key] = np.empty(temperature.shape)
