@@ -546,7 +546,7 @@ C     ***********************************************************************
    54 FORMAT ('    Fwmin, Fwmax, Fwstep:',F4.2,X,F4.2,X,F4.2)
    
       !-- Reading of hydrometeor constants file
-      Hydromet_const_file = '../param/ICE3_constants.txt'
+      Hydromet_const_file = '../param/THMD_constants.txt'
       WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
       OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
       READ(333,*) ! Read the first line of the file
@@ -1473,10 +1473,11 @@ C     ###################################
       REAL*8 D
       REAL*8 RHOX
       
-      RHOX=MAX(50., MIN(0.13/(D*1000), 890.-100.))
-      !WRITE(*,*) 'Computing Thompson Snow Density'
-      !WRITE(*,*) 'D=', D
-
+      RHOX=MAX(50., MIN(0.13/(D/1000), 890.-100.))
+      !RHOX=0.13/(D/1000)
+      WRITE(*,*) 'Computing Thompson Snow Density'
+      WRITE(*,*) 'D=', D
+      WRITE(*,*) 'rhos=', RHOX
       RETURN
       END
       !END FUNCTION THOMRHOX
