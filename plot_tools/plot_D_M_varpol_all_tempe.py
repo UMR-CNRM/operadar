@@ -26,8 +26,8 @@ Path_tables = "../tables_generator/tables"
 dir_fig="IMG/"
 
 #band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
-band,color_list,T_list ='C',['k','gray','b','c','g','y','r'],[-80,-70,-60,-10,0,10,30]
-typeh_list=['wg']
+band,color_list,T_list ='K',['k','gray','b','c','g','y','r'],[-80,-70,-60,-10,0,10,30]
+typeh_list=['gg']
 Fw=0.6
 
 listplot=['M'] #,'M']
