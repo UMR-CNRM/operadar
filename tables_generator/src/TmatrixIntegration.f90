@@ -1273,7 +1273,7 @@ ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical sch
     cre2 = nu+1
     crg2 = GAMMA(cre2)
     org2 = 1/crg2
-    lamb = (PI*1000/6 * P3/M * GAMMA(nu+3+1)/GAMMA(nu+1))**(1/b)
+    lamb = (PI*1000/6 * P3/M * GAMMA(nu+3+1)/GAMMA(nu+1))**(1./b)
     No = P3*org2 * lamb**cre2
 
   ELSE IF (typeh=='ii') THEN
@@ -1286,14 +1286,15 @@ ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical sch
     No = P3*oig2*lamb**cie2 
 
   ELSE IF (typeh=='cl') THEN
-    cce1 = 1 + nu
-    cce2 = nu+1 + nu
-    cce3 = nu+b+1 + nu
+    cce1 = 1+nu
+    cce2 = b+1+nu
+    cce3 = nu+b+1+3
     ccg1 = GAMMA(cce1)
     ccg2 = GAMMA(cce2)
     ccg3 = GAMMA(cce3)
     lamb = (Nt_c*a*ccg2*1/ccg1/M)**(1./b)
     No = Nt_c/ccg1 * lamb**cce1
+    
 
   ELSE IF (typeh=='ss') THEN
     lamb = 0 !In fact, snow in Thom does not havy any lambda/N0. Is lamba necessary for the code/operadar in the future?? 
@@ -1318,12 +1319,12 @@ ELSE IF (CCLOUD=='THOM') THEN !ChangeEB_PSD - Add the Thompson Microphysical sch
     lam_exp = (N0_exp*a*cgg1/M)**oge1
     lamb = lam_exp * (cgg3*ogg2*ogg1)**(1./b) !This lambda is used to predict the ng || !ChangeEB_Pending - Not sure about what lambda take... I could try with this
     !! v1 computes No from N0_exp. Is an approach similar to CR-SIM, although not exactly the same
-    No = N0_exp/(cgg2*lam_exp)*lamb**cge2 
+    !No = N0_exp/(cgg2*lam_exp)*lamb**cge2 
 
-    !ChangeEB_Pending - v2 computes No from the diagnostic ng, 
-    !ng = cgg2*ogg3*M*lamb**b / a
+    !!ChangeEB_Pending - v2 computes No from the diagnostic ng, 
+    ng = cgg2*ogg3*M*lamb**b / a
     !!!lamb = (a*cgg3*ogg2*ng/M)**(1./b) !Recalculate lambda - Not in v0 
-    !No = ng*ogg2*lamb**cge2
+    No = ng*ogg2*lamb**cge2
   ENDIF
 ENDIF    
 
@@ -1372,7 +1373,6 @@ IF (CCLOUD=='THOM') THEN
 ELSE
   N = No*(alpha/GAMMA(nu))*(lamb**(alpha*nu))*(D**(alpha*nu-1))*EXP(-(lamb*D)**alpha)
 ENDIF
-
 
 ! !IF (testMode) THEN
 !   WRITE (0,*) "lamb,D,alpha, nu, No,N=",lamb,D,alpha,nu,No,N

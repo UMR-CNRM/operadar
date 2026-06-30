@@ -545,7 +545,6 @@ C     ***********************************************************************
       WRITE (0,54) Fwmin, Fwmax, Fwstep   
    54 FORMAT ('    Fwmin, Fwmax, Fwstep:',F4.2,X,F4.2,X,F4.2)
    
-   
       !-- Reading of hydrometeor constants file
       Hydromet_const_file = '../param/ICE3_constants.txt'
       WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
@@ -1475,7 +1474,9 @@ C     ###################################
       REAL*8 RHOX
       
       RHOX=MAX(50., MIN(0.13/(D*1000), 890.-100.))
-      
+      !WRITE(*,*) 'Computing Thompson Snow Density'
+      !WRITE(*,*) 'D=', D
+
       RETURN
       END
       !END FUNCTION THOMRHOX
