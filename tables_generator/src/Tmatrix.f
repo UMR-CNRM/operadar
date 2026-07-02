@@ -1474,7 +1474,6 @@ C     ###################################
       REAL*8 RHOX
       
       RHOX=MAX(50., MIN(0.13/(D/1000), 890.-100.))
-      !RHOX=0.13/(D/1000)
       !WRITE(*,*) 'Computing Thompson Snow Density'
       !WRITE(*,*) 'D=', D
       !WRITE(*,*) 'rhos=', RHOX

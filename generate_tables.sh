@@ -17,7 +17,7 @@ RIMING=""
 DIEL=""
 
 # Parameters list
-HYDRO_LIST=('ss') #("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
+HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
 BAND_LIST=('K') #("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
 DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05" "TH08")

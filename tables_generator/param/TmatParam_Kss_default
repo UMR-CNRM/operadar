@@ -5,7 +5,7 @@ sigbeta:0.0
 DIEL:RY19dry
 ARfunc:CNST
 ARcnst:0.60
-DSTYfunc:ZA05
+DSTYfunc:RHOX
 Frim:1.0
 LAM:15.0
 ELEVmin:0.0
