@@ -1,11 +1,11 @@
-type:cl
+type:cs
 band:K
 canting:nocant
 sigbeta:0.0
 DIEL:Liebe91
 ARfunc:CNST
 ARcnst:1.0
-DSTYfunc:RHOX
+DSTYfunc:TH08
 Frim:1.0
 LAM:8.40
 ELEVmin:0.0

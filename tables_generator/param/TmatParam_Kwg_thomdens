@@ -1,11 +1,11 @@
-type:wh
+type:wg
 band:K
 canting:nocant
 sigbeta:0.0
 DIEL:LBwetgr
 ARfunc:RYwg
 ARcnst:0.80
-DSTYfunc:DSTH
+DSTYfunc:TH08
 Frim:1.0
 LAM:8.40
 ELEVmin:0.0

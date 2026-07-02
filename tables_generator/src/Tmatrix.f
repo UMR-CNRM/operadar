@@ -717,8 +717,8 @@ C ============================================================================
             Dm=D*(AR**(-1.0/3))
             CALL ICOND2_1M_RHOX(aSnow,bSnow,D,Dm,P,RHOP)
           ! ----- m-D relationship ICE3/LIMA
-          ELSE IF (DSTYfunc .EQ. "DSTH") THEN !ChangeEB_rho: Introducing new function for rhos at thom
-            CALL THOMRHOX(D,RHOP)
+          ELSE IF (DSTYfunc .EQ. "TH08") THEN !ChangeEB_rho: Introducing new function for rhos at thom
+            CALL TH08RHOX(D,RHOP)
           ELSE 
             CALL QRHOX(aj,bj,D,Dm,P,RHOP)
           ENDIF ! RHOP
@@ -1461,7 +1461,7 @@ C     ###################################
       !END FUNCTION MO17RHOX
 
 C     ###################################
-      SUBROUTINE THOMRHOX(D, RHOX) !ChangeEB_rho: Defining a new subroutine for snow dens
+      SUBROUTINE TH08RHOX(D, RHOX) !ChangeEB_rho: Defining a new subroutine for snow dens
 C     ###################################
       ! Calculation of snow density of Thomspon scheme in WRF model 
       ! Thompson scheme defined at Thompson et al., (2008)
@@ -1480,7 +1480,7 @@ C     ###################################
       !WRITE(*,*) 'rhos=', RHOX
       RETURN
       END
-      !END FUNCTION THOMRHOX
+      !END FUNCTION TH08RHOX
 
 c     ###################################
       SUBROUTINE QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSX) 

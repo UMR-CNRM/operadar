@@ -737,25 +737,14 @@ DO idTc=0,nTcloop
             Deqrmrecsup=Deqrmrec+(Deqrmrec-Deqrmrecinf)
             Deqmrecsup=Deqmrec+(Deqmrec-Deqmrecinf)
           ENDIF            
-  
-          !ChangeEB_Pending + ChangeEB_FallVelocity: Here I should add a new equation for the fall velocity in the WRF-Thompson scheme (Equation A3 from Thompson (2008))
-          !In this equation apart from ccj and ddj there's a new term, f, for each hydrometeor. It is "Cj" in the configuration table (used in ICE3 MP)
-          !f_cl:-; f_rr:195; f_ii:0; f_ss:100; f_gg:0
-          !The equation should be: vtr = (RHOAS/RHO)**(1/2)*ccj*D**ddj*exp(Cj*D)
-          !CAUTION: It needs the air density at the surface (RHOAS) and the air denisty (RHO). I still don't know how to call them - loop? 
-          !CAUTION: Cloud water dos not sediement
-          !Note: I have doubts about that part of the code. vtr - for rain, vts - for snow, vtm - for mixed? What happens with graupel? And cloud ice? 
 
-          !In the Thompson MP scheme, vtx = (rho0/rho)**(1/2)*a*D**b*exp(-fD) (Thompson, 2008)
-          !However, as the air density rho is not avaiable, the median of (rho0/rho)**(1/2) for a Study Case in la Cerdanya valley (Pyrinees) has been computed (=1.06778848)
-          !User may want to adapt it. Maybe create a linear regression between temperature and rho?
-          
-          !ChangeEB_FallVelocity -  For test purposes, thom_fall experiment, use ICE3 param but with the fall velocity from thompson. 
+          !FallVelocities - In thom_psd, the particle fall velocity is the same from ICE3
+          ! Fall velocities: eq 4.15 p 93 PhD Tony Le Bastard
+          ! from Wolfensberger (2018) / Mitra (1990)
           phi=0.246*Fw+(1-0.246)*(Fw**7)
-          vtr = 1.06778848 *ccj_rr*Deqrrec**ddj*EXP(-Deqrrec*Cj)
-          vts = 1.06778848 *ccj*Drec**ddj*EXP(-Drec*Cj) 
-          vtm=phi*vtr+(1-phi)*vts 
-
+          vtr=ccj_rr*(Deqrrec**ddj_rr)
+          vts=ccj*(Drec**ddj)
+          vtm=phi*vtr+(1-phi)*vts
 
 !           IF (testMode) THEN
 !               WRITE(0,*) " Drec,Deqrrec,Dmrec,Deqrmrec",Drec,Deqrrec,Dmrec,Deqrmrec

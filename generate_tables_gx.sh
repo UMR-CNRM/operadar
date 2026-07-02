@@ -17,14 +17,14 @@ RIMING=""
 DIEL=""
 
 # Parameters list
-HYDRO_LIST=('ss') #("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
+HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
 BAND_LIST=('K') #("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
 ARfunc_LIST=("AUds" "CNST" "BR02" "RYdg" "RYwg")
-DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05" "TH08")
+DSTYfunc_LIST=("BR07" "RHOX" "LS15" "ZA05" "DSTH")
 DIELfunc_LIST=("Liebe91" "RY19dry" "LBwetgr" "MGwMA08")
-MICRO_LIST=("ICE3") #("ICE3" "ICJW" "LIMA" "LIMC" "THOM")
+MICRO_LIST=("THOM") #("ICE3" "ICJW" "LIMA" "LIMC")
 
-DEFAULT_MODES=("default" "David2025AMT" "David2026PhD" "vertical" "thomfull" "thompsd" "thomdens" "thomfall")
+DEFAULT_MODES=("default" "David2025AMT" "David2026PhD" "vertical" "WRFTHOM_g1_di_vt" "WRFTHOM_g2_di_vt" "WRFTHOM_g2_dt_vt")
 
 # Errors storage
 MISSING_FILES=()
@@ -54,7 +54,7 @@ usage() {
     cat <<EOF
 Usage:
   DEFAULT MODE:     $0 --default --band <value>
-  Specialized MODE: $0 --David2025AMT/--David2026PhD/--vertical/--thomfull/--thompsd/--thomdens/--thomfall --band <value>
+  Specialized MODE: $0 --David2025AMT/--David2026PhD/--vertical/--WRFTHOM_g1_di_vt/--WRFTHOM_g2_di_vt/--WRFTHOM_g2_dt_vt --band <value>
   NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
   EDIT MODE:        $0 --hydro <value> --band <value> [options]
 
@@ -72,7 +72,7 @@ EOF
 # Argument parsing
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --default|--David2025AMT|--David2026PhD|--vertical|--thomfull|--thompsd|--thomdens|--thomfall)
+        --default|--David2025AMT|--David2026PhD|--vertical|--WRFTHOM_g1_di_vt|--WRFTHOM_g2_di_vt|--WRFTHOM_g2_dt_vt)
             [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
             MODE="$1"
             ;;
@@ -220,7 +220,7 @@ generate_tables() {
 
 # Main execution
 case "$MODE" in
-    --default|--David2025AMT|--David2026PhD|--vertical|--thomfull|--thompsd|--thomdens|--thomfall)
+    --default|--David2025AMT|--David2026PhD|--vertical|--WRFTHOM_g1_di_vt|--WRFTHOM_g2_di_vt|--WRFTHOM_g2_dt_vt)
         generate_tables "${MODE#--}"  # removes -- to get the name only
         ;;
     --newConf)

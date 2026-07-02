@@ -750,12 +750,19 @@ DO idTc=0,nTcloop
           !However, as the air density rho is not avaiable, the median of (rho0/rho)**(1/2) for a Study Case in la Cerdanya valley (Pyrinees) has been computed (=1.06778848)
           !User may want to adapt it. Maybe create a linear regression between temperature and rho?
           
-          !ChangeEB_FallVelocity -  For test purposes, thom_fall experiment, use ICE3 param but with the fall velocity from thompson. 
-          phi=0.246*Fw+(1-0.246)*(Fw**7)
-          vtr = 1.06778848 *ccj_rr*Deqrrec**ddj*EXP(-Deqrrec*Cj)
-          vts = 1.06778848 *ccj*Drec**ddj*EXP(-Drec*Cj) 
-          vtm=phi*vtr+(1-phi)*vts 
-
+          IF (CCLOUD=='THOM') THEN
+            phi=0.246*Fw+(1-0.246)*(Fw**7)
+            vtr = 1.06778848 *ccj_rr*Deqrrec**ddj*EXP(-Deqrrec*Cj)
+            vts = 1.06778848 *ccj*Drec**ddj*EXP(-Drec*Cj) 
+            vtm=phi*vtr+(1-phi)*vts !ChangeEB_Pending - I guess that I need to keep this
+          ELSE !ChangeEB_FallVelocity - ICE3/Lima options for fall velocities
+            ! Fall velocities: eq 4.15 p 93 PhD Tony Le Bastard
+            ! from Wolfensberger (2018) / Mitra (1990)
+            phi=0.246*Fw+(1-0.246)*(Fw**7)
+            vtr=ccj_rr*(Deqrrec**ddj_rr)
+            vts=ccj*(Drec**ddj)
+            vtm=phi*vtr+(1-phi)*vts
+          ENDIF
 
 !           IF (testMode) THEN
 !               WRITE(0,*) " Drec,Deqrrec,Dmrec,Deqrmrec",Drec,Deqrrec,Dmrec,Deqrmrec
