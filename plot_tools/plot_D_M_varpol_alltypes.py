@@ -29,7 +29,7 @@ band,color_list,typeh_list ='K',['b','k','c','g','gray','gray'],['rr','cl','ss',
 #band,color_list,typeh_list ='W',['b','k'],['rr','ii']
 
 listplot=['M'] #,'M']
-TmatOption={'K':'thomfall'}
+TmatOption={'K':'default_copied'}
 #TmatOption={'L':'default','C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}

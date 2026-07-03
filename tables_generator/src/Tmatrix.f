@@ -546,7 +546,7 @@ C     ***********************************************************************
    54 FORMAT ('    Fwmin, Fwmax, Fwstep:',F4.2,X,F4.2,X,F4.2)
    
       !-- Reading of hydrometeor constants file
-      Hydromet_const_file = '../param/ICE3_constants.txt'
+      Hydromet_const_file = '../param/THOM_constants.txt'
       WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
       OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
       READ(333,*) ! Read the first line of the file
