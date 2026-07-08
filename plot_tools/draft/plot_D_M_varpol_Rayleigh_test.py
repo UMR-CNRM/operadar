@@ -2,51 +2,48 @@
 """
 Created on Tue Dec 1 09:23:04 2020
 @author: borderiesm and augrosc
-Plot the values of  D-Zhh et M-Zhh (or Zdr, Kdp, Rhohv, Ah)
-for specified hydrometeors, radar bands
+Trace distributions D-Zhh et M-Zhh (ou Zdr, Kdp, Rhohv ou Ah)
+pour bandes de frequence specifiee dans band_list
 """
 
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import pandas as pd
 import os
 from utils.utils_plot import sample_cmap
 
 # --- Configuration ---
 micro = "ICE3"
-TmatOption={'S':'improved','C':'vertical','K':'default','Ka':'default',
-            'Ku':'default','W':'default','L':'David2026PhD'}
-
-plotR = True # True to plot Rayleigh scattering (in addition to Tmatrix)
-band_list = ['C', 'Ku','K', 'Ka', 'W']
-typeh_list = ['rr','ss', 'gg', 'cl', 'ii', 'wg']
-plot_list=['M'] #['D','M']
-var_list = ['Zh'] #['Zh', 'Zdr', 'Rhohv', 'Kdp', 'Ah', 'Av']
-
-Path_tables = "../tables_generator/tables/"
-dir_fig = "IMG/"
-
-# Number of moments for each hydrometeor as a function of the microphysics scheme
+TmatOption={'S':'David2026PhD','C':'vertical','K':'default','Ka':'default','Ku':'default','W':'default','L':'David2026PhD'}
 moments = {
     "ICE3": {"rr": "1M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "1M", "cs": "1M", "ii": "1M"},
     "ICJW": {"rr": "1M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "1M", "cs": "1M", "ii": "1M"},
     "LIMA": {"rr": "2M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "2M", "cs": "2M", "ii": "2M"},
     "LIMC": {"rr": "2M", "ss": "1M", "gg": "1M", "wg": "1M", "cl": "2M", "cs": "2M", "ii": "1M"}
 }
+plotR = True
+band_list = ['C','K','Ka'] #, 'W'] #'Ku', 'K', 'Ka', 'W']
+typeh_list = ['rr','ii'] #'ss', 'gg', 'cl', 'ii', 'wg']
+listplot=['M'] #'D','M']
 
+Path_tables = "../tables_generator/tables/"
+dir_fig = "IMG/"
+
+# Bandes et types
 
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX = {'D': 'Deq', 'M': 'M'}
-
+listvar = ['Zh']
 unit={'Zh':'dBZ','Zdr':'dB','Kdp':u'\u00B0'+r' km$^{-1}$','Rhohv':'/','Ah':'dB'+r' km$^{-1}$','Av':'dB'+r' km$^{-1}$'}
 typeName = {
     'ii': 'Pristine ice', 'ss': 'Dry Snow', 'gg': 'Dry Graupel', 'cl': 'Cloud Water',
     'cs': 'Cloud Water', 'rr': 'Rain', 'wg': 'Wet Graupel', 'hh': 'Dry Hail', 'wh': 'Wet Hail'
 }
 
-# Y-axis limits
+# Limites Y
 ymin_dict, ymax_dict = {}, {}
 for var in ['Zh', 'Zdr', 'Rhohv', 'Kdp', 'Ah', 'Av']:
     ymin_dict[var], ymax_dict[var] = {}, {}
@@ -65,20 +62,23 @@ ymax_dict["Av"] = {'ii': 10, 'ss': 10, 'gg': 10, 'cl': 10, 'rr': 10, 'wg': 10, '
 dmax_dict = {'ii': 10, 'ss': 20, 'gg': 50, 'cl': 2, 'cs': 2, 'rr': 10, 'wg': 50, 'hh': 100, 'wh': 100}
 Fwsel = 0
 Fw_list, Fw_ls = [0.0, 0.1, 0.6, 1.0], ['-.', ':', '--', '-']
-ELEVsel = 90
+ELEVsel = 0
 Nii = 800
-expN_list, N_ls = [3], ['-.', '-', '--']
+#expN_list, N_ls = [2, 3, 4], ['-.', '-', '--']
+expN_list, N_ls = [3], ['-']
 T_dict = {'ii': -30, 'ss': -10, 'gg': 0, 'cl': 10, 'cs': 10, 'rr': 10, 'wg': 10, 'hh': 1, 'wh': 10}
 delim = {'D': r"\s+", 'M': ';'}
 
-# Colorbar
+# Palette de couleurs
 palette = sample_cmap('viridis', n=len(band_list), as_hex=True)
 color = {lab: palette[i] for i, lab in enumerate(band_list)}
+
+# Style de ligne par bande
 style = {b: '-' for b in band_list}
 
-# Loop over variables to plot
-for var in var_list:
-    for plot in plot_list:
+# Boucle sur variables et plots
+for var in listvar:
+    for plot in listplot:
         print("Plotting " + var + "-" + plot)
         fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(24, 12))
         ax = axes.flat
@@ -115,7 +115,6 @@ for var in var_list:
                     'Ah': df['Ah'].to_numpy(),
                     'Av': df['Av'].to_numpy()
                 }
-                vn[var]=np.array(vn[var], dtype=float)
 
                 vn_R = {
                     'Zh': df['zhhR'].to_numpy(),
@@ -125,7 +124,6 @@ for var in var_list:
                     'Ah': df['AhR'].to_numpy(),
                     'Av': df['AvR'].to_numpy()
                 }
-                vn_R[var]=np.array(vn_R[var], dtype=float)
 
                 x = df[pltX[plot]].to_numpy()
 
@@ -136,16 +134,41 @@ for var in var_list:
                         label = f"Fw={Fw}"
                         ax[itypeh].plot(x[ind], vn[var][ind], label=label, color=color[band], ls=Fw_ls[iFw], linewidth=3)
                 elif (typeh == 'ii' and plot == 'M') or (plot == 'M' and moments[micro][typeh] == "2M"):
+                
                     expNcol = np.log10(P3col)
+                
                     for iN, expN in enumerate(expN_list):
-                        id = np.argmin(np.abs(expNcol - expN))
-                        expNsel = expNcol[id]
-                        ind = np.where((Tcol == T_dict[typeh]) & (ELEV == ELEVsel) & (expNcol == expNsel))
-                        label = f" expN={expNsel:.1f}"
-                        ax[itypeh].plot(x[ind], vn[var][ind], label=label, color=color[band], ls=N_ls[iN], linewidth=3)
+                
+                        idx = np.argmin(np.abs(expNcol - expN))
+                        expNsel = expNcol[idx]
+                
+                        ind = (
+                            (Tcol == T_dict[typeh]) &
+                            (ELEV == ELEVsel) &
+                            np.isclose(expNcol, expNsel, atol=1e-6)
+                        )
+                
+                        if np.count_nonzero(ind) == 0:
+                            print(f"WARNING : aucun point trouvé pour {typeh} {band}")
+                            continue
+                
+                        label = f"{band}, expN={expNsel:.1f}"
+                
+                        ax[itypeh].plot(
+                            x[ind],
+                            vn[var][ind],
+                            label=label,
+                            color=color[band],
+                            ls=N_ls[iN],
+                            linewidth=3
+                        )
                 else:
                     ind = np.where((Tcol == T_dict[typeh]) & (ELEV == ELEVsel) & (P3col == Fwsel))
                     ax[itypeh].plot(x[ind], vn[var][ind], label=band, color=color[band], linewidth=3)
+                    print(
+                        f"{typeh} {band} : "
+                        f"{np.count_nonzero(ind)} points"
+                        )
                     if plotR:
                         ax[itypeh].plot(x[ind], vn_R[var][ind], label=f"{band}, Rayleigh", color=color[band], ls='--', linewidth=3)
 
@@ -160,32 +183,40 @@ for var in var_list:
                 ax[itypeh].set_xlabel(f"{plot}({pltunit[plot]})", fontsize=20)
                 ax[itypeh].tick_params(axis='x', labelsize=20)
                 ax[itypeh].tick_params(axis='y', labelsize=20)
-                ax[itypeh].set_ylim(ymin_dict[var][typeh], ymax_dict[var][typeh])
+                ax[itypeh].set_ylim(
+                    ymin_dict[var][typeh],
+                    ymax_dict[var][typeh]
+                )
+                
+                ax[itypeh].yaxis.set_major_locator(MaxNLocator(8))
                 if plot == "D":
                     ax[itypeh].set_xlim(0, dmax_dict[typeh])
                 elif plot == "M":
                     ax[itypeh].set_xlim(1e-5, 1e-2)
                     ax[itypeh].set_xscale('log')
 
-                if (iband==0):
-                    if (typeh in ['wg', 'wh']):
-                        ax[itypeh].legend(loc='best', fontsize=16)
-                    if ((typeh == 'ii' and plot == 'M') or (plot == 'M' and moments[micro][typeh] == "2M")):
-                        ax[itypeh].legend(loc='best', fontsize=16)
-                
-                    
-                ax[itypeh].grid()
 
-        # Common legend below all figures
+
+        for iax, typeh in enumerate(typeh_list):
+        
+            if (
+                typeh in ['wg', 'wh']
+                or
+                ((plot == 'M') and
+                 ((typeh == 'ii') or (moments[micro][typeh] == "2M")))
+            ):
+                ax[iax].legend(loc='best', fontsize=16)
+
+        # Légende commune sous les figures
         handles, labels = ax[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.02), ncol=len(band_list), fontsize=18)
 
-        # Global title
+        # Titre global
         figtitle = f"{var}({unit[var]}) as a function of {plot}({pltunit[plot]}) - ELEV={ELEVsel}° - {micro}"
         fig.suptitle(figtitle, fontsize=30)
         fig.tight_layout(rect=[0, 0.08, 1, 0.95])
 
-        # Saving the figure
+        # Sauvegarde
         bandtit = ''.join(band_list)
         micron = '' if plot == 'D' else micro
         nomfig = f"{dir_fig}DistTmat{bandtit}{micron}_{plot}{var}{TmatOption[band_list[0]]}"

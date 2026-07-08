@@ -25,7 +25,7 @@ authors = [
 # Installed with pip install -e .
 dependencies = [
     "pyproj",
-    "numpy",
+    "numpy==2.2.6",
     "xarray>=2023.2",
     "pandas",
     "netCDF4",

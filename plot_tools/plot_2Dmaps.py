@@ -4,10 +4,9 @@ Create PNG maps of polarimetric radar variables from operadar NetCDF files.
 For real case only (latitude and longitude are needed) => operadar configuration file needs
 real_case=True
 
+Select the variables to plot, the directory containing operadar files, 
+the output directory for the images to save and the domain 
 
-Example
--------
-python3 plot_2Dmaps.py --dataDir ../modelFiles/ --outputDir ../modelFiles/ --vars Zh Zdr Kdp --levels 89
 """
 import os
 import sys
@@ -25,132 +24,58 @@ import cartopy.feature as cfeature
 import epygram
 epygram.init_env()
 
-# ------------------------------------------------------------------
-# Variable metadata (global so that plot_map can see it)
-# ------------------------------------------------------------------
-VAR_DICT = {
-    "Zh": {"name": "Reflectivity", "min": 8, "max": 64, "step": 4, "unit": "dBZ"},
-    "Zh_att": {"name": "Attenuated Reflectivity", "min": 8, "max": 64, "step": 4, "unit": "dBZ"},
-    "Zdr": {"name": "Differential Reflectivity", "min": 0, "max": 6, "step": 0.5, "unit": "dB"},
-    "Kdp": {"name": "Specific Differential Phase", "min": 0, "max": 6, "step": 0.5, "unit": "°/km"},
-}
+from utils.plot_map import plot_map, VAR_DICT
 
-# ------------------------------------------------------------------
-# Mapping routine
-# ------------------------------------------------------------------
-def plot_map(var, lon, lat, data, bounds, cmap, lev,
-             out_dir, fname_base, model, micro, time,
-             lon_min, lon_max, lat_min, lat_max):
-    """
-    Plot a 2-D filled-contour map of *data* and save to PNG.
-    """
-    fig = plt.figure(figsize=(13, 12))
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    ax.contourf(lon, lat, data, levels=bounds, cmap=cmap, extend="both")
 
-    # colorbar
-    cbar = plt.colorbar(ax.collections[0], orientation="vertical",
-                        ticks=bounds, shrink=0.7, pad=0.02)
-    cbar.set_label(f"{var} ({VAR_DICT[var]['unit']})", fontsize=16)
+# === Directories, variables and model levels to plot ===
+dataDir="../modelFiles/AROME/"
+outputDir="./IMG/"
+variables=["Zh","Zdr"] #["Zh", "Zdr", "Kdp", "Ah", "Rhohv", "Zh_att"]
+levels=[89] 
 
-    # map decorations
-    ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
-    ax.coastlines()
-    ax.add_feature(cfeature.BORDERS, linestyle=":", edgecolor="gray")
-    ax.add_feature(cfeature.STATES.with_scale("10m"),
-                   linewidth=1, linestyle="-", edgecolor="gray")
-    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                      linewidth=1, color="gray", alpha=0.5, linestyle="--")
-    gl.top_labels = gl.right_labels = False
 
-    # title & output file name
-    day = pd.to_datetime(time.values).strftime("%Y%m%d")
-    hour = pd.to_datetime(time.values).strftime("%H%M")
-    if lev == -1:
-        title = f"Max {VAR_DICT[var]['name']} – {model} {micro} – {day} {hour} UTC"
-        png_name = fname_base.replace("dpolvar", var).replace(".nc", "_max.png")
-    else:
-        title = f"{VAR_DICT[var]['name']} at level {lev} – {model} {micro} – {day} {hour} UTC"
-        png_name = fname_base.replace("dpolvar", var).replace(".nc", f"_lev{lev}.png")
+# === Domain ===
+lon_min, lon_max, lat_min, lat_max = -5., 10., 41., 52.
+# SESAR domain ?
+#lon_min, lon_max, lat_min, lat_max = -12.0, 16., 37.5, 55.4
 
-    plt.title(title, fontsize=16)
-    plt.xlabel("Longitude")
-    plt.ylabel("Latitude")
+# === Colormap ===
+epygram.util.load_cmap("radar")
+cmap = plt.get_cmap("radar")
+cmap.set_under("white")
+cmap.set_over("deeppink")
 
-    plt.savefig(os.path.join(out_dir, png_name),
-                bbox_inches="tight", pad_inches=0, dpi=100)
-    plt.close(fig)
+# === Loop over variables to plot ===
+for fpath in glob.glob(dataDir + "//*.nc"):
+    if os.path.isfile(fpath):
+        fname=os.path.basename(fpath)
+        print(f"Processing: {fpath}")
+        print(f"Filename: {fname}")
+        ds = xr.open_dataset(fpath)
 
-# ------------------------------------------------------------------
-# Processing loop
-# ------------------------------------------------------------------
-def main(data_dir, out_dir, variables, levels):
-    """Loop over NetCDF files and create maps."""
+        for var in variables:
+            if var not in VAR_DICT:
+                print(f"  Warning: {var} not in VAR_DICT – skipped")
+                continue
+            vmin = VAR_DICT[var]["min"]
+            vmax = VAR_DICT[var]["max"]
+            step = VAR_DICT[var]["step"]
+            bounds = np.arange(vmin, vmax + step, step)
 
-    # domain
-    lon_min, lon_max, lat_min, lat_max = -5., 10., 41., 52.
-    # SESAR domain ?
-    #lon_min, lon_max, lat_min, lat_max = -12.0, 16., 37.5, 55.4
+            # individual levels
+            for lev in levels:
+                print(f"  Plot {var} at level {lev}")
+                fld = ds[var].sel(level=lev)
+                plot_map(var, fld.lon, fld.lat, fld, bounds, cmap, lev,
+                         outputDir, fname, ds.model, ds.microphysics,
+                         ds.time, lon_min, lon_max, lat_min, lat_max)
 
-    # colormap
-    epygram.util.load_cmap("radar")
-    cmap = plt.get_cmap("radar")
-    cmap.set_under("white")
-    cmap.set_over("deeppink")
+            # column maximum
+            print(f"  Plot {var} max")
+            fld_max = ds[var].max(dim="level")
+            plot_map(var, fld_max.lon, fld_max.lat, fld_max, bounds,
+                     cmap, -1, outputDir, fname,
+                     ds.model, ds.microphysics, ds.time,
+                     lon_min, lon_max, lat_min, lat_max)
 
-    for fpath in glob.glob(data_dir + "//*.nc"):
-        if os.path.isfile(fpath):
-            fname=os.path.basename(fpath)
-            print(f"Processing: {fpath}")
-            print(f"Filename: {fname}")
-            ds = xr.open_dataset(fpath)
-
-            for var in variables:
-                if var not in VAR_DICT:
-                    print(f"  Warning: {var} not in VAR_DICT – skipped")
-                    continue
-                vmin = VAR_DICT[var]["min"]
-                vmax = VAR_DICT[var]["max"]
-                step = VAR_DICT[var]["step"]
-                bounds = np.arange(vmin, vmax + step, step)
-
-                # individual levels
-                for lev in levels:
-                    print(f"  Plot {var} at level {lev}")
-                    fld = ds[var].sel(level=lev)
-                    plot_map(var, fld.lon, fld.lat, fld, bounds, cmap, lev,
-                             out_dir, fname, ds.model, ds.microphysics,
-                             ds.time, lon_min, lon_max, lat_min, lat_max)
-
-                # column maximum
-                print(f"  Plot {var} max")
-                fld_max = ds[var].max(dim="level")
-                plot_map(var, fld_max.lon, fld_max.lat, fld_max, bounds,
-                         cmap, -1, out_dir, fname,
-                         ds.model, ds.microphysics, ds.time,
-                         lon_min, lon_max, lat_min, lat_max)
-
-            ds.close()
-
-# ------------------------------------------------------------------
-# Command-line interface
-# ------------------------------------------------------------------
-if __name__ == "__main__":  
-    
-    parser = argparse.ArgumentParser(
-        description="Generate PNG maps of radar variables from AROME NetCDF files.")
-    parser.add_argument("--dataDir", required=True,
-                        help="Directory containing NetCDF files")
-    parser.add_argument("--outputDir", required=True,
-                        help="Directory containing output images")
-    parser.add_argument("--vars", nargs="+", default=["Zh"],
-                        help="Variables to plot (space-separated)")
-    parser.add_argument("--levels", nargs="+", type=int,
-                        default=[89],
-                        help="Model levels to plot (space-separated)")
-    args = parser.parse_args()
-
-    if not os.path.isdir(args.dataDir):
-        sys.exit(f"Error: directory '{args.dataDir}' does not exist.")
-
-    main(args.dataDir, args.outputDir, args.vars, args.levels)
+        ds.close()
