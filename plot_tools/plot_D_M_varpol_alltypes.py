@@ -25,10 +25,10 @@ Path_tables = "../tables_generator/tables/"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='W',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,typeh_list ='K',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
 #band,color_list,typeh_list ='W',['b','k'],['rr','ii']
 
-listplot=['M'] #,'M']
+listplot=['D','M'] #,'M']
 TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
 #TmatOption={'L':'default','C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
@@ -68,6 +68,7 @@ for typeh in typeh_list:
 
 
 dmax_dict={'ii':10,'ss':20,'gg':50,'cl':2,'rr':10,'wg':50,'hh':100,'wh':100}
+dmax=50
 
 Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe can be wet in ICE3/LIMA)
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
@@ -153,7 +154,7 @@ for plot in listplot:
         ymax=ymax_dict[var]
         ax[ivar].set_ylim(ymin,ymax)
         if plot=="D":
-            ax[ivar].set_xlim(0,dmax_dict[typeh])
+            ax[ivar].set_xlim(0,dmax)
         if plot=="M":
             ax[ivar].set_xlim(1e-05,1e-02)
             ax[ivar].set_xscale('log')
