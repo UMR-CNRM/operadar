@@ -437,9 +437,12 @@ C     ***********************************************************************
       CHARACTER*4 ARfunc
       CHARACTER*4 DSTYfunc
       CHARACTER*7 DIEL
-      CHARACTER*30 nomfileCoef
-      CHARACTER*26 nomfileResu
-      CHARACTER*26 nomfileParam  
+      CHARACTER*1024 nomfileCoef
+      CHARACTER*1024 nomfileResu
+      CHARACTER*1024 nomfileParam  
+      CHARACTER*32 arg
+      INTEGER idTcFirst, idTcLast, NMAXT, iRow, nRows
+      CHARACTER*400, ALLOCATABLE :: rows(:) ! output lines of one temperature
 
       REAL*8 zhh,zvv,zdr,kdp,rhohv,sighh,sigvv,Ah,Av ! Tmatrix
       REAL*8 zhhR,zvvR,zdrR,kdpR,rhohvR,sighhR,sigvvR ! Rayleigh spheroids
@@ -472,12 +475,26 @@ C     ***********************************************************************
       WRITE(0,*) '---------------------------------------'
       
       !-- Input files
+      ! Optional arguments (all optional, defaults = historical behaviour):
+      !   1: parameter file  (default ../param/tmp_config)
+      !   2: output TmatCoefDiff file (default ../tables/<type>/TmatCoefDiff_<band><type>)
+      !   3: output TmatResu file     (default ../tables/<type>/TmatResu_<band><type>)
+      !   4,5: first and last temperature index to compute (0-based, default all).
+      !        The header is always written for the full temperature range, so the
+      !        outputs of several runs on consecutive index ranges can be concatenated
+      !        (keeping the 3 header lines of the first one only).
       nomfileParam='../param/tmp_config' 
-      WRITE(0,*) 'Reading :',nomfileParam
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 1) 
+     &   CALL GET_COMMAND_ARGUMENT(1, nomfileParam)
+      WRITE(0,*) 'Reading :',trim(nomfileParam)
       
       
       !-----Reading of parameters
-      OPEN (5,FILE=nomfileParam)
+      OPEN (5,FILE=trim(nomfileParam),STATUS='OLD',iostat=ios)
+      IF (ios .NE. 0) THEN
+        WRITE(0,*) 'ERROR: cannot open ',trim(nomfileParam)
+        STOP 1
+      ENDIF
       READ (5,1)typeh
     1 FORMAT (5X,A2)
       READ (5,22)band
@@ -577,10 +594,14 @@ C     ***********************************************************************
      & //typeh
       nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//trim(band)
      & //typeh
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 2) 
+     &   CALL GET_COMMAND_ARGUMENT(2, nomfileCoef)
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 3) 
+     &   CALL GET_COMMAND_ARGUMENT(3, nomfileResu)
 
 
-      WRITE(0,*) '   ',nomfileCoef
-      WRITE(0,*) '   ',nomfileResu
+      WRITE(0,*) '   ',trim(nomfileCoef)
+      WRITE(0,*) '   ',trim(nomfileResu)
 
       OPEN (4,FILE=trim(nomfileResu)) 
       OPEN (7,FILE=trim(nomfileCoef)) 
@@ -613,21 +634,39 @@ C     ***********************************************************************
      
       !==============================================================
       
-      NTc=nint((Tcmax-Tcmin)/Tcstep)+1 !========= Loop over temperature (°C)
-      DO idTc=0,NTc-1 
+      NTc=nint((Tcmax-Tcmin)/Tcstep)+1
+      NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1
+      NFw=nint((Fwmax-Fwmin)/Fwstep)+1
+      ND=nint((expDmax-expDmin)/expDstep)+1
+
+      ! Range of temperatures computed by this run (arguments 4 and 5)
+      idTcFirst=0
+      idTcLast=NTc-1
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 5) THEN
+        CALL GET_COMMAND_ARGUMENT(4, arg)
+        READ(arg,*) idTcFirst
+        CALL GET_COMMAND_ARGUMENT(5, arg)
+        READ(arg,*) idTcLast
+        idTcFirst=MAX(idTcFirst,0)
+        idTcLast=MIN(idTcLast,NTc-1)
+        WRITE(0,*) '   temperature indexes:',idTcFirst,' to ',idTcLast
+      ENDIF
+
+      ! The T-matrix of a particle does not depend on the elevation: it is
+      ! computed once per (Tc, Fw, D) and only the amplitudes (AMPL) are
+      ! computed for each elevation. Lines are kept in memory for one
+      ! temperature and written in the usual order Tc > ELEV > Fw > D.
+      nRows=NELEV*NFw*ND
+      ALLOCATE(rows(nRows))
+
+      DO idTc=idTcFirst,idTcLast !========= Loop over temperature (°C)
         Tc=Tcmin+idTc*Tcstep  
         Tk=Tc+273.15 !T (°K)
         
-        NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1 !========= Loop over elevation
-        DO idELEV=0,NELEV-1
-          ELEV=ELEVmin+idELEV*ELEVstep
-          
-          NFw=nint((Fwmax-Fwmin)/Fwstep)+1 !========= Loop over liquid water fraction
-          DO idF=0,NFw-1
+          DO idF=0,NFw-1 !========= Loop over liquid water fraction
             Fw=Fwmin+idF*Fwstep
 
-            ND=nint((expDmax-expDmin)/expDstep)+1 !========= Loop over diameters(mm) 
-            DO idD=0,ND-1
+            DO idD=0,ND-1 !========= Loop over diameters(mm) 
               expD=expDmin+idD*expDstep
               D=10**(expD)
 
@@ -824,17 +863,25 @@ C ========================================================================
       K2=ABS((QMW**2-1.)/(QMW**2+2.))**2 ! |K|^2 (not Re(K^2))
       radar_cnst = (1D12*(LAM*1D-3)**4)/(K2*(P**5D0)) !1D12 pr Cnst en mm4 au lieu de m4
                       
-      ! --------- Scattering with T-matrix 
-      CALL TMD(LAM,ELEV,Deq,AR,EPSX,Saa,Sbb,Saaf,Sbbf)
+      ! --------- T-matrix of the particle (independent of the elevation)
+      CALL TMD_TMAT(LAM,Deq,AR,EPSX,NMAXT)
      
       ! --------- Scattering with Rayleigh
       CALL COMPUTE_SCATTERING_RAYLEIGH(LAM,Deq,AR,EPSX,
      &     SaaR,SbbR)                                  
       
+      IF (canting .EQ. "analyt") 
+     &    CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETAeff,P,A1,A2,A3,A4,
+     &                                    A5,A7)
+
+      DO idELEV=0,NELEV-1 !========= Loop over elevation
+      ELEV=ELEVmin+idELEV*ELEVstep
+
+      ! --------- Scattering amplitudes with T-matrix for this elevation
+      CALL TMD_AMPL(LAM,ELEV,NMAXT,Saa,Sbb,Saaf,Sbbf)
+
       ! Canting is considered with analytical angular momentums
       IF (canting .EQ. "analyt") THEN
-          CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETAeff,P,A1,A2,A3,A4,
-     &                                    A5,A7)
 
           ! ---------- Dual pol var using T-matrix    
           CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,Saa,Sbb,Saaf,
@@ -860,15 +907,13 @@ C ========================================================================
       ELSE
           WRITE(0,*) "canting options: analyt or nocant"
           WRITE(0,*) "current ",canting
-          STOP      
+          STOP 1
       ENDIF
 
     
-      ! --------- Writing scattering coefficients 
-      ! NB : The 3 first lines (written previously)
-      ! describe the content of the file
-      
-      WRITE (7,5002) Tc,ELEV,Fw,D,Dm,Deq,Deqm,Deqr,Deqrm,sighh,
+      ! --------- Scattering coefficients, kept in memory (see above)
+      iRow=idELEV*NFw*ND+idF*ND+idD+1
+      WRITE (rows(iRow),5002) Tc,ELEV,Fw,D,Dm,Deq,Deqm,Deqr,Deqrm,sighh,
      & sigvv,REAL(deltaco),AIMAG(deltaco),zhh,zdr,kdp,rhohv,Ah,Av,
      & sighhR,sigvvR,REAL(deltacoR),AIMAG(deltacoR),
      & zhhR,zdrR,kdpR,rhohvR,AhR,AvR
@@ -883,16 +928,20 @@ C ========================================================================
       !WRITE (0,*) Tc,Deq,sighh,sighhR,zhh,zhhR,zdr,zdrR    
  
   
-      ITIME=MCLOCK()
-      TIME=DFLOAT(ITIME)/6000D0
-      !PRINT 5010,TIME
- 5010 FORMAT (' time =',F8.2,' min')
-
+      ENDDO !fin boucle ELEV
       ENDDO !fin boucle Deq 
       ENDDO!fin boucle Fw
-      ENDDO !fin boucle ELEV
+
+      ! --------- Writing scattering coefficients of this temperature
+      ! NB : The 3 first lines (written previously)
+      ! describe the content of the file
+      DO iRow=1,nRows
+        WRITE (7,'(A)') trim(rows(iRow))
+      ENDDO
+      FLUSH(7)
       ENDDO !fin boucle T°  
  
+      DEALLOCATE(rows)
       CLOSE(7)
       CLOSE(4)
       
@@ -1799,14 +1848,28 @@ C ============================================================================
 C     ================  SUBROUTINE TMD ==================
       SUBROUTINE TMD(LAM,ELEV,Deq,AR,EPSX,
      &                 Saa,Sbb,Saaf,Sbbf)
-     
+      ! T-matrix + amplitudes for one elevation (kept for compatibility)
       ! in: LAM,ELEV,Deq,AR,EPSX
       ! out: Saa,Sbb,Saaf,Sbbf
+      REAL*8  LAM,ELEV,Deq,AR
+      COMPLEX*16 EPSX,Saa,Sbb,Saaf,Sbbf
+      INTEGER NMAX
+      CALL TMD_TMAT(LAM,Deq,AR,EPSX,NMAX)
+      CALL TMD_AMPL(LAM,ELEV,NMAX,Saa,Sbb,Saaf,Sbbf)
+      RETURN
+      END SUBROUTINE TMD
+
+C     ================  SUBROUTINE TMD_TMAT ==================
+      SUBROUTINE TMD_TMAT(LAM,Deq,AR,EPSX,NMAXOUT)
+      ! Computes the T-matrix of the particle (stored in COMMON /TMAT/)
+      ! in: LAM,Deq,AR,EPSX
+      ! out: NMAXOUT (size of the T-matrix, needed by TMD_AMPL)
 
 C    DECLARATION OF VARIABLES *******************************************
       IMPLICIT REAL*8 (A-H,O-Z)
       INCLUDE 'ampld.par.f'
-      REAL*8  LAM,ELEV,Deq,AR
+      REAL*8  LAM,Deq,AR
+      INTEGER NMAXOUT
       REAL*8  AXI,MRR,MRI
       REAL*8  X(NPNG2),W(NPNG2),S(NPNG2),SS(NPNG2),
      *        AN(NPN1),R(NPNG2),DR(NPNG2),ALPHA,BETA,THET,THET0,
@@ -1882,7 +1945,7 @@ c      IF(NP.EQ.-3) PRINT 7160
       IXXX=XEV+4.05D0*XEV**0.333333D0
       INM1=MAX0(4,IXXX)
       IF (INM1.GE.NPN1) WRITE(0,7333) NPN1
-      IF (INM1.GE.NPN1) STOP
+      IF (INM1.GE.NPN1) STOP 1
  7333 FORMAT('CONVERGENCE IS NOT OBTAINED FOR NPN1=',I3,  
      &       '.  EXECUTION TERMINATED')
       QEXT1=0D0
@@ -1892,7 +1955,7 @@ c      IF(NP.EQ.-3) PRINT 7160
          MMAX=1
          NGAUSS=NMAX*NDGS
          IF (NGAUSS.GT.NPNG1) WRITE(0,7340) NGAUSS
-         IF (NGAUSS.GT.NPNG1) STOP
+         IF (NGAUSS.GT.NPNG1) STOP 1
  7340    FORMAT('NGAUSS =',I3,' I.E. IS GREATER THAN NPNG1.',
      &          '  EXECUTION TERMINATED')
  !7334    FORMAT(' NMAX =', I3,'  DC2=',D8.2,'   DC1=',D8.2)
@@ -1921,7 +1984,7 @@ c      IF(NP.EQ.-3) PRINT 7160
 c        PRINT 7334, NMAX,DSCA,DEXT
          IF(DSCA.LE.DDELT.AND.DEXT.LE.DDELT) GO TO 55
          IF (NMA.EQ.NPN1) WRITE(0,7333) NPN1
-         IF (NMA.EQ.NPN1) STOP      
+         IF (NMA.EQ.NPN1) STOP 1
    50 CONTINUE
    55 NNNGGG=NGAUSS+1
       MMAX=NMAX
@@ -2037,6 +2100,19 @@ c        PRINT 7800,M,DABS(QXT),QSC,NMAX
  
 
 C     END CONVERGENCE TEST 
+      NMAXOUT=NMAX
+      RETURN
+      END SUBROUTINE TMD_TMAT
+
+C     ================  SUBROUTINE TMD_AMPL ==================
+      SUBROUTINE TMD_AMPL(LAM,ELEV,NMAX,Saa,Sbb,Saaf,Sbbf)
+      ! Amplitudes for one elevation, from the T-matrix computed by TMD_TMAT
+      ! in: LAM,ELEV,NMAX
+      ! out: Saa,Sbb,Saaf,Sbbf (backward a, b and forward a, b)
+      IMPLICIT REAL*8 (A-H,O-Z)
+      REAL*8  LAM,ELEV,ALPHA,BETA,THET,THET0
+      INTEGER NMAX
+      COMPLEX*16 Saa,Sab,Sba,Sbb,Saaf,Sabf,Sbaf,Sbbf
 
 C     INITIALISATION ------------------
 
@@ -2060,7 +2136,7 @@ C     INITIALISATION ------------------
       Sbb=-Sbb
        
       RETURN
-      END SUBROUTINE TMD!fin subroutine
+      END SUBROUTINE TMD_AMPL
 
 C    ============  END SUBROUTINE TMD  ===================
 
@@ -2096,7 +2172,7 @@ C     !                       HH = horizontal pol scattering coefficient)
      &    PL.LT.0D0.OR.PL.GT.360D0.OR.
      &    PL1.LT.0D0.OR.PL1.GT.360D0) THEN 
           WRITE (6,2000)
-          STOP
+          STOP 1
       ELSE
           CONTINUE
       ENDIF  
@@ -2517,7 +2593,7 @@ C**********************************************************************
            ZI(I)=V2
    10 CONTINUE
       IF (NMAX.GT.NPN1) PRINT 9000,NMAX,NPN1
-      IF (NMAX.GT.NPN1) STOP
+      IF (NMAX.GT.NPN1) STOP 1
  9000 FORMAT(' NMAX = ',I2,', i.e., greater than ',I3)
       TB=TA*DSQRT(MRR*MRR+MRI*MRI)
       TB=DMAX1(TB,DFLOAT(NMAX))

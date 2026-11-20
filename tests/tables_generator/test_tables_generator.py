@@ -319,6 +319,23 @@ class TestTmat:
         for r in rows:
             assert r["RHOP"] <= RHOI, r
 
+    def test_tmat_exit_status_when_tmatrix_does_not_converge(self, sandbox):
+        """When the T-matrix does not converge (here fully melted 100 mm hail at W band, beyond the method's
+        limits), Tmat stops with a non-zero exit status, so that a truncated table cannot go unnoticed."""
+        p = default_param(type="wh", band="W", DIEL="LBwetgr", ARfunc="RYwg", ARcnst=0.8, Tcmin=0.0, Tcmax=0.0,
+                          Fwmin=1.0, Fwmax=1.0, expDmin=2.0, expDmax=2.0)
+        (sandbox.root / "param" / "tmp_config").write_text(format_param(p))
+        (sandbox.root / "tables" / "wh").mkdir()
+        r = subprocess.run(["./Tmat"], cwd=sandbox.root / "src", capture_output=True, text=True, timeout=600)
+        assert r.returncode != 0 and "CONVERGENCE IS NOT OBTAINED" in r.stderr
+
+    def test_large_hail_at_w_band_converges(self, sandbox):
+        """Dry hail of 100 mm at W band (the upper limit of TmatParam_Whh_default) is computed: it needs larger
+        T-matrix arrays (NPN1 = 160 in ampld.par.f; with 100 the table stopped near 70 mm)."""
+        rows = tmat_rows(sandbox, type="hh", band="W", DIEL="RY19dry", ARfunc="RYdg", ARcnst=0.8, Tcmin=0.0,
+                         Tcmax=0.0, expDmin=2.0, expDmax=2.0)
+        assert len(rows) == 1 and rows[0]["D"] == 100.0 and -50 < rows[0]["zhh"] < 100
+
     def test_tmat_fails_without_type_subfolder(self, tmp_path, binaries):
         """Tmat writes into tables/<type>/ and stops if that folder is missing, which is why
         generate_tables.sh must create it (see section 5)."""
@@ -577,11 +594,12 @@ class TestPSD:
 
 # =============================================================================================
 FAKE_TMAT = """#!/bin/bash
-# mimics Tmat: reads ../param/tmp_config, writes ../tables/<type>/TmatCoefDiff_<band><type>
-echo "$PWD" >> ../calls_tmat
-t=$(sed -n 's/^type://p' ../param/tmp_config); b=$(sed -n 's/^band://p' ../param/tmp_config)
-[ -d ../tables/$t ] || { echo "Cannot open file '../tables/$t/TmatCoefDiff_$b$t'" >&2; exit 2; }
-echo fake > ../tables/$t/TmatCoefDiff_$b$t
+# mimics Tmat <param> <out coef> <out resu> <first Tc index> <last Tc index>:
+# 3 header lines, then one line per temperature index
+echo "$@" >> ../calls_tmat
+t=$(sed -n 's/^type://p' "$1"); [ -n "$t" ] || { echo "cannot read $1" >&2; exit 2; }
+{ echo h1; echo h2; echo h3; for ((i=$4; i<=$5; i++)); do echo "row $i"; done; } > "$2"
+{ echo r1; for ((i=$4; i<=$5; i++)); do echo "resu $i"; done; } > "$3"
 """
 FAKE_TMATINT = """#!/bin/bash
 # mimics TmatInt <exec_dir> <repo> <type> <band> <micro> <moment>
@@ -620,6 +638,21 @@ class TestGenerateTablesScript:
     input is missing). This checks the options and the file handling of the script in a second,
     without computing any table.
     """
+
+    def test_parallel_blocks_are_concatenated_in_order(self, script_root, report):
+        """With -j 4, Tmat is run as 4 processes on consecutive blocks of temperatures and their outputs are joined
+        in temperature order, with the header written once."""
+        run_script(script_root, "--default", "--band", "C", "-j", "4")
+        gen = script_root / "tables_generator"
+        calls = (gen / "calls_tmat").read_text().splitlines()
+        lines = (gen / "tables" / "default" / "TmatCoefDiff_Crr").read_text().splitlines()
+        ntc = 61  # TmatParam_Crr_default: -20..40 C
+        report.table("Tmat processes started for rain (arguments: param, outputs, first and last Tc index)",
+                     ["call"], [[c.split("/")[-1] if False else " ".join(a.split("/")[-1] for a in c.split())]
+                                for c in calls if "Crr" in c])
+        assert sum("Crr" in c for c in calls) == 4
+        assert lines[:3] == ["h1", "h2", "h3"]
+        assert lines[3:] == [f"row {i}" for i in range(ntc)]
 
     def test_script_rejects_unknown_band(self, script_root):
         """An unknown band (--band Q) is rejected with an error message."""
@@ -693,3 +726,51 @@ class TestGenerateTablesScript:
         """The unfinished edit mode (--hydro, --arf, ...) was removed: its options are refused with a message."""
         r = run_script(script_root, *args)
         assert r.returncode != 0 and "Unknown option" in r.stdout
+
+
+@needs_fortran
+class TestGenerateTablesEndToEnd:
+    """6. generate_tables.sh with the real Tmat and TmatInt
+
+    The script is run on a copy of the repository where the default C-band parameter files of three types
+    are replaced by small versions, so the whole chain (parameter file, Tmat, TmatInt) runs in seconds.
+    """
+
+    TYPES = {"rr": dict(), "gg": dict(type="gg", DIEL="RY19dry", ARfunc="RYdg", ARcnst=0.8),
+             "wg": dict(type="wg", DIEL="LBwetgr", ARfunc="RYwg", ARcnst=0.8, canting="analyt", sigbeta=40.0,
+                        Fwmax=1.0, Fwstep=0.5)}
+
+    @pytest.fixture
+    def small_repo(self, tmp_path, binaries):
+        root = tmp_path / "repo"
+        gen = root / "tables_generator"
+        (gen / "src").mkdir(parents=True)
+        (gen / "tables").mkdir()
+        (gen / "param").mkdir()
+        for f in PARAM.glob("*_constants.txt"):
+            shutil.copy(f, gen / "param")
+        for h, over in self.TYPES.items():
+            p = default_param(band="C", Tcmin=-4.0, Tcmax=4.0, Tcstep=2.0, ELEVmax=90.0, ELEVstep=90.0,
+                              expDmin=-1.0, expDmax=0.9, expDstep=0.1, **{**dict(type=h), **over})
+            (gen / "param" / f"TmatParam_C{h}_default").write_text(format_param(p))
+        shutil.copy(REPO / "generate_tables.sh", root)
+        shutil.copy(binaries[0], gen / "src" / "Tmat")
+        shutil.copy(binaries[1], gen / "src" / "TmatInt")
+        return root
+
+    def test_parallel_run_gives_identical_tables(self, small_repo, report):
+        """The tables produced with -j 3 (Tmat split over 3 processes) are byte-identical to those of a
+        sequential run (-j 1), for rain, graupel and wet graupel (2 elevations, 5 temperatures)."""
+        tables = small_repo / "tables_generator" / "tables" / "default"
+        results = {}
+        for jobs in ("1", "3"):
+            shutil.rmtree(tables, ignore_errors=True)
+            r = run_script(small_repo, "--default", "--band", "C", "-j", jobs)
+            results[jobs] = {f.name: f.read_bytes() for f in tables.glob("TmatCoef*")}
+            assert r.returncode == 1  # the other 5 types have no parameter file in this small copy
+            assert "5 step(s) failed" in r.stdout
+        report.table("Files compared", ["file", "lines", "identical"],
+                     [[n, results["1"][n].count(b"\n"), results["1"][n] == results["3"].get(n)]
+                      for n in sorted(results["1"])])
+        assert len(results["1"]) == 6  # TmatCoefDiff + TmatCoefInt for 3 types
+        assert results["1"] == results["3"]

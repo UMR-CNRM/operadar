@@ -11,7 +11,7 @@ CF = gfortran
 # Local (ubuntu)
 # Should be something like : LIBS = -L ./my_lapack_path -llapack -lrefblas
 LIBS = -L ./libFortran/lapack -llapack -lrefblas
-CFLAGS = -pipe -Wall 
+CFLAGS = -pipe -Wall -O2
 
 all: TmatInt
 

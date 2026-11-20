@@ -8,6 +8,7 @@
 MODE=""
 NEW_CONF=""
 BAND=""
+JOBS=1   # number of Tmat processes run in parallel (option -j)
 
 # Parameters list
 HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
@@ -40,6 +41,10 @@ Usage:
   Specialized MODE: $0 --David2025AMT/--David2026PhD/--vertical --band <value>
   NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
 
+Option:
+  -j, --jobs <N>    run N Tmat processes in parallel (each computes a block of
+                    temperatures), e.g. -j \$(nproc). Default: 1.
+
 Bands: ${BAND_LIST[@]}
 
 DEFAULT and Specialized modes use param/TmatParam_<band><type>_<mode>.
@@ -64,6 +69,11 @@ while [[ $# -gt 0 ]]; do
             [[ -z "$1" || "$1" == --* ]] && { echo "/!\ Error: --newConf expect a folder name."; usage; exit 1; }
             NEW_CONF="$1"
             ;;
+        -j|--jobs)
+            shift
+            [[ "$1" =~ ^[1-9][0-9]*$ ]] || { echo "/!\ Error: -j/--jobs expects a positive integer."; exit 1; }
+            JOBS="$1"
+            ;;
         --band)
             shift
             valid_band "$1" || { echo "/!\ Error: invalid band. Expect one of the following : ${BAND_LIST[*]}"; exit 1; }
@@ -81,6 +91,46 @@ done
 # Validation checks
 [[ -z "$MODE" || -z "$BAND" ]] && usage
 
+
+# Run Tmat for one parameter file, split over $JOBS processes (blocks of temperatures).
+# Each process writes its own files; they are then concatenated in temperature order
+# (Tmat writes the header for the full range, so only the first block keeps it).
+# Usage: run_tmat <param file> <output TmatCoefDiff> <output TmatResu> <log file>
+run_tmat() {
+    local param="$1" out="$2" resu="$3" log="$4"
+    local ntc
+    ntc=$(awk -F: '/^Tcmin:/{a=$2} /^Tcmax:/{b=$2} /^Tcstep:/{c=$2} END{printf "%d", (b-a)/c+1.5}' "$param")
+    local njobs=$(( JOBS < ntc ? JOBS : ntc ))
+    local chunk=$(( (ntc + njobs - 1) / njobs ))
+    local tmp
+    tmp=$(mktemp -d "${out}.tmp.XXXXXX")
+    local pids=() j first last status=0
+    njobs=$(( (ntc + chunk - 1) / chunk ))
+    echo "Tmat: ${ntc} temperatures in ${njobs} process(es), log in ${log}"
+    for (( j=0; j<njobs; j++ )); do
+        first=$(( j * chunk ))
+        last=$(( first + chunk - 1 ))
+        (( last > ntc - 1 )) && last=$(( ntc - 1 ))
+        ( cd "$SRC_DIR" && ./Tmat "$param" "$tmp/coef_$j" "$tmp/resu_$j" "$first" "$last" ) > "$tmp/log_$j" 2>&1 &
+        pids+=($!)
+    done
+    for (( j=0; j<njobs; j++ )); do
+        wait "${pids[$j]}" || status=1
+    done
+    : > "$log"
+    for (( j=0; j<njobs; j++ )); do
+        echo "===== Tmat block $j" >> "$log"
+        cat "$tmp/log_$j" >> "$log"
+    done
+    if [[ $status -eq 0 ]]; then
+        { cat "$tmp/coef_0"; for (( j=1; j<njobs; j++ )); do tail -n +4 "$tmp/coef_$j"; done; } > "$out"
+        { cat "$tmp/resu_0"; for (( j=1; j<njobs; j++ )); do tail -n +2 "$tmp/resu_$j"; done; } > "$resu"
+    else
+        grep -h -iE "error|convergence|terminated" "$tmp"/log_* | sort -u | head -5
+    fi
+    rm -rf "$tmp"
+    return $status
+}
 
 # Core table generation function
 FAILURES=0
@@ -137,11 +187,12 @@ generate_tables() {
         # Scattering coefficients as a function of the diameter (Tmat), if not already there
         local coefdiff="${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
         if [[ ! -f "$coefdiff" ]]; then
-            cp "$PARAM_FILE" "${PARAM_FOLDER}/tmp_config"
-            mkdir -p "${TABLE_FOLDER}/${H}"   # Tmat writes into tables/<type>/
-            if ( cd "$SRC_DIR" && ./Tmat ) && [[ -f "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" ]]; then
-                mv "${TABLE_FOLDER}/${H}/TmatCoefDiff_${BAND}${H}" "$coefdiff"
+            if run_tmat "$PARAM_FILE" "$coefdiff.part" \
+                        "${TABLE_FOLDER}/${output_subfolder}/TmatResu_${BAND}${H}" \
+                        "${TABLE_FOLDER}/${output_subfolder}/Tmat_${BAND}${H}.log"; then
+                mv "$coefdiff.part" "$coefdiff"
             else
+                rm -f "$coefdiff.part"
                 echo "Failed to compute the scattering coefficients for ${H} (Tmat)"
                 FAILURES=$((FAILURES+1))
                 continue
