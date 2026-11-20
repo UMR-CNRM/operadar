@@ -439,7 +439,7 @@ DO idTc=0,nTcloop
   FREQ=(LIGHTSPEED)/LAM
   call QEPSW(Tk,FREQ,EPSW)
   QMW=SQRT(EPSW)  
-  K2=((QMW**2-1.)/(QMW**2+2.))**2
+  K2=ABS((QMW**2-1.)/(QMW**2+2.))**2 ! |K|^2 (not Re(K^2))
   radar_cnst = (1E12*(LAM)**4)/(K2*(P**5D0)) !
 
 

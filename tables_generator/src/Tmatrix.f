@@ -423,6 +423,7 @@ C     ***********************************************************************
       REAL*8 radar_cnst,K2,LIGHTSPEED !K2=diel factor computed from EPSW
       INTEGER NELEV,NTc,ND,idELEV,idTc,idD
       REAL*8 SIGBETA,SIGBETAr,SIGBETAwg ! canting angle width
+      REAL*8 SIGBETAeff ! width used for the current particle (SIGBETA is never modified)
       REAL*8 Fwmin, Fwstep, Fwmax,Fw,Fw_lim
 
       REAL*8 FREQ,Tk,expD,Deqm
@@ -647,6 +648,7 @@ C ============================================================================
         AR=ARdg             ! AR initial (dry graupel) 
         Dm=D*(AR**(-1.0/3.))   ! Dm        
         CALL QRHOX(aj,bj,D,Dm,P,RHOP)  ! RHOP
+        RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
 
         ! Max mass water fraction before a shell is forming (all cavities are filled)          
         Fw_lim=(1/RHOI-1/RHOP)/(1/RHOI-1/RHOP-1/RHOLW) ! eq 19 doc ou 4.4 PhD Le Bastard
@@ -721,11 +723,13 @@ C ============================================================================
           ELSE 
             CALL QRHOX(aj,bj,D,Dm,P,RHOP)
           ENDIF ! RHOP
+          RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
           Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
           CALL AR_BRANDES(Deqr,ARr)    ! ARr
         ! ----- Other particles : RHOP from m-D relationship ICE3/LIMA
         ELSE
           CALL QRHOX(aj,bj,D,Dm,P,RHOP)
+          RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
           Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
           CALL AR_BRANDES(Deqr,ARr)    ! ARr
         ENDIF
@@ -779,14 +783,17 @@ C ========================================================================
 C =================== END dielectric constant EPSX ====================
 
 C =================== SIGBETA : width of canting angle distribution =====
+        ! SIGBETA must not be overwritten: it is the dry-particle value read in the
+        ! parameter file and is reused for every diameter, Fw, elevation and temperature
+        SIGBETAeff=SIGBETA
         IF (Fw .GT. 0) THEN
           CALL CANTING_RY11wetg(Fw,SIGBETA,SIGBETAr,SIGBETAwg)
-          SIGBETA=SIGBETAwg 
+          SIGBETAeff=SIGBETAwg
         ENDIF
 C =================== END width of canting angle distribution===========
 
       ! Saving in resu file diameters, density RHOP, diel EPSX and axis ratio AR 
-      WRITE(4,*)  D,Deq,Fw,Fw_lim,RHOP,EPSX,RHOI,EPSI,AR,SIGBETA
+      WRITE(4,*)  D,Deq,Fw,Fw_lim,RHOP,EPSX,RHOI,EPSI,AR,SIGBETAeff
 
 C ========================================================================   
 C             COMPUTE dpol var with Rayleigh and Tmatrix 
@@ -803,7 +810,7 @@ C ========================================================================
       !---------- Radar constant 
       CALL QEPSW(Tk,FREQ,EPSW)
       QMW=SQRT(EPSW) 
-      K2=((QMW**2-1.)/(QMW**2+2.))**2 
+      K2=ABS((QMW**2-1.)/(QMW**2+2.))**2 ! |K|^2 (not Re(K^2))
       radar_cnst = (1D12*(LAM*1D-3)**4)/(K2*(P**5D0)) !1D12 pr Cnst en mm4 au lieu de m4
                       
       ! --------- Scattering with T-matrix 
@@ -815,7 +822,8 @@ C ========================================================================
       
       ! Canting is considered with analytical angular momentums
       IF (canting .EQ. "analyt") THEN
-          CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETA,P,A1,A2,A3,A4,A5,A7)
+          CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETAeff,P,A1,A2,A3,A4,
+     &                                    A5,A7)
 
           ! ---------- Dual pol var using T-matrix    
           CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,Saa,Sbb,Saaf,
