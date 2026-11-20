@@ -13,7 +13,7 @@
 # ----- INPUT file path (path to folder containing the files)
 input_filePath  = f"./modelFiles/AROME/"
 # ----- OUPUT file(s) directory
-output_filePath = f"./modelFiles/AROME/"
+output_filePath = f"./operadarFiles/AROME/"
 
 # ----- Lookup tables directory path
 path_tables = f"./tables_generator/tables/default/"

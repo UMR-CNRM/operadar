@@ -25,12 +25,12 @@ Path_tables = "../tables_generator/tables/"
     
 dir_fig="IMG/"
 
-band,color_list,typeh_list ='K',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
+band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss','ii','gg','wg']
 #band,color_list,typeh_list ='W',['b','k'],['rr','ii']
 
-listplot=['D','M'] #,'M']
-TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
-#TmatOption={'L':'default','C':'default','K':'default','W':'default'}
+listplot=['M'] #,'M']
+#TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
+TmatOption={'L':'default','C':'default','K':'default','W':'default'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh'] #,'Zdr','Kdp'] #,'Rhohv','Ah','Av']
