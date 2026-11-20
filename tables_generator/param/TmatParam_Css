@@ -14,7 +14,7 @@ ELEVstep:90.0
 Tcmin:-75.0
 Tcmax:10.0
 Tcstep:1.0
-expDmin:-1.0
+expDmin:-2.0
 expDmax:1.7
 expDstep:0.02
 Fwmin:0.0
