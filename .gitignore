@@ -16,3 +16,4 @@ tables_generator/src/TmatInt
 tables_generator/src/libFortran/
 plot_tools/IMG/
 plot_tools/nohupOUT/
+tests/tables_generator/report/
