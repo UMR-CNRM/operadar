@@ -7,8 +7,8 @@ then open tests/tables_generator/report/test_report.html (see README.md in this 
 Fortran tests need gfortran and a LAPACK/refBLAS build (LAPACK_DIR, default
 tables_generator/src/libFortran/lapack); they are skipped otherwise.
 
-Tests marked xfail(strict=True) document known bugs: they fail today, and will be
-reported as "BUG FIXED?" once the bug is fixed, as a reminder to remove the marker.
+Tests marked xfail(strict=True) document known bugs: they fail until the bug is fixed,
+then are reported as "BUG FIXED?" as a reminder to remove the marker. (None at the moment.)
 """
 from __future__ import annotations
 
@@ -117,6 +117,13 @@ class TestParameterFiles:
     def test_vertical_configs_include_90deg(self, path):
         """The '*_vertical' configurations (for vertically pointing radars) contain the 90 degree elevation."""
         assert self.parse(path)["ELEVmax"] == 90.0
+
+    @pytest.mark.parametrize("path", [p for p in PARAM_FILES if re.match(r"TmatParam_[A-Za-z]+ss", p.name)],
+                             ids=lambda p: p.name)
+    def test_snow_tables_start_at_10_microns(self, path):
+        """Snow parameter files start at D = 0.01 mm (expDmin = -2): the ICE3 snow distribution at low content
+        is made of very small particles, which a 0.1 mm lower limit misses (Zh of -290 dBZ at 1 mg/m3)."""
+        assert self.parse(path)["expDmin"] <= -2.0
 
     def test_mass_diameter_constants_consistent_between_schemes(self, report):
         """The mass-diameter coefficients a, b of each species are identical in all *_constants.txt files.
@@ -274,6 +281,29 @@ class TestTmat:
             assert rw["zhh"] == pytest.approx(rd["zhh"], abs=0.01)
             assert rw["zdr"] == pytest.approx(rd["zdr"], abs=0.001)
 
+    def test_mgwma08_dielectric_option(self, sandbox, report):
+        """Wet graupel with the MGwMA08 dielectric option: with Fw = 0 it equals dry graupel, and a fully melted
+        particle (Fw = 1) is brighter than the dry one (the water volume fraction used to be left undefined).
+
+        Zh is not monotonic in Fw for small particles (the particle shrinks while melting), so only the two ends
+        are tested."""
+        common = dict(band="C", ARcnst=0.8, Tcmin=0.0, Tcmax=0.0, expDmin=0.0, expDmax=1.0, expDstep=0.1)
+        wet = tmat_rows(sandbox, type="wg", DIEL="MGwMA08", ARfunc="RYwg", Fwmin=0.0, Fwmax=1.0, Fwstep=0.25,
+                        **common)
+        dry = tmat_rows(sandbox, type="gg", DIEL="RY19dry", ARfunc="RYdg", **common)
+        by_fw = {}
+        for r in wet:
+            by_fw.setdefault(r["Fw"], []).append(r)
+        with report.figure("Wet graupel with MGwMA08, C band, 0 C") as ax:
+            ax.plot(col(dry, "D"), col(dry, "zhh"), "k--", label="dry graupel")
+            for fw, rows in by_fw.items():
+                ax.plot(col(rows, "D"), col(rows, "zhh"), label=f"Fw = {fw}")
+            ax.set(xlabel="D (mm)", ylabel="Zh (dBZ)")
+        for rw, rd in zip(by_fw[0.0], dry):
+            assert rw["zhh"] == pytest.approx(rd["zhh"], abs=0.01)
+        for r0, r1 in zip(by_fw[0.0], by_fw[1.0]):
+            assert r1["zhh"] > r0["zhh"], r0["D"]
+
     @pytest.mark.parametrize("typeh,arfunc,arcnst,dmin", [("ss", "AUds", 0.75, -1.0), ("ii", "CNST", 0.2, -2.0)],
                              ids=["snow", "pristine ice"])
     def test_particle_density_not_above_solid_ice(self, sandbox, report, typeh, arfunc, arcnst, dmin):
@@ -412,6 +442,58 @@ class TestTmatInt:
             if 1e-6 <= lo["M"] <= 1e-4:
                 assert lo["zhhR"] > hi["zhhR"]
 
+    def test_two_moment_table_with_several_liquid_fractions(self, sandbox, report):
+        """A 2-moment species (LIMA rain) integrated from a T-matrix table that also contains other liquid
+        fractions gives the same result as from a table with Fw = 0 only (rows used to be read at the wrong place)."""
+        # two temperatures: with one temperature and one elevation the wrong row index happened to be right
+        common = dict(band="C", Tcmin=0.0, Tcmax=10.0, Tcstep=10.0, expDmin=-2.0, expDmax=0.9, expDstep=0.05)
+        one = sandbox.run_tmat(default_param(**common))
+        _, r1 = read_coefint(sandbox.run_tmatint(one, "a", "rr", "C", micro="LIMA", moment="2M"))
+        two = sandbox.run_tmat(default_param(Fwmin=0.0, Fwmax=0.5, Fwstep=0.5, **common))
+        _, r2 = read_coefint(sandbox.run_tmatint(two, "b", "rr", "C", micro="LIMA", moment="2M"))
+        n = sorted({r["P3"] for r in r1})[50]  # 1e5 m-3
+        with report.figure("LIMA rain (2 moments), N = 1e5 m-3, C band, 10 C") as ax:
+            for rows, lab, st in ((r1, "T-matrix table with Fw = 0 only", "-"), (r2, "table with Fw = 0 and 0.5", "--")):
+                rows = [r for r in rows if r["P3"] == n and r["Tc"] == 10.0]
+                ax.semilogx([r["M"] * 1e3 for r in rows], col(rows, "zhh"), st, label=lab)
+            ax.set(xlabel="rain content (g/m3)", ylabel="Zh (dBZ)")
+        assert len(r1) == len(r2)
+        for a, b in zip(r1, r2):
+            assert a["zhh"] == b["zhh"] and a["kdp"] == b["kdp"], (a["M"], a["P3"])
+
+    def test_snow_lower_diameter_limit(self, sandbox, report):
+        """ICE3 snow at C band, -10 C: with the diameter range starting at 0.01 mm, Zh increases with the content
+        from 0.01 to 2 g/m3, and is unchanged above 0.3 g/m3 compared with a 0.1 mm start.
+
+        The ICE3 snow distribution has a mean diameter of 0.02 mm at 0.01 g/m3 and 1.4 micron at 0.001 g/m3,
+        so below about 0.01 g/m3 even a 0.01 mm start misses most of it (Zh too low). Above about 2.4 g/m3 the
+        largest snowflakes exceed the 50 mm upper limit and Zh stops increasing. Both limits are visible on the
+        figure but not tested."""
+        common = dict(type="ss", band="C", DIEL="RY19dry", ARfunc="AUds", ARcnst=0.75, Tcmin=-10.0, Tcmax=-10.0,
+                      expDmax=1.7, expDstep=0.02)
+        res = {}
+        for dmin in (-1.0, -2.0):
+            diff = sandbox.run_tmat(default_param(expDmin=dmin, **common))
+            res[dmin] = read_coefint(sandbox.run_tmatint(diff, f"d{int(-dmin)}", "ss", "C"))[1]
+        with report.figure("ICE3 snow, C band, -10 C: effect of the smallest diameter of the table") as ax:
+            for dmin, rows in res.items():
+                rows = [r for r in rows if r["zhh"] > -60]
+                ax.semilogx([r["M"] * 1e3 for r in rows], col(rows, "zhh"), label=f"Dmin = {10 ** dmin:g} mm")
+            ax.axvspan(1e-2, 2, color="green", alpha=0.08, label="tested range")
+            ax.set(xlabel="snow content (g/m3)", ylabel="Zh (dBZ)")
+        rows = [r for r in res[-2.0] if 1e-5 <= r["M"] <= 2e-3]
+        z = col(rows, "zhh")
+        assert all(b > a for a, b in zip(z, z[1:]))
+        old = {r["M"]: r["zhh"] for r in res[-1.0]}
+        assert all(abs(r["zhh"] - old[r["M"]]) < 0.1 for r in res[-2.0] if 3e-4 <= r["M"] <= 3e-3)
+
+    def test_unknown_type_gives_clear_error(self, sandbox):
+        """TmatInt stops with a clear message (instead of a Fortran end-of-file crash) when the type is not in
+        the constants file."""
+        r = subprocess.run([str(sandbox.root / "src" / "TmatInt"), str(sandbox.root / "src"), "t", "zz", "C",
+                            "ICE3", "1M"], capture_output=True, text=True, timeout=30)
+        assert r.returncode != 0 and "not found" in r.stderr
+
     def test_wet_graupel_integration_without_water_equals_dry_graupel(self, graupel_tables, report):
         """Integrated wet graupel with Fw = 0 equals dry graupel (within 0.02 dB for M >= 0.1 g/m3),
         and melting graupel (Fw = 0.5) is brighter than dry graupel."""
@@ -432,11 +514,10 @@ class TestTmatInt:
             if 1e-5 <= a["M"] <= 1e-3:
                 assert a["zhh"] > b["zhh"]
 
-    @pytest.mark.xfail(strict=True, reason="review #6: the M/Mint renormalisation cancels for non-melting species "
-                                           "(the PSD keeps the truncated mass) but not for wg/ws (PSD scaled to M)")
     def test_wet_graupel_and_graupel_same_normalisation_at_low_content(self, graupel_tables, report):
-        """Same comparison as above, but at all contents: wet graupel with Fw = 0 and dry graupel should agree
-        within 0.02 dB down to 10^-7 kg/m3."""
+        """Same comparison as above, but at all contents: wet graupel with Fw = 0 and dry graupel agree
+        within 0.02 dB down to 10^-7 kg/m3 (wet species used to be rescaled to the full content M,
+        dry ones not: all species now keep the mass inside the diameter range of the table)."""
         rwg, rgg = graupel_tables
         dry_part = [r for r in rwg if r["P3"] == 0.0]
         with report.figure("Zh(wet graupel, Fw = 0) - Zh(dry graupel)") as ax:
@@ -473,12 +554,9 @@ class TestPSD:
     analytic Marshall-Palmer distribution used by ICE3 for rain.
     """
 
-    @pytest.mark.xfail(strict=True, reason="review #7: in PSD (ICE3, 1-moment) No=c*lamb**x is computed before "
-                                           "lamb, i.e. with the value of the previous call")
     def test_psd_ice3_rain_marshall_palmer(self, tmp_path, report):
         """For ICE3 rain at 1 g/m3, PSD returns N(D) = 8e6 exp(-lambda D) (m-4), whatever was computed
-        in the previous call. Today the result is still correct in the tables because TmatInt rescales the
-        distribution to the right mass, which hides this bug."""
+        in the previous call (No used to be computed from the lambda of the previous call)."""
         src = (SRC / "TmatrixIntegration.f90").read_text()
         (tmp_path / "psd.f90").write_text(PSD_DRIVER % dict(M="1e-3") + "\n" + src[src.index("SUBROUTINE PSD("):])
         subprocess.run(["gfortran", "-O0", "-w", "psd.f90", "-o", "psd"], cwd=tmp_path, check=True,
@@ -548,8 +626,6 @@ class TestGenerateTablesScript:
         r = run_script(script_root, "--default", "--band", "Q")
         assert r.returncode != 0 and "invalid band" in r.stdout
 
-    @pytest.mark.xfail(strict=True, reason="review #5: generate_tables.sh never creates tables/<type>/, so Tmat "
-                                           "cannot write its output on a fresh clone")
     def test_default_mode_generates_all_tables(self, script_root, report):
         """On a fresh clone, 'generate_tables.sh --default --band C' produces a TmatCoefInt table for all
         8 hydrometeor types in tables/default/."""
@@ -581,18 +657,39 @@ class TestGenerateTablesScript:
         assert not (script_root / "tables_generator" / "calls_tmat").exists()
         assert not (script_root / "tables_generator" / "calls_tmatint").exists()
 
-    @pytest.mark.xfail(strict=True, reason="review #5: MODE is set to 'newConf' but the final case tests "
-                                           "'--newConf', so --newConf falls into edit mode")
-    def test_newconf_mode_runs_generator(self, script_root):
-        """'--newConf myconf --band C' runs the generator for a new configuration folder."""
-        for h in HYDRO_LIST:
-            (script_root / "tables_generator" / "tables" / h).mkdir()
+    def test_newconf_mode_runs_generator(self, script_root, report):
+        """'--newConf myconf --band C' copies each base file TmatParam_C<type> to TmatParam_C<type>_myconf and
+        produces both tables for the 8 types in tables/myconf/."""
         r = run_script(script_root, "--newConf", "myconf", "--band", "C")
-        assert "toto_C.txt" not in r.stdout
-        assert (script_root / "tables_generator" / "calls_tmat").exists(), r.stdout
+        gen = script_root / "tables_generator"
+        out = gen / "tables" / "myconf"
+        report.table("Files produced", ["type", "param copy", "TmatCoefDiff", "TmatCoefInt"],
+                     [[h] + ["yes" if f.exists() else "no" for f in (gen / "param" / f"TmatParam_C{h}_myconf",
+                      out / f"TmatCoefDiff_C{h}", out / f"TmatCoefInt_ICE3_1M_C{h}")] for h in HYDRO_LIST])
+        assert r.returncode == 0, r.stdout
+        for h in HYDRO_LIST:
+            assert (gen / "param" / f"TmatParam_C{h}_myconf").exists(), h
+            assert (out / f"TmatCoefInt_ICE3_1M_C{h}").exists(), h
 
-    @pytest.mark.xfail(strict=True, reason="review #5: valid_arf uses ARF_LIST but the array is ARfunc_LIST")
-    def test_arf_option_accepts_valid_value(self, script_root):
-        """The --arf option accepts a valid axis-ratio function (CNST)."""
-        r = run_script(script_root, "--hydro", "rr", "--band", "C", "--arf", "CNST")
-        assert "invalid axis ratio" not in r.stdout
+    def test_script_can_be_launched_from_another_directory(self, script_root, tmp_path):
+        """The script finds its folders from its own location, so it also works when launched from elsewhere."""
+        r = subprocess.run(["bash", str(script_root / "generate_tables.sh"), "--default", "--band", "C"],
+                           cwd=tmp_path, capture_output=True, text=True, timeout=60)
+        assert r.returncode == 0, r.stdout
+        assert (script_root / "tables_generator" / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").exists()
+
+    def test_script_exit_status_reports_failures(self, script_root):
+        """If one step fails (here a missing parameter file), the other types are still processed but the
+        script ends with an error status and a message, so a failed generation does not go unnoticed."""
+        (script_root / "tables_generator" / "param" / "TmatParam_Cgg_default").unlink()
+        r = run_script(script_root, "--default", "--band", "C")
+        assert r.returncode != 0
+        assert "step(s) failed" in r.stdout
+        assert (script_root / "tables_generator" / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").exists()
+
+    @pytest.mark.parametrize("args", [["--hydro", "rr", "--band", "C"], ["--default", "--band", "C", "--arf", "CNST"]],
+                             ids=["--hydro", "--arf"])
+    def test_removed_edit_mode_options_are_rejected(self, script_root, args):
+        """The unfinished edit mode (--hydro, --arf, ...) was removed: its options are refused with a message."""
+        r = run_script(script_root, *args)
+        assert r.returncode != 0 and "Unknown option" in r.stdout

@@ -551,9 +551,19 @@ C     ***********************************************************************
       Hydromet_const_file = '../param/ICE3_constants.txt'
       WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
       OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
+      IF (ios .NE. 0) THEN
+        WRITE(0,*) 'ERROR: cannot open ',Hydromet_const_file
+        STOP 1
+      ENDIF
       READ(333,*) ! Read the first line of the file
+      espece='  '
       DO WHILE (espece /= typeh) 
-            READ(333,*) espece,aj,bj
+            READ(333,*,iostat=ios) espece,aj,bj
+            IF (ios .NE. 0) THEN
+              WRITE(0,*) 'ERROR: type ',typeh,' not found in ',
+     &                   Hydromet_const_file
+              STOP 1
+            ENDIF
       ENDDO
       WRITE (0,*) '   espece=',espece
       WRITE (0,*) '   aj=',aj
@@ -775,6 +785,7 @@ C ========================================================================
           
       ELSE IF (DIEL .EQ. "MGwMA08") THEN
           CALL QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSXd)
+          CALL VolWaterFraction(RHOP,RHOLW,Fw,FVW) ! was never computed
           CALL QEPSX_MaxGarW_MA08(EPSXd,EPSW,EPSI,FVW,EPSX) 
 
       ENDIF ! End choices for dielectric constant   
@@ -883,7 +894,7 @@ C ========================================================================
       ENDDO !fin boucle T°  
  
       CLOSE(7)
-      CLOSE(8)
+      CLOSE(4)
       
       WRITE(0,*) 'SAVED !'
       WRITE(0,*) '---------------------------------------'

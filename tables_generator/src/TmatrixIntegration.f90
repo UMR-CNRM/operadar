@@ -39,8 +39,12 @@
 !           Mint va donc servir à corriger la distribution en taille des hydrométéores (étape 2)
 !
 ! Etape 2 : Calcul des variables radar
-!           La distribution en taille de l'espèce est modifiée par le facteur M/Mint pour assurer que l'intégration finale
-!           par somme de Riemman retombe sur le contenu initial M
+!           La distribution en taille de l'espèce est modifiée par le facteur M/Mint.
+!           NB (2026/11): Mint is computed in step 1 with the PSD corrected by M/M_ss (truncation),
+!           whereas step 2 uses the uncorrected PSD, so the factor M/Mint gives the PSD the mass
+!           that falls inside the diameter range of the table (Riemann sum M_ss), not M itself.
+!           This is now the same for all species (it was not for wg/ws): mass outside the diameter
+!           range of the table is not redistributed over the resolved diameters.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !====================
@@ -257,6 +261,9 @@ ELSE
     Nmoments=1
   ELSE IF (MOMENT=='2M') THEN 
     Nmoments=2
+  ELSE
+    WRITE(0,*) ' ERROR: MOMENT must be 1M or 2M, got ',MOMENT
+    STOP 1
   ENDIF
 ENDIF
 
@@ -265,9 +272,18 @@ Hydromet_const_file = trim(exec_dir)//'/../param/'//CCLOUD//'_constants.txt'
 WRITE(0,*) ' Reading : ',trim(Hydromet_const_file)
 
 open(unit=333,file = trim(Hydromet_const_file),action="read",iostat=ios)
+IF (ios /= 0) THEN
+  WRITE(0,*) ' ERROR: cannot open ',trim(Hydromet_const_file)
+  STOP 1
+ENDIF
 read(333,*) ! Read the first line of the file
+espece='  '
 DO while(espece /= typeh) 
-  read(333,*) espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
+  read(333,*,iostat=ios) espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
+  IF (ios /= 0) THEN
+    WRITE(0,*) ' ERROR: type ',typeh,' not found in ',trim(Hydromet_const_file)
+    STOP 1
+  ENDIF
 ENDDO
 WRITE(0,*) '    PSD constants : ',espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
 close(333)
@@ -275,9 +291,14 @@ close(333)
 !----- Reading of the rain constants 
 open(unit=333,file = trim(Hydromet_const_file),action="read",iostat=ios)
 read(333,*) ! Read the first line of the file
+espece_rr='  '
 DO while(espece_rr /= 'rr') 
-  read(333,*) espece_rr,aj_rr,bj_rr,alphaj_rr,nuj_rr,Xj_rr,Cj_rr,&
+  read(333,*,iostat=ios) espece_rr,aj_rr,bj_rr,alphaj_rr,nuj_rr,Xj_rr,Cj_rr,&
               ccj_rr,ddj_rr
+  IF (ios /= 0) THEN
+    WRITE(0,*) ' ERROR: type rr not found in ',trim(Hydromet_const_file)
+    STOP 1
+  ENDIF
 ENDDO
 close(333)
 
@@ -459,10 +480,10 @@ DO idTc=0,nTcloop
       P3max=expCCmax 
       P3min=expCCmin 
       P3step=expCCstep 
-      nFw=1
+      ! nFw is NOT changed: it is the number of Fw values in the T-matrix file and is
+      ! needed to find the rows (kTmat); only the first Fw (Fwmin) is used for 2 moments
     ELSE ! 1-moment : P3 = Fw
       nP3=nint((Fwmax-Fwmin)/Fwstep)+1
-      nFw=nP3
       P3max=Fwmax
       P3min=Fwmin
       P3step=Fwstep
@@ -902,10 +923,8 @@ DO idTc=0,nTcloop
               call PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
                         aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
               N_ss2=N_ss
-              IF(M_ss .GT. 0) THEN
-                N_ss=(((1-Fw)*M)/M_ss)*N_ss
-                N_ss2=(((1-Fw)*M)/M_ss2)*N_ss2
-              ENDIF
+              ! No (1-Fw)*M/M_ss correction here (unlike step 1): as for the other species,
+              ! the final PSD keeps the mass that falls inside the diameter range of the table
             ELSE
               N_ss=0
               N_ss2=0
@@ -916,10 +935,7 @@ DO idTc=0,nTcloop
               call PSD(Fw*M,Deqrmrec,Tk,CCLOUD,P3,'rr',&
                         aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,mumax,Nmoments,lamj,N_rr)
               N_rr2=N_rr
-              IF(M_rr .GT. 0) THEN
-                N_rr=((Fw*M)/M_rr)*N_rr
-                N_rr2=((Fw*M)/M_rr2)*N_rr2
-              ENDIF
+              ! No Fw*M/M_rr correction here either (see above)
             ELSE
               N_rr=0
               N_rr2=0
@@ -989,6 +1005,8 @@ DO idTc=0,nTcloop
           IMdeltacoint=0
           REdeltacoRint=0
           IMdeltacoRint=0
+          deltacoint=complex(0,0)
+          deltacoRint=complex(0,0)
         ENDIF
         
         
@@ -1161,8 +1179,8 @@ IF (CCLOUD=='ICE3') THEN
     No = P3
     lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b) !PSD LIMA
   ELSE
-    No   = c*(lamb**x)
     lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b)) ! PSD ICE3
+    No   = c*(lamb**x)
   ENDIF
 
 ELSE IF (CCLOUD=='ICJW') THEN
