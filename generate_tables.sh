@@ -13,7 +13,9 @@ JOBS=1   # number of Tmat processes run in parallel (option -j)
 # Parameters list
 HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
 BAND_LIST=("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
-MICRO_LIST=("ICE3") #("ICE3" "ICJW" "LIMA" "LIMC")
+# Types skipped for some bands (not needed for now). Remove an entry to compute those tables again.
+declare -A SKIP_TYPES=(["Ku"]="hh wh" ["K"]="hh wh" ["Ka"]="hh wh" ["W"]="hh wh")
+MICRO_LIST=("ICE3" "LIMA") #("ICE3" "ICJW" "LIMA" "LIMC")
 
 DEFAULT_MODES=("default" "David2025AMT" "David2026PhD" "vertical")
 
@@ -42,8 +44,8 @@ Usage:
   NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
 
 Option:
-  -j, --jobs <N>    run N Tmat processes in parallel (each computes a block of
-                    temperatures), e.g. -j \$(nproc). Default: 1.
+  -j, --jobs <N>    run N Tmat and TmatInt processes in parallel (each computes a
+                    block of temperatures), e.g. -j \$(nproc). Default: 1.
 
 Bands: ${BAND_LIST[@]}
 
@@ -132,6 +134,39 @@ run_tmat() {
     return $status
 }
 
+# Run TmatInt for one type and scheme, split over $JOBS processes (blocks of temperatures).
+# Usage: run_tmatint <output subfolder> <type> <micro> <moment> <output TmatCoefInt>
+run_tmatint() {
+    local repo="$1" h="$2" micro="$3" moment="$4" out="$5"
+    local coefdiff="${TABLE_FOLDER}/${repo}/TmatCoefDiff_${BAND}${h}"
+    local ntc
+    ntc=$(sed -n 2p "$coefdiff" | awk '{printf "%d", ($14-$12)/$13+1.5}')
+    local njobs=$(( JOBS < ntc ? JOBS : ntc ))
+    local chunk=$(( (ntc + njobs - 1) / njobs ))
+    njobs=$(( (ntc + chunk - 1) / chunk ))
+    local tmp
+    tmp=$(mktemp -d "${out}.tmp.XXXXXX")
+    local pids=() j first last status=0
+    for (( j=0; j<njobs; j++ )); do
+        first=$(( j * chunk ))
+        last=$(( first + chunk - 1 ))
+        (( last > ntc - 1 )) && last=$(( ntc - 1 ))
+        "$SRC_DIR/TmatInt" "$SRC_DIR" "$repo" "$h" "$BAND" "$micro" "$moment" "$first" "$last" "$tmp/int_$j" \
+            > "$tmp/log_$j" 2>&1 &
+        pids+=($!)
+    done
+    for (( j=0; j<njobs; j++ )); do
+        wait "${pids[$j]}" || status=1
+    done
+    if [[ $status -eq 0 ]]; then
+        { cat "$tmp/int_0"; for (( j=1; j<njobs; j++ )); do tail -n +4 "$tmp/int_$j"; done; } > "$out"
+    else
+        cat "$tmp"/log_* | grep -iE "error|not found" | sort -u | head -5
+    fi
+    rm -rf "$tmp"
+    return $status
+}
+
 # Core table generation function
 FAILURES=0
 
@@ -160,6 +195,10 @@ generate_tables() {
     mkdir -p "${TABLE_FOLDER}/${output_subfolder}"
 
     for H in "${HYDRO_LIST[@]}"; do
+        if [[ " ${SKIP_TYPES[$BAND]:-} " == *" $H "* ]]; then
+            echo -e "\n================ SKIPPING ${H} (not computed for ${BAND} band, see SKIP_TYPES) ==="
+            continue
+        fi
         echo -e "\n================ PROCESSING ${H} ============================="
 
         if [[ $is_special_mode == true ]]; then
@@ -207,7 +246,7 @@ generate_tables() {
             OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
 
             if [[ ! -f "$OUT_FILE" ]]; then
-                if "$SRC_DIR/TmatInt" "$SRC_DIR" "$output_subfolder" "$H" "$BAND" "$MICRO" "$MOMENT"; then
+                if run_tmatint "$output_subfolder" "$H" "$MICRO" "$MOMENT" "$OUT_FILE"; then
                     echo "Successfully generated tables for ${H} with ${MICRO} microphysics"
                 else
                     echo "Failed to generate tables for ${H} with ${MICRO}"

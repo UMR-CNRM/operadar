@@ -1394,7 +1394,11 @@ C     ###################################
       REAL*8 ZTHETA
       COMPLEX*16 EPSI
 
-      ZTHETA=1-300./PTEMP
+      ! Solid ice cannot be warmer than 0 C (a melting particle stays at 0 C).
+      ! Hufford's formula is only valid for ice: above 0 C its imaginary part
+      ! grows quickly and has a pole at 29.06 C ((0.0073-ZTHETA) = 0), which
+      ! gave hail tables 11 dB too high at 29 C and non-converging T-matrices.
+      ZTHETA=1-300./MIN(PTEMP,273.15D0)
     
       EPSI=3.15+(0.,1.)*((50.4-62*ZTHETA)*1.E5*EXP(22.1*ZTHETA)/PFREQ+
      &    ((0.502+0.131*ZTHETA)*1.E-13/(1.-ZTHETA)+

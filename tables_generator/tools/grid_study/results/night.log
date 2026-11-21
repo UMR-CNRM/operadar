@@ -1,0 +1,11 @@
+23:43 start fw4
+23:46 end fw4 (8 lines)
+23:46 start tc2
+00:17 end tc2 (64 lines)
+00:17 start cov2
+00:19 end cov2 (64 lines)
+00:19 start m_lima
+00:23 end m_lima (64 lines)
+00:23 start cov_lima
+00:27 end cov_lima (64 lines)
+00:27 all done

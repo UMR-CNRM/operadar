@@ -102,7 +102,7 @@ class Sandbox:
         typeh, band = param["type"], param["band"]
         (self.root / "param" / "tmp_config").write_text(format_param(param))
         (self.root / "tables" / typeh).mkdir(exist_ok=True)
-        r = subprocess.run(["./Tmat"], cwd=self.root / "src", capture_output=True, text=True, timeout=600)
+        r = subprocess.run(["./Tmat"], cwd=self.root / "src", capture_output=True, text=True, timeout=int(os.environ.get("TMAT_TIMEOUT", "600")))
         out = self.root / "tables" / typeh / f"TmatCoefDiff_{band}{typeh}"
         if r.returncode != 0 or not out.exists():
             raise RuntimeError(f"Tmat failed ({r.returncode}):\n{r.stderr[-2000:]}")
