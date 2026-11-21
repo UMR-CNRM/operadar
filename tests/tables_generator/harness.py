@@ -35,7 +35,7 @@ PARAM_LAYOUT = [
 ]
 MICRO_KEYS = ["ICE3", "LIMA", "ICJW", "LIMC"]
 
-# Wavelengths (mm) used in the *_default parameter files
+# Wavelengths (mm) used in the *_David2025AMT parameter files
 LAM_MM = {"L": 190.4, "S": 106.2, "C": 53.2, "X": 31.9, "Ku": 20.0, "K": 15.0, "Ka": 8.4, "W": 3.15}
 
 
@@ -104,6 +104,7 @@ class Sandbox:
         (self.root / "tables" / typeh).mkdir(exist_ok=True)
         r = subprocess.run(["./Tmat"], cwd=self.root / "src", capture_output=True, text=True, timeout=int(os.environ.get("TMAT_TIMEOUT", "600")))
         out = self.root / "tables" / typeh / f"TmatCoefDiff_{band}{typeh}"
+        self.last_stderr = r.stderr  # messages of the last Tmat run (warnings)
         if r.returncode != 0 or not out.exists():
             raise RuntimeError(f"Tmat failed ({r.returncode}):\n{r.stderr[-2000:]}")
         return out

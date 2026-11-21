@@ -17,7 +17,8 @@ BAND_LIST=("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
 declare -A SKIP_TYPES=(["Ku"]="hh wh" ["K"]="hh wh" ["Ka"]="hh wh" ["W"]="hh wh")
 MICRO_LIST=("ICE3" "LIMA") #("ICE3" "ICJW" "LIMA" "LIMC")
 
-DEFAULT_MODES=("default" "David2025AMT" "David2026PhD" "vertical")
+DEFAULT_MODES=("David2025AMT" "David2026PhD")
+DEFAULT_ALIAS="David2026PhD"   # --default is an alias for this configuration
 
 
 # Paths (relative to this script, so it can be launched from any directory)
@@ -39,8 +40,8 @@ valid_band() { validate_value BAND_LIST "$1"; }
 usage() {
     cat <<EOF
 Usage:
-  DEFAULT MODE:     $0 --default --band <value>
-  Specialized MODE: $0 --David2025AMT/--David2026PhD/--vertical --band <value>
+  PREDEFINED MODE:  $0 --David2025AMT/--David2026PhD --band <value>
+                    (--default is an alias for --${DEFAULT_ALIAS})
   NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
 
 Option:
@@ -49,7 +50,7 @@ Option:
 
 Bands: ${BAND_LIST[@]}
 
-DEFAULT and Specialized modes use param/TmatParam_<band><type>_<mode>.
+PREDEFINED modes use param/TmatParam_<band><type>_<mode> and write the tables in tables/<mode>/.
 NEWCONF mode copies param/TmatParam_<band><type> to TmatParam_<band><type>_<folder_name>
 (edit the base files, or the copies, to change the configuration) and writes the
 tables in tables/<folder_name>/.
@@ -60,9 +61,13 @@ EOF
 # Argument parsing
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --default|--David2025AMT|--David2026PhD|--vertical)
+        --default|--David2025AMT|--David2026PhD)
             [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
             MODE="$1"
+            if [[ "$MODE" == "--default" ]]; then
+                MODE="--${DEFAULT_ALIAS}"
+                echo "Note: --default is an alias for ${MODE}."
+            fi
             ;;
         --newConf)
             [[ -n "$MODE" ]] && { echo "/!\ Error: mutually exclusive options."; usage; exit 1; }
@@ -177,6 +182,13 @@ generate_tables() {
     # Check if special mode
     if [[ " ${DEFAULT_MODES[@]} " =~ " ${output_subfolder} " ]]; then
         is_special_mode=true
+        if ! compgen -G "${PARAM_FOLDER}/TmatParam_${BAND}??_${output_subfolder}" > /dev/null; then
+            local bands
+            bands=$(ls "${PARAM_FOLDER}" | sed -n "s/^TmatParam_\([A-Za-z]*\)[a-z][a-z]_${output_subfolder}\$/\1/p" | sort -u | tr '\n' ' ')
+            echo "/!\\ Error: the ${output_subfolder} configuration has no parameter files for ${BAND} band."
+            echo "    Bands available for ${output_subfolder}: ${bands:-none}. Other configurations: ${DEFAULT_MODES[*]}."
+            return 1
+        fi
         mode_type="PREDEFINED"
         mode_desc="with the predefined parameter files TmatParam_${BAND}<type>_${output_subfolder}"
     else
@@ -277,7 +289,7 @@ done
 
 # Main execution
 case "$MODE" in
-    --default|--David2025AMT|--David2026PhD|--vertical)
+    --David2025AMT|--David2026PhD)
         generate_tables "${MODE#--}" || exit 1  # removes -- to get the name only
         ;;
     newConf)

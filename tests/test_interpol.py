@@ -11,7 +11,7 @@ hydrometeor='ii'
 micro='ICE3'
 moment=1
 dpol2add=['Zh']
-path_table ='../tables_generator/tables/default/'
+path_table ='../tables_generator/tables/David2025AMT/'
 tableDict=read_and_extract_tables_content(band=band,
                                           hydrometeors=[hydrometeor],
                                           moments={hydrometeor:moment},

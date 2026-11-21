@@ -10,7 +10,8 @@ table changes, because of the bug fixes and the new grids.
 
 ```bash
 cd tables_generator/src && make -f makefile_createTable && make -f makefile_integrationOverPsd && cd ../..
-./generate_tables.sh --default --band C -j 8      # about 5 minutes for C band (ICE3 + LIMA)
+./generate_tables.sh --default --band C -j 8      # default = David2026PhD (L, S, C)
+./generate_tables.sh --David2025AMT --band W -j 8 # David2025AMT: all bands
 ```
 
 ---
@@ -25,7 +26,9 @@ cd tables_generator/src && make -f makefile_createTable && make -f makefile_inte
 | Accuracy | Grid study against finer references; Fw step 0.05 was too coarse | Fw step 0.01: wet graupel 0.4-0.7 dB more accurate |
 | Coverage | New `Mfrac` column: fraction of the content inside the diameter range of the table | Shows where the size distribution is cut (values too low) |
 | Plots | Plot scripts fixed for the new tables; new 2D maps of the full tables | See section 6 and `plot_tools/README.md` |
-| Tests | pytest suite with an HTML report (237 tests) | `tests/tables_generator/README.md` |
+| Configurations | `default` renamed `David2025AMT` (same options at all bands), `--default` = `David2026PhD`, `vertical` removed, elevations 0-90° every 10° | See section 8 |
+| Canting and elevation | New `canting=orient` (averaging over orientations, valid at any elevation); Rayleigh columns now follow the elevation | See section 8, figures 6-8 |
+| Tests | pytest suite with an HTML report (342 tests) | `tests/tables_generator/README.md` |
 
 ---
 
@@ -55,7 +58,6 @@ cd tables_generator/src && make -f makefile_createTable && make -f makefile_inte
 
 ### Parameter files and script
 - `TmatParam_K??` had the Ka wavelength (8.40 mm instead of 15.0 mm); `TmatParam_Xwh` had no band line;
-  `Cwg_vertical` had no 90° elevation.
 - `generate_tables.sh` failed on fresh clones (missing output folders), `--newConf` did not run `Tmat`, and failures
   were not reported. The unfinished edit mode was removed. The script now stops at once, with the commands to
   run, if `Tmat` or `TmatInt` has not been compiled.
@@ -79,8 +81,11 @@ cd tables_generator/src && make -f makefile_createTable && make -f makefile_inte
 | `-j N`: `Tmat` and `TmatInt` run as N processes on blocks of temperatures | x2.6 more with `-j 8` (x13 in total with the two lines above) |
 | Coarser grids validated by the grid study (section 4) | x5 to x100 depending on the type |
 
-With these changes the whole C-band default set (cl, cs, rr, ii, ss, gg, hh, wg; ICE3 and LIMA) takes about
-5 minutes with `-j 8`. Hail and wet hail are no longer computed at Ku, K, Ka and W bands (not needed for now;
+With these changes the whole C-band set (cl, cs, rr, ii, ss, gg, hh, wg; ICE3 and LIMA) took about
+5 minutes with `-j 8` with 2 elevations. With the 10 elevations of section 8, one band takes 19 to 56 minutes with `-j 8`
+for David2025AMT (C band 24 min, W band the slowest) and 31 to 45 minutes for David2026PhD (`canting=orient` needs
+the amplitudes at 91 incidence angles). All the tables (David2025AMT 8 bands + David2026PhD L, S, C) took 6 hours
+and take 133 GB. Hail and wet hail are no longer computed at Ku, K, Ka and W bands (not needed for now;
 `SKIP_TYPES` in `generate_tables.sh`).
 
 ---
@@ -109,7 +114,9 @@ The Fw step is the only change that makes tables *more* accurate: Zh varies quic
 melt water (figure 1), and 0.01 is the finest step the parameter format allows.
 
 ![Wet graupel, M-Fw](figures_2026-11/Int_ICE3_1M_Cwg_M-Fw.png)
-*Figure 1. Wet graupel at C band, 0 °C, as a function of the content M and of Fw (new `plot_tables_2D.py`).*
+*Figure 1. Wet graupel at C band, 0 °C, as a function of the content M and of Fw (new `plot_tables_2D.py`,
+David2026PhD tables). The horizontal line at Fw = 0.8 is not a bug: the axis ratio law of Ryzhkov et al. (2011,
+`RYwg`) is continuous but has its minimum (0.56) at Fw = 0.8, so Zdr is largest and rhohv has a kink there.*
 
 ---
 
@@ -140,7 +147,7 @@ the table (huge drops at low N, tiny droplets at very high N).*
 
 ## 6. Plot tools
 
-All the plot scripts now work with the new tables (`plot_tools/README.md` explains how to use each of them):
+Figures 1 to 5 were made with the final David2026PhD tables. All the plot scripts now work with the new tables (`plot_tools/README.md` explains how to use each of them):
 - **New `plot_tables_2D.py`**: 2D maps of the full tables (M-Tc, M-Fw, M-N for the integrated tables; D-Tc, D-Fw
   for single particles) for Zh, Zdr, Kdp, rhohv, Ah and Zh - Zh Rayleigh, with the coverage `Mfrac` hatched.
   Figure 4 shows the Mie resonances of large wet graupel at C band (negative Kdp, Zdr changing sign above ~20 mm).
@@ -153,7 +160,7 @@ All the plot scripts now work with the new tables (`plot_tools/README.md` explai
 *Figure 4. Single wet graupel particle at C band, 0 °C, as a function of the diameter (before melting) and Fw.*
 
 ![Curves](figures_2026-11/curves_C_ICE3_M.png)
-*Figure 5. Zh, Zdr and Kdp as a function of the content for all types (C band, ICE3), from
+*Figure 5. Zh, Zdr and Kdp as a function of the content for all types (C band, ICE3, David2026PhD; the Kdp axis of the script stops at 0.04 °/km to show the small values), from
 `plot_D_M_varpol_alltypes.py`.*
 
 ---
@@ -163,9 +170,76 @@ All the plot scripts now work with the new tables (`plot_tools/README.md` explai
 `tests/tables_generator/` builds `Tmat` and `TmatInt` in a sandbox and checks the physics (Rayleigh limit,
 analytic Z and rain rate, symmetries, dry ice constant above 0 °C), the parameter files, the parallel generation
 (-j N gives byte-identical tables) and `generate_tables.sh` (options, failures, missing programs).
-`tests/test_mixed_phase.py` checks content conservation in the mixed phase. 237 tests pass. After each run, an
+It also checks the predefined configurations (options of the thesis Table 4.3 at every band, elevations 0-90°),
+`canting=orient` (equal to `nocant` without canting, equal to `analyt` at low elevation, Zdr = Kdp = 0 at 90°), the
+Rayleigh columns at elevation and the `--default` alias. `tests/test_mixed_phase.py` checks content conservation
+in the mixed phase. 342 tests pass (21 November 2026). After each run, an
 HTML report is written to `tests/tables_generator/report/test_report.html`.
 
 ```bash
 pytest tests/tables_generator tests/test_mixed_phase.py
 ```
+
+---
+
+## 8. Configurations and elevations
+
+- **`default` renamed `David2025AMT`**: the configuration of [David et al. (2025)](https://doi.org/10.5194/amt-18-3715-2025),
+  no canting and spherical pristine ice. It is now **the same at every band** (L to W): X band had canting for all
+  types and oblate snow (copied from another configuration by mistake), Ku to W had plate-like pristine ice
+  (AR 0.2) and `CNST` 0.6 snow, S band had snow AR 0.80 instead of 0.75. A test checks that all bands share the same
+  microphysical options.
+- **`--default` is an alias for `--David2026PhD`** (L, S, C): tables in `tables/David2026PhD/`, used by the operadar
+  configuration templates. For a band without David2026PhD files the script stops and lists the available bands.
+- **`vertical` removed**: all configurations now cover **0 to 90 degrees every 10 degrees**. Before, L to X tables had
+  0 and 10 degrees only, and operadar used the 10 degree values at higher elevations (C-band rain, 5 g/m³, 30 degrees:
+  Zdr 2.92 dB instead of 2.22 dB, Kdp +29 %). With a 10 degree step, the interpolation error is ≤ 0.03 dB on Zh,
+  ≤ 0.06 dB on Zdr and ≤ 1 % of the 0 degree value on Kdp (grid study, `results/elev_ranges.txt`). The tables are
+  5 times larger.
+- Summary of the configurations, their differences and their impact on the radar variables:
+  `docs/wiki_draft/Lookup-table-configurations.md` (wiki page draft).
+- **Canting at any elevation** (new option `canting: orient`, used by David2026PhD). The analytical angular moments
+  of Ryzhkov et al. (2011, eq. 20) (`canting: analyt`) assume a horizontal beam; at higher elevations they were
+  applied to the amplitudes of an aligned particle (at 90 degrees: same result as without canting). `orient`
+  averages the T-matrix amplitudes over the orientations of the particles (Gaussian distribution of the axis around
+  the vertical, uniform azimuth, as in pytmatrix), using the amplitudes as a function of the angle between the beam
+  and the axis, so it is valid at any elevation. At 0 degrees it gives the same results as `analyt` (Zdr within
+  0.003 dB, Zh within 0.03 dB, same Kdp for David2026PhD C band); at higher elevations Zdr and Kdp hardly change,
+  but `analyt` overestimated rhohv (wet graupel at 60 degrees: 1.000 instead of 0.996) and the Zh of wet graupel
+  (+0.3 to 0.4 dB at 60-90 degrees). `analyt` is kept (with a warning above 10 degrees).
+- **Rayleigh columns at elevation**: they were computed at 0 degrees for every elevation (Zdr of 2.25 dB at vertical
+  incidence for L-band rain). The Rayleigh amplitude in vertical polarisation now follows the elevation
+  (S_v = S_b + (S_a - S_b) cos^2(elevation)), and the Rayleigh and T-matrix columns agree for small particles at all
+  elevations. operadar uses the Rayleigh columns only with `scattering_method = 'Rayleigh'` or `'both'`.
+- **Ku-band pristine ice (David2025AMT)**: with spherical ice the T-matrix does not converge for the last diameter
+  (10 mm, a resonance of the convergence test; 9.55 mm and the other bands are fine). The table stops at 9.55 mm
+  (an ice crystal of 10 mm would weigh 8 mg: no impact).
+
+
+![Elevation](figures_2026-11/elevation_C_David2026PhD.png)
+*Figure 6. Radar variables as a function of the elevation (David2026PhD, C band, `canting=orient`). Zh hardly
+changes; Zdr and Kdp decrease to 0 at 90°; rhohv goes to 1 at 90° for rain (oblate drops seen from below look
+round). Dashed: Rayleigh columns of the rain tables, which now follow the elevation (C band: Mie effects raise Zdr
+above the Rayleigh value for heavy rain).*
+
+![Configurations](figures_2026-11/configurations_C.png)
+*Figure 7. David2025AMT (solid) and David2026PhD (dashed) at C band, 0° elevation, where the size distribution is
+inside the table (Mfrac > 0.99). Main differences: pristine ice (Zdr 0 dB for spheres, 0.5 to 4 dB for plates
+of AR 0.2), snow (Zdr up to 0.6 dB at low content with AR 0.6), wet graupel (Zdr and Kdp about halved by the
+canting) and graupel Kdp. Rain changes little (canting 10°). Kdp axis: symmetric log scale, linear below 0.01 °/km.*
+
+![Bands](figures_2026-11/bands_David2025AMT.png)
+*Figure 8. David2025AMT rain and snow at the 8 bands (ICE3, 0° elevation; dotted: Rayleigh). Attenuation is not
+included. Mie effects reduce Zh from Ka band for rain and from C band for snow above ~0.5 g/m³; rain Kdp becomes
+negative at W band and at Ka band above ~4 g/m³ (large drops).*
+
+---
+
+## 9. Still to decide
+
+The points still open are listed in section 5 of `docs/wiki_draft/Lookup-table-configurations.md`: hail up to 30 °C
+in David2026PhD (no effect, could be cut to 0 °C), base files used by `--newConf` (not equal to any predefined
+configuration), ICE3 snow above 2-3 g/m³ (beyond the 50 mm table limit) and the memory used by operadar to read the
+larger tables (all 26 columns are read; reading only the needed ones would divide it by about 3).
+Old table folders that can be deleted: `tables_generator/tables/vertical/` (2.4 GB) and
+`tables_generator/tables/default_old/` (7.2 GB).

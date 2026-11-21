@@ -16,8 +16,8 @@ from utils.utils_plot import sample_cmap, select_rows
 
 # --- Configuration ---
 micro = "ICE3"
-TmatOption={'S':'improved','C':'vertical','K':'default','Ka':'default',
-            'Ku':'default','W':'default','L':'David2026PhD'}
+TmatOption={'S':'David2026PhD','C':'David2026PhD','K':'David2025AMT','Ka':'David2025AMT',
+            'Ku':'David2025AMT','W':'David2025AMT','L':'David2026PhD'}
 
 plotR = True # True to plot Rayleigh scattering (in addition to Tmatrix)
 band_list = ['C', 'Ku','K', 'Ka', 'W']

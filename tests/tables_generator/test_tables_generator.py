@@ -64,7 +64,7 @@ PARAM_FILES = sorted(p for p in PARAM.glob("TmatParam_*") if not p.name.endswith
 KNOWN_BAD: dict[str, str] = {}  # file name -> reason (strict xfail) for known-defective parameter files
 PARAM_CASES = [pytest.param(p, id=p.name, marks=pytest.mark.xfail(strict=True, reason=KNOWN_BAD[p.name]))
                if p.name in KNOWN_BAD else pytest.param(p, id=p.name) for p in PARAM_FILES]
-VERTICAL_FILES = [p for p in PARAM_FILES if p.name.endswith("_vertical")]
+PREDEFINED_FILES = [p for p in PARAM_FILES if p.name.endswith(("_David2025AMT", "_David2026PhD"))]
 
 
 class TestParameterFiles:
@@ -109,14 +109,54 @@ class TestParameterFiles:
         assert p["band"] == m.group(1)
         assert p["type"] == m.group(2)
         assert abs(p["LAM"] - LAM_MM[p["band"]]) < 0.06, f"LAM={p['LAM']} inconsistent with band {p['band']}"
-        assert p["canting"] in ("nocant", "analyt")
+        assert p["canting"] in ("nocant", "analyt", "orient")
         assert p["DIEL"] in ("Liebe91", "RY19dry", "LBwetgr", "MGwMA08")
         assert p["ARfunc"] in ("BR02", "CNST", "AUds", "RYdg", "RYwg")
 
-    @pytest.mark.parametrize("path", VERTICAL_FILES, ids=lambda p: p.name)
-    def test_vertical_configs_include_90deg(self, path):
-        """The '*_vertical' configurations (for vertically pointing radars) contain the 90 degree elevation."""
-        assert self.parse(path)["ELEVmax"] == 90.0
+    # Options of the predefined configurations (canting, sigbeta, ARfunc, ARcnst), from Table 4.3 of C. David's
+    # PhD thesis (2026): REF = David et al. (2025, AMT), NEW = thesis. Hail is included in graupel in the thesis
+    # (same options as graupel); wet hail as wet graupel; cloud droplets are spheres. ARcnst is only used by
+    # CNST, and by AUds/RYdg/RYwg as the axis ratio of large particles (0.75 for AUds, 0.8 for RYdg).
+    EXPECTED_OPTIONS = {
+        "David2025AMT": {"rr": ("nocant", 0, "BR02", None), "cl": ("nocant", 0, "CNST", 1.0),
+                         "cs": ("nocant", 0, "CNST", 1.0), "ii": ("nocant", 0, "CNST", 1.0),
+                         "ss": ("nocant", 0, "AUds", 0.75), "gg": ("nocant", 0, "RYdg", 0.8),
+                         "hh": ("nocant", 0, "RYdg", 0.8), "wg": ("nocant", 0, "RYwg", 0.8),
+                         "wh": ("nocant", 0, "RYwg", 0.8)},
+        "David2026PhD": {"rr": ("orient", 10, "BR02", None), "cl": ("nocant", 0, "CNST", 1.0),
+                         "cs": ("nocant", 0, "CNST", 1.0), "ii": ("orient", 10, "CNST", 0.2),
+                         "ss": ("orient", 40, "CNST", 0.6), "gg": ("orient", 40, "RYdg", 0.8),
+                         "hh": ("orient", 40, "RYdg", 0.8), "wg": ("orient", 40, "RYwg", 0.8),
+                         "wh": ("orient", 40, "RYwg", 0.8)},
+    }
+
+    @pytest.mark.parametrize("config", ["David2025AMT", "David2026PhD"])
+    @pytest.mark.parametrize("typeh", ["rr", "cl", "cs", "ii", "ss", "gg", "hh", "wg", "wh"])
+    def test_predefined_config_options(self, config, typeh):
+        """The predefined configurations use the options of the publications at every band: David2025AMT
+        (David et al. 2025, AMT: no canting, spherical pristine ice) and David2026PhD (C. David's PhD thesis,
+        Table 4.3: canting of rain and ice, oblate pristine ice and snow). Only the diameter, temperature and
+        elevation ranges may differ between bands. The canting of David2026PhD uses the orientation
+        averaging (canting=orient), valid at all the elevations of the tables."""
+        files = sorted(PARAM.glob(f"TmatParam_*{typeh}_{config}"))
+        assert files, f"no {typeh} file for {config}"
+        if config == "David2025AMT":
+            assert len(files) == 8, [f.name for f in files]
+        keys = ("canting", "sigbeta", "DIEL", "ARfunc", "ARcnst", "DSTYfunc", "Frim")
+        opts = {f.name: tuple(self.parse(f)[k] for k in keys) for f in files}
+        assert len(set(opts.values())) == 1, opts
+        p = self.parse(files[0])
+        cant, sig, arf, arc = self.EXPECTED_OPTIONS[config][typeh]
+        assert (p["canting"], p["sigbeta"], p["ARfunc"]) == (cant, sig, arf)
+        if arc is not None:
+            assert p["ARcnst"] == pytest.approx(arc)
+
+    @pytest.mark.parametrize("path", PREDEFINED_FILES, ids=lambda p: p.name)
+    def test_predefined_configs_cover_0_to_90deg(self, path):
+        """The predefined configurations cover all elevations, from 0 to 90 degrees (ground radars at any
+        elevation, vertically pointing and spaceborne radars), so no separate 'vertical' configuration is needed."""
+        p = self.parse(path)
+        assert p["ELEVmin"] == 0.0 and p["ELEVmax"] == 90.0
 
     @pytest.mark.parametrize("path", [p for p in PARAM_FILES if re.match(r"TmatParam_[A-Za-z]+ss", p.name)],
                              ids=lambda p: p.name)
@@ -236,6 +276,77 @@ class TestTmat:
         for rw, rb in zip(wide, nocant):
             assert 0 < rw["zdr"] < rb["zdr"] and 0 < rw["kdp"] < rb["kdp"]
 
+    ELEV_0_90 = dict(ELEVmin=0.0, ELEVmax=90.0, ELEVstep=30.0)
+
+    def test_rayleigh_columns_follow_the_elevation(self, sandbox, report):
+        """The Rayleigh columns depend on the elevation like the T-matrix ones: for small drops they agree
+        at every elevation, and Zdr = 0 at 90 deg (the old code computed Rayleigh at 0 deg for every
+        elevation: Zdr of 2.25 dB at vertical incidence for L-band rain)."""
+        for cant, sig in (("nocant", 0.0), ("orient", 10.0)):
+            rows = tmat_rows(sandbox, band="C", canting=cant, sigbeta=sig, expDmin=-0.5, expDmax=0.0,
+                             expDstep=0.1, **self.ELEV_0_90)
+            for r in rows:
+                assert r["zdrR"] == pytest.approx(r["zdr"], abs=0.003), (cant, r["ELEV"], r["D"])
+                assert r["kdpR"] == pytest.approx(r["kdp"], rel=0.02, abs=1e-12), (cant, r["ELEV"], r["D"])
+                if r["ELEV"] == 90.0:
+                    assert abs(r["zdrR"]) < 1e-6
+        e0 = [r["zdrR"] for r in rows if r["ELEV"] == 0.0]
+        e60 = [r["zdrR"] for r in rows if r["ELEV"] == 60.0]
+        assert all(b <= a for a, b in zip(e0, e60)) and e60[-1] < e0[-1]  # drops < 0.5 mm are spheres
+
+    def test_orient_without_canting_equals_nocant(self, sandbox):
+        """canting=orient with a zero width is exactly the computation without canting, at every elevation
+        (T-matrix and Rayleigh columns)."""
+        common = dict(band="C", expDmin=0.0, expDmax=0.8, expDstep=0.1, **self.ELEV_0_90)
+        nocant = tmat_rows(sandbox, canting="nocant", **common)
+        orient = tmat_rows(sandbox, canting="orient", sigbeta=0.0, **common)
+        for ro, rn in zip(orient, nocant):
+            for k in ("sighh", "sigvv", "REdeltaco", "kdp", "Ah", "Av", "sighhR", "sigvvR", "kdpR"):
+                assert ro[k] == pytest.approx(rn[k], rel=1e-4, abs=1e-30), (k, ro["ELEV"], ro["D"])
+
+    @pytest.mark.parametrize("sigbeta", [10.0, 40.0])
+    def test_orient_matches_analytic_canting_at_low_elevation(self, sandbox, sigbeta, report):
+        """At 0 deg elevation, for particles in the Rayleigh regime, the orientation averaging (canting=orient)
+        gives the analytical angular moments of Ryzhkov et al. (2011, eq. 20) used by canting=analyt:
+        Zdr within 0.005 dB, Kdp within 2 %, rhohv within 1e-4."""
+        common = dict(type="gg", band="S", DIEL="RY19dry", ARfunc="CNST", ARcnst=0.6, Tcmin=-10.0, Tcmax=-10.0,
+                      expDmin=0.0, expDmax=0.7, expDstep=0.1, sigbeta=sigbeta)
+        ana = tmat_rows(sandbox, canting="analyt", **common)
+        ori = tmat_rows(sandbox, canting="orient", **common)
+        report.table(f"Graupel AR 0.6, S band, 0 deg, canting {sigbeta:g} deg: analyt vs orient",
+                     ["D (mm)", "Zdr analyt", "Zdr orient", "Kdp analyt", "Kdp orient"],
+                     [[f"{a['D']:.2f}", f"{a['zdr']:.4f}", f"{o['zdr']:.4f}", f"{a['kdp']:.3e}", f"{o['kdp']:.3e}"]
+                      for a, o in zip(ana, ori)])
+        for a, o in zip(ana, ori):
+            assert o["zdr"] == pytest.approx(a["zdr"], abs=0.005)
+            assert o["kdp"] == pytest.approx(a["kdp"], rel=0.02)
+            assert o["rhohv"] == pytest.approx(a["rhohv"], abs=1e-4)
+            assert o["zhh"] == pytest.approx(a["zhh"], abs=0.02)
+
+    def test_orient_vertical_incidence(self, sandbox, report):
+        """With canting=orient, at vertical incidence the orientations have no preferred horizontal direction:
+        Zdr = 0 and Kdp = 0, while rhohv < 1 for large canted drops; Zdr decreases with the elevation."""
+        rows = tmat_rows(sandbox, band="C", canting="orient", sigbeta=10.0, expDmin=0.5, expDmax=0.8,
+                         expDstep=0.1, **self.ELEV_0_90)
+        with report.figure("Rain, C band, canting 10 deg (orient): Zdr vs elevation") as ax:
+            for D in sorted({r["D"] for r in rows}):
+                sel = [r for r in rows if r["D"] == D]
+                ax.plot([r["ELEV"] for r in sel], [r["zdr"] for r in sel], "o-", label=f"D={D:.1f} mm")
+            ax.set(xlabel="elevation (deg)", ylabel="Zdr (dB)")
+        top = [r for r in rows if r["ELEV"] == 90.0]
+        assert all(abs(r["zdr"]) < 1e-6 and abs(r["kdp"]) < 1e-10 for r in top)
+        assert top[-1]["rhohv"] < 0.9995
+        for D in {r["D"] for r in rows}:
+            z = [r["zdr"] for r in sorted((r for r in rows if r["D"] == D), key=lambda r: r["ELEV"])]
+            assert all(b < a for a, b in zip(z, z[1:]))
+
+    def test_analyt_canting_warns_at_high_elevation(self, sandbox):
+        """canting=analyt is only valid at low elevation: Tmat prints a warning when the table goes above 10 deg."""
+        sandbox.run_tmat(default_param(canting="analyt", sigbeta=10.0, **self.ELEV_0_90))
+        assert "WARNING: canting=analyt" in sandbox.last_stderr
+        sandbox.run_tmat(default_param(canting="analyt", sigbeta=10.0, ELEVmax=10.0, ELEVstep=10.0))
+        assert "WARNING" not in sandbox.last_stderr
+
     def test_rayleigh_sphere_reflectivity_is_d6(self, sandbox, report):
         """For a small water sphere, Z = D^6 at every band. This checks the radar constant uses |K|^2
         (the old code used Re(K^2): +0.4 dB at W band)."""
@@ -350,7 +461,7 @@ class TestTmat:
         assert r.returncode != 0 and "CONVERGENCE IS NOT OBTAINED" in r.stderr
 
     def test_large_hail_at_w_band_converges(self, sandbox):
-        """Dry hail of 100 mm at W band (the upper limit of TmatParam_Whh_default) is computed: it needs larger
+        """Dry hail of 100 mm at W band (the upper limit of TmatParam_Whh_David2025AMT) is computed: it needs larger
         T-matrix arrays (NPN1 = 160 in ampld.par.f; with 100 the table stopped near 70 mm)."""
         rows = tmat_rows(sandbox, type="hh", band="W", DIEL="RY19dry", ARfunc="RYdg", ARcnst=0.8, Tcmin=0.0,
                          Tcmax=0.0, expDmin=2.0, expDmax=2.0)
@@ -664,12 +775,12 @@ class TestGenerateTablesScript:
     def test_parallel_blocks_are_concatenated_in_order(self, script_root, report):
         """With -j 4, Tmat and TmatInt are each run as 4 processes on consecutive blocks of temperatures and
         their outputs are joined in temperature order, with the header written once."""
-        run_script(script_root, "--default", "--band", "C", "-j", "4")
+        run_script(script_root, "--David2025AMT", "--band", "C", "-j", "4")
         gen = script_root / "tables_generator"
         calls = (gen / "calls_tmat").read_text().splitlines()
-        lines = (gen / "tables" / "default" / "TmatCoefDiff_Crr").read_text().splitlines()
-        ilines = (gen / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").read_text().splitlines()
-        prm = dict(l.split(":", 1) for l in (PARAM / "TmatParam_Crr_default").read_text().splitlines() if ":" in l)
+        lines = (gen / "tables" / "David2025AMT" / "TmatCoefDiff_Crr").read_text().splitlines()
+        ilines = (gen / "tables" / "David2025AMT" / "TmatCoefInt_ICE3_1M_Crr").read_text().splitlines()
+        prm = dict(l.split(":", 1) for l in (PARAM / "TmatParam_Crr_David2025AMT").read_text().splitlines() if ":" in l)
         tc = [prm["Tcmin"], prm["Tcstep"], prm["Tcmax"]]
         ntc = round((float(tc[2]) - float(tc[0])) / float(tc[1])) + 1
         report.table("Tmat processes started for rain (arguments: param, outputs, first and last Tc index)",
@@ -688,7 +799,7 @@ class TestGenerateTablesScript:
         rows = []
         for band, hail_expected in (("W", False), ("Ku", False), ("C", True)):
             (gen / "calls_tmat").unlink(missing_ok=True)
-            r = run_script(script_root, "--default", "--band", band)
+            r = run_script(script_root, "--David2025AMT", "--band", band)
             calls = (gen / "calls_tmat").read_text()
             rows.append([band, f"{band}hh" in calls, f"{band}rr" in calls])
             assert (f"{band}hh" in calls) == hail_expected
@@ -700,44 +811,62 @@ class TestGenerateTablesScript:
 
     def test_script_rejects_unknown_band(self, script_root):
         """An unknown band (--band Q) is rejected with an error message."""
-        r = run_script(script_root, "--default", "--band", "Q")
+        r = run_script(script_root, "--David2025AMT", "--band", "Q")
         assert r.returncode != 0 and "invalid band" in r.stdout
+
+    def test_default_is_alias_for_david2026phd(self, script_root):
+        """--default is an alias for --David2026PhD: it uses the TmatParam_*_David2026PhD files and writes the
+        tables in tables/David2026PhD/."""
+        r = run_script(script_root, "--default", "--band", "C")
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "alias for --David2026PhD" in r.stdout
+        tables = script_root / "tables_generator" / "tables"
+        assert (tables / "David2026PhD" / "TmatCoefInt_ICE3_1M_Crr").exists()
+        assert not (tables / "default").exists()
+
+    def test_default_on_band_without_files_gives_available_bands(self, script_root):
+        """David2026PhD only exists for L, S and C: '--default --band W' stops at once and lists the bands of
+        the configuration (and the other configurations) instead of failing on every type."""
+        r = run_script(script_root, "--default", "--band", "W")
+        assert r.returncode != 0
+        assert "no parameter files for W band" in r.stdout and "C L S" in r.stdout and "David2025AMT" in r.stdout
+        assert "PROCESSING" not in r.stdout
 
     def test_script_stops_if_programs_not_compiled(self, script_root):
         """Tmat and TmatInt are not in git: without them the script stops at once and says how to compile them."""
         (script_root / "tables_generator" / "src" / "Tmat").unlink()
-        r = run_script(script_root, "--default", "--band", "C")
+        r = run_script(script_root, "--David2025AMT", "--band", "C")
         assert r.returncode != 0 and "Tmat not found" in r.stdout and "make -f makefile_createTable" in r.stdout
         assert not list((script_root / "tables_generator" / "tables").rglob("TmatCoef*"))
 
-    def test_default_mode_generates_all_tables(self, script_root, report):
-        """On a fresh clone, 'generate_tables.sh --default --band C' produces a TmatCoefInt table for all
-        8 hydrometeor types in tables/default/."""
-        r = run_script(script_root, "--default", "--band", "C")
-        out = script_root / "tables_generator" / "tables" / "default"
+    def test_predefined_mode_generates_all_tables(self, script_root, report):
+        """On a fresh clone, 'generate_tables.sh --David2025AMT --band C' produces a TmatCoefInt table for all
+        8 hydrometeor types in tables/David2025AMT/."""
+        r = run_script(script_root, "--David2025AMT", "--band", "C")
+        out = script_root / "tables_generator" / "tables" / "David2025AMT"
         report.table("Tables produced", ["type", "TmatCoefDiff", "TmatCoefInt"],
                      [[h, "yes" if (out / f"TmatCoefDiff_C{h}").exists() else "no",
                        "yes" if (out / f"TmatCoefInt_ICE3_1M_C{h}").exists() else "no"] for h in HYDRO_LIST])
         missing = [h for h in HYDRO_LIST if not (out / f"TmatCoefInt_ICE3_1M_C{h}").exists()]
         assert not missing, f"no table produced for {missing}"
 
-    def test_default_mode_works_when_type_folders_exist(self, script_root):
-        """If the tables/<type>/ folders already exist, --default produces both tables for all 8 types."""
+    def test_predefined_mode_works_when_type_folders_exist(self, script_root):
+        """If the tables/<type>/ folders already exist, --David2025AMT produces both tables for all 8 types."""
         for h in HYDRO_LIST:
             (script_root / "tables_generator" / "tables" / h).mkdir()
-        run_script(script_root, "--default", "--band", "C")
-        out = script_root / "tables_generator" / "tables" / "default"
+        run_script(script_root, "--David2025AMT", "--band", "C")
+        out = script_root / "tables_generator" / "tables" / "David2025AMT"
         for h in HYDRO_LIST:
             assert (out / f"TmatCoefDiff_C{h}").exists() and (out / f"TmatCoefInt_ICE3_1M_C{h}").exists(), h
 
-    def test_default_mode_reuses_existing_tables(self, script_root):
-        """Tables already present in tables/default/ are reused: Tmat and TmatInt are not run again."""
-        out = script_root / "tables_generator" / "tables" / "default"
+    def test_predefined_mode_reuses_existing_tables(self, script_root):
+        """Tables already present in tables/David2025AMT/ are reused: Tmat and TmatInt are not run again."""
+        out = script_root / "tables_generator" / "tables" / "David2025AMT"
         out.mkdir()
         for h in HYDRO_LIST:
             (out / f"TmatCoefDiff_C{h}").write_text("x")
             (out / f"TmatCoefInt_ICE3_1M_C{h}").write_text("x")
-        run_script(script_root, "--default", "--band", "C")
+        run_script(script_root, "--David2025AMT", "--band", "C")
         assert not (script_root / "tables_generator" / "calls_tmat").exists()
         assert not (script_root / "tables_generator" / "calls_tmatint").exists()
 
@@ -757,21 +886,21 @@ class TestGenerateTablesScript:
 
     def test_script_can_be_launched_from_another_directory(self, script_root, tmp_path):
         """The script finds its folders from its own location, so it also works when launched from elsewhere."""
-        r = subprocess.run(["bash", str(script_root / "generate_tables.sh"), "--default", "--band", "C"],
+        r = subprocess.run(["bash", str(script_root / "generate_tables.sh"), "--David2025AMT", "--band", "C"],
                            cwd=tmp_path, capture_output=True, text=True, timeout=60)
         assert r.returncode == 0, r.stdout
-        assert (script_root / "tables_generator" / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").exists()
+        assert (script_root / "tables_generator" / "tables" / "David2025AMT" / "TmatCoefInt_ICE3_1M_Crr").exists()
 
     def test_script_exit_status_reports_failures(self, script_root):
         """If one step fails (here a missing parameter file), the other types are still processed but the
         script ends with an error status and a message, so a failed generation does not go unnoticed."""
-        (script_root / "tables_generator" / "param" / "TmatParam_Cgg_default").unlink()
-        r = run_script(script_root, "--default", "--band", "C")
+        (script_root / "tables_generator" / "param" / "TmatParam_Cgg_David2025AMT").unlink()
+        r = run_script(script_root, "--David2025AMT", "--band", "C")
         assert r.returncode != 0
         assert "step(s) failed" in r.stdout
-        assert (script_root / "tables_generator" / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").exists()
+        assert (script_root / "tables_generator" / "tables" / "David2025AMT" / "TmatCoefInt_ICE3_1M_Crr").exists()
 
-    @pytest.mark.parametrize("args", [["--hydro", "rr", "--band", "C"], ["--default", "--band", "C", "--arf", "CNST"]],
+    @pytest.mark.parametrize("args", [["--hydro", "rr", "--band", "C"], ["--David2025AMT", "--band", "C", "--arf", "CNST"]],
                              ids=["--hydro", "--arf"])
     def test_removed_edit_mode_options_are_rejected(self, script_root, args):
         """The unfinished edit mode (--hydro, --arf, ...) was removed: its options are refused with a message."""
@@ -783,7 +912,7 @@ class TestGenerateTablesScript:
 class TestGenerateTablesEndToEnd:
     """6. generate_tables.sh with the real Tmat and TmatInt
 
-    The script is run on a copy of the repository where the default C-band parameter files of three types
+    The script is run on a copy of the repository where the David2025AMT C-band parameter files of three types
     are replaced by small versions, so the whole chain (parameter file, Tmat, TmatInt) runs in seconds.
     """
 
@@ -803,7 +932,7 @@ class TestGenerateTablesEndToEnd:
         for h, over in self.TYPES.items():
             p = default_param(band="C", Tcmin=-4.0, Tcmax=4.0, Tcstep=2.0, ELEVmax=90.0, ELEVstep=90.0,
                               expDmin=-1.0, expDmax=0.9, expDstep=0.1, **{**dict(type=h), **over})
-            (gen / "param" / f"TmatParam_C{h}_default").write_text(format_param(p))
+            (gen / "param" / f"TmatParam_C{h}_David2025AMT").write_text(format_param(p))
         shutil.copy(REPO / "generate_tables.sh", root)
         shutil.copy(binaries[0], gen / "src" / "Tmat")
         shutil.copy(binaries[1], gen / "src" / "TmatInt")
@@ -812,11 +941,11 @@ class TestGenerateTablesEndToEnd:
     def test_parallel_run_gives_identical_tables(self, small_repo, report):
         """The tables produced with -j 3 (Tmat and TmatInt each split over 3 processes) are byte-identical to
         those of a sequential run (-j 1), for rain, graupel and wet graupel (2 elevations, 5 temperatures)."""
-        tables = small_repo / "tables_generator" / "tables" / "default"
+        tables = small_repo / "tables_generator" / "tables" / "David2025AMT"
         results = {}
         for jobs in ("1", "3"):
             shutil.rmtree(tables, ignore_errors=True)
-            r = run_script(small_repo, "--default", "--band", "C", "-j", jobs)
+            r = run_script(small_repo, "--David2025AMT", "--band", "C", "-j", jobs)
             results[jobs] = {f.name: f.read_bytes() for f in tables.glob("TmatCoef*")}
             assert r.returncode == 1  # the other 5 types have no parameter file in this small copy
             assert "5 step(s) failed" in r.stdout

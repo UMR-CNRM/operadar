@@ -4,7 +4,7 @@
 
 refband="C"
 newband="L" #"S"
-config="default" # improved
+config="David2025AMT" # David2026PhD, vertical...
  
 param1="band"
 val1="C"

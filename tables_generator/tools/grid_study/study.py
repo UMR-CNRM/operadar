@@ -30,7 +30,7 @@ MICRO = os.environ.get("STUDY_MICRO", "ICE3")  # microphysics scheme of the Tmat
 MFRAC_MIN = 0.99  # cells where the PSD is truncated are excluded from step comparisons
 
 
-def load_default(band, typeh, suffix="default"):
+def load_default(band, typeh, suffix="David2025AMT"):
     d = {}
     for l in (PARAM / f"TmatParam_{band}{typeh}_{suffix}").read_text().splitlines():
         k, _, v = l.partition(":")

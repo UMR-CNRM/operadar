@@ -451,6 +451,15 @@ C     ***********************************************************************
       REAL*8 A1,A2,A3,A4,A5,A7
       COMPLEX*16 Saa,Sbb,Saaf,Sbbf,deltaco
       COMPLEX*16 SaaR,SbbR,deltacoR ! Rayleigh
+      COMPLEX*16 SaaRel ! Rayleigh amplitude in vertical polarisation at the elevation ELEV
+      ! canting=orient: amplitudes (backward B, forward F) parallel (P) and perpendicular (O)
+      ! to the plane (beam, symmetry axis), for angles CHI = 0, CHISTEP, ..., 90 deg between
+      ! the beam and the symmetry axis (T-matrix, and Rayleigh with suffix R)
+      INTEGER NCHI, J
+      REAL*8 CHISTEP
+      PARAMETER (CHISTEP=1D0, NCHI=90)
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      COMPLEX*16 SPBR(0:NCHI),SOBR(0:NCHI)
       
       REAL*8 aj,bj,aSnow,bSnow
       REAL*8 P
@@ -546,6 +555,12 @@ C     ***********************************************************************
       WRITE (0,*) '   type=',typeh
       WRITE (0,*) '   band=',band
       WRITE (0,*) '   canting=',canting !,"ok"
+      IF (canting.NE."nocant" .AND. canting.NE."analyt" .AND.
+     &    canting.NE."orient") THEN
+        WRITE(0,*) "canting options: nocant, analyt or orient"
+        WRITE(0,*) "current ",canting
+        STOP 1
+      ENDIF
       WRITE (0,*) '   SIGBETA=',SIGBETA !,"ok"
       WRITE (0,*) '   DIEL=',DIEL !,"ok" options: 
       WRITE (0,*) '   ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
@@ -636,6 +651,12 @@ C     ***********************************************************************
       
       NTc=nint((Tcmax-Tcmin)/Tcstep)+1
       NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1
+      IF (canting.EQ."analyt" .AND. SIGBETA.GT.0 .AND.
+     &    ELEVmax.GT.10.01) THEN
+        WRITE(0,*) "WARNING: canting=analyt (angular moments of ",
+     &   "Ryzhkov et al. 2011, eq. 20) is only valid at low ",
+     &   "elevation; ELEVmax=",ELEVmax,". Use canting=orient."
+      ENDIF
       NFw=nint((Fwmax-Fwmin)/Fwstep)+1
       ND=nint((expDmax-expDmin)/expDstep)+1
 
@@ -866,7 +887,8 @@ C ========================================================================
       ! --------- T-matrix of the particle (independent of the elevation)
       CALL TMD_TMAT(LAM,Deq,AR,EPSX,NMAXT)
      
-      ! --------- Scattering with Rayleigh
+      ! --------- Scattering with Rayleigh (amplitudes along the symmetry axis a and
+      !           perpendicular to it b, for a beam perpendicular to the axis)
       CALL COMPUTE_SCATTERING_RAYLEIGH(LAM,Deq,AR,EPSX,
      &     SaaR,SbbR)                                  
       
@@ -874,13 +896,29 @@ C ========================================================================
      &    CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETAeff,P,A1,A2,A3,A4,
      &                                    A5,A7)
 
+      IF (canting .EQ. "orient") THEN
+        ! Amplitudes as a function of the angle CHI between the beam and the axis
+        CALL AMPL_VS_CHI(LAM,NMAXT,NCHI,CHISTEP,SPB,SOB,SPF,SOF)
+        ! Rayleigh: the polarisation in the plane (beam, axis) sees the axis
+        ! with a weight sin^2(CHI); backward = forward
+        DO J=0,NCHI
+          SPBR(J)=SbbR+(SaaR-SbbR)*DSIN(J*CHISTEP*P/180D0)**2
+          SOBR(J)=SbbR
+        ENDDO
+      ENDIF
+
       DO idELEV=0,NELEV-1 !========= Loop over elevation
       ELEV=ELEVmin+idELEV*ELEVstep
 
       ! --------- Scattering amplitudes with T-matrix for this elevation
+      !           (symmetry axis vertical)
       CALL TMD_AMPL(LAM,ELEV,NMAXT,Saa,Sbb,Saaf,Sbbf)
+      ! --------- Rayleigh amplitude in vertical polarisation at this elevation
+      !           (the vertical polarisation sees the vertical axis with a weight cos^2(ELEV))
+      SaaRel=SbbR+(SaaR-SbbR)*DCOS(ELEV*P/180D0)**2
 
       ! Canting is considered with analytical angular momentums
+      ! (Ryzhkov et al. 2011, eq. 20: valid at low elevation only)
       IF (canting .EQ. "analyt") THEN
 
           ! ---------- Dual pol var using T-matrix    
@@ -889,25 +927,30 @@ C ========================================================================
      &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
       
           ! ---------- Dual pol var using Rayleigh
-          CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,SaaR,SbbR,SaaR,
-     &               SbbR,A1,A2, A3, A4, A5, A7,
+          CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,SaaRel,SbbR,
+     &               SaaRel,SbbR,A1,A2, A3, A4, A5, A7,
+     &               sighhR,sigvvR,deltacoR,
+     &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
+
+      ! Canting by averaging over the orientations (valid at any elevation)
+      ELSE IF (canting .EQ. "orient") THEN
+          CALL COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETAeff,
+     &               NCHI,CHISTEP,SPB,SOB,SPF,SOF,
+     &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
+          CALL COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETAeff,
+     &               NCHI,CHISTEP,SPBR,SOBR,SPBR,SOBR,
      &               sighhR,sigvvR,deltacoR,
      &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
       
-      ELSE IF (canting .EQ. "nocant") THEN ! no canting 
+      ELSE ! no canting 
           ! ---------- Dual pol var using T-matrix    
           CALL COMPUTE_VARPOL(LAM,radar_cnst,Saa,Sbb,Saaf,Sbbf,
      &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
             
           ! ---------- Dual pol var using Rayleigh
-          CALL COMPUTE_VARPOL(LAM,radar_cnst,SaaR,SbbR,SaaR,SbbR,
+          CALL COMPUTE_VARPOL(LAM,radar_cnst,SaaRel,SbbR,SaaRel,SbbR,
      &               sighhR,sigvvR,deltacoR,
      &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
-
-      ELSE
-          WRITE(0,*) "canting options: analyt or nocant"
-          WRITE(0,*) "current ",canting
-          STOP 1
       ENDIF
 
     
@@ -959,6 +1002,150 @@ C ============================================================================
 C ===============            VARPOL SUBROUTINES              =================
 C ============================================================================
       
+C     =============================================================
+      SUBROUTINE AMPL_VS_CHI(LAM,NMAX,NCHI,CHISTEP,SPB,SOB,SPF,SOF)
+C     =============================================================
+      ! Backward (B) and forward (F) scattering amplitudes of the axisymmetric
+      ! particle whose T-matrix was computed by TMD_TMAT, for a beam making an
+      ! angle CHI = J*CHISTEP (J=0..NCHI, 0 to 90 deg) with the symmetry axis,
+      ! in the basis parallel (P) / perpendicular (O) to the plane (beam, axis).
+      ! In that basis the amplitude matrix of an axisymmetric particle is
+      ! diagonal. TMD_AMPL (axis vertical) at the elevation 90-CHI gives them:
+      ! Saa = parallel, Sbb = perpendicular.
+      INTEGER NMAX,NCHI,J
+      REAL*8 LAM,CHISTEP
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      DO J=0,NCHI
+        CALL TMD_AMPL(LAM,90D0-J*CHISTEP,NMAX,SPB(J),SOB(J),
+     &                SPF(J),SOF(J))
+      ENDDO
+      RETURN
+      END
+C     ========= END AMPL_VS_CHI
+
+C     =============================================================
+      SUBROUTINE COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETA,
+     &                 NCHI,CHISTEP,SPB,SOB,SPF,SOF,
+     &                 sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
+C     =============================================================
+      ! Dual-pol variables of canted particles at any elevation, by averaging
+      ! over the orientations of the symmetry axis.
+      !
+      ! Orientations: the symmetry axis n makes an angle BETA with the vertical,
+      ! with a Gaussian distribution of standard deviation SIGBETA on the sphere,
+      ! p(BETA) ~ exp(-BETA^2/(2 SIGBETA^2)) sin(BETA), and a uniform azimuth
+      ! ALPHA (same distribution as the orientation averaging of pytmatrix and
+      ! hydroscatt). It has no preferred horizontal direction, so at vertical
+      ! incidence Zdr = 0 and Kdp = 0. For small SIGBETA it gives the analytical
+      ! angular moments of Ryzhkov et al. (2011, eq. 20) used by canting=analyt
+      ! (e.g. 4e-4 for SIGBETA = 10 deg); for large SIGBETA (40 deg) these
+      ! moments are themselves an approximation (two independent tilts, not
+      ! isotropic in azimuth) and the results differ at low elevation.
+      !
+      ! Amplitudes: for each orientation, CHI = angle between the beam k and n;
+      ! the amplitudes SP (in the plane (k,n)) and SO (perpendicular) at CHI are
+      ! interpolated from AMPL_VS_CHI, then expressed in the radar basis:
+      !   Shh = SO + (SP-SO) x,  Svv = SO + (SP-SO) (1-x),
+      !   x = (n.h)^2 / (1-(n.k)^2)   (squared cosine between h and the plane)
+      ! with k = (cos E, 0, sin E), h = (0,1,0), v = (-sin E, 0, cos E).
+      ! With SIGBETA = 0 this gives exactly COMPUTE_VARPOL (no canting).
+      !
+      ! Quadrature: trapezoidal rule in BETA on [0, min(NSIG*SIGBETA, 180 deg)]
+      ! (NB points) and in ALPHA on [0, 360 deg[ (NA points).
+      !
+      ! in: LAM, radar_cnst, ELEV (deg), SIGBETA (deg), NCHI, CHISTEP, SPB, SOB,
+      !     SPF, SOF (backward and forward amplitudes vs CHI)
+      ! out: sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av (as COMPUTE_VARPOL)
+      IMPLICIT NONE
+      INTEGER NCHI, NB, NA, I, J, K, NBEFF, NAEFF
+      REAL*8 NSIG
+      PARAMETER (NB=61, NA=24, NSIG=5D0)
+      REAL*8 LAM,radar_cnst,ELEV,SIGBETA,CHISTEP
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      REAL*8 sighh,sigvv,zhh,zdr,kdp,rhohv,Ah,Av
+      COMPLEX*16 deltaco
+      REAL*8 P,SIG,E,KX,KZ,BETA,ALPHA,BMAX,W,WSUM,NX,NY,NZ,NK,X,CHI,F
+      COMPLEX*16 SPb1,SOb1,SPf1,SOf1,SHH,SVV,SHHF,SVVF
+      REAL*8 SUMHH,SUMVV
+      COMPLEX*16 SUMHV,SUMFHH,SUMFVV
+
+      P=DACOS(-1D0)
+      SIG=SIGBETA*P/180D0
+      E=ELEV*P/180D0
+      KX=DCOS(E)
+      KZ=DSIN(E)
+      NBEFF=NB
+      NAEFF=NA
+      IF (SIG .LE. 0D0) THEN
+        NBEFF=1
+        NAEFF=1
+      ENDIF
+      BMAX=MIN(NSIG*SIG,P)
+
+      SUMHH=0D0
+      SUMVV=0D0
+      SUMHV=(0D0,0D0)
+      SUMFHH=(0D0,0D0)
+      SUMFVV=(0D0,0D0)
+      WSUM=0D0
+      DO I=1,NBEFF
+        BETA=0D0
+        W=1D0
+        IF (NBEFF .GT. 1) THEN
+          BETA=(I-1)*BMAX/(NBEFF-1)
+          W=DEXP(-BETA**2/(2D0*SIG**2))*DSIN(BETA)
+          IF (I.EQ.1 .OR. I.EQ.NBEFF) W=0.5D0*W
+        ENDIF
+        IF (W .LE. 0D0 .AND. NBEFF .GT. 1) CYCLE
+        DO J=1,NAEFF
+          ALPHA=(J-1)*2D0*P/NAEFF
+          ! symmetry axis
+          NX=DSIN(BETA)*DCOS(ALPHA)
+          NY=DSIN(BETA)*DSIN(ALPHA)
+          NZ=DCOS(BETA)
+          NK=ABS(NX*KX+NZ*KZ)
+          IF (NK .GT. 1D0) NK=1D0
+          CHI=DACOS(NK)*180D0/P
+          ! squared cosine between h and the plane (k,n)
+          IF (1D0-NK**2 .GT. 1D-12) THEN
+            X=NY**2/(1D0-NK**2)
+          ELSE
+            X=0.5D0 ! axis along the beam: SP=SO, x has no effect
+          ENDIF
+          ! linear interpolation in CHI
+          K=INT(CHI/CHISTEP)
+          IF (K .GE. NCHI) K=NCHI-1
+          F=CHI/CHISTEP-K
+          SPb1=(1-F)*SPB(K)+F*SPB(K+1)
+          SOb1=(1-F)*SOB(K)+F*SOB(K+1)
+          SPf1=(1-F)*SPF(K)+F*SPF(K+1)
+          SOf1=(1-F)*SOF(K)+F*SOF(K+1)
+          SHH=SOb1+(SPb1-SOb1)*X
+          SVV=SOb1+(SPb1-SOb1)*(1D0-X)
+          SHHF=SOf1+(SPf1-SOf1)*X
+          SVVF=SOf1+(SPf1-SOf1)*(1D0-X)
+          SUMHH=SUMHH+W*ABS(SHH)**2
+          SUMVV=SUMVV+W*ABS(SVV)**2
+          SUMHV=SUMHV+W*SHH*DCONJG(SVV)
+          SUMFHH=SUMFHH+W*SHHF
+          SUMFVV=SUMFVV+W*SVVF
+          WSUM=WSUM+W
+        ENDDO
+      ENDDO
+
+      sighh=4*P*SUMHH/WSUM
+      sigvv=4*P*SUMVV/WSUM
+      deltaco=SUMHV/WSUM
+      zhh=10*LOG10(radar_cnst*sighh)
+      zdr=zhh-10*LOG10(radar_cnst*sigvv)
+      rhohv=4*P*ABS(deltaco)/SQRT(sighh*sigvv)
+      kdp=LAM*180/P*1D-3*DBLE((SUMFHH-SUMFVV)/WSUM)
+      Ah=LAM*8.686*1D-3*AIMAG(SUMFHH/WSUM)
+      Av=LAM*8.686*1D-3*AIMAG(SUMFVV/WSUM)
+      RETURN
+      END
+C     ========= END COMPUTE_VARPOL_ORIENT
+
 C     =============================================================
       SUBROUTINE COMPUTE_VARPOL_CANTING(LAM,radar_cnst,Saa,Sbb,Saaf,
      &                 Sbbf,A1,A2, A3, A4, A5, A7,
