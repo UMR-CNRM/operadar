@@ -29,7 +29,10 @@ Fw is read as F4.2: 0.01 is the finest possible step.
 The tables only under-estimate (by up to 40 dB) where the mean particle is larger than the table range:
 - pristine ice: mean mass > 3e-6 kg (3 mg per crystal), e.g. N = 1000 /m3 with M > 3e-3 kg/m3;
 - LIMA cloud: mean mass > 5e-8 kg (mean drop ~0.5 mm, i.e. drizzle, not cloud);
-- snow (1M): M > 9.5e-3 kg/m3 (bias up to 6 dB at L band at 3e-2 kg/m3).
+- snow (1M): M > 9.5e-3 kg/m3 (bias up to 6 dB at L band at 3e-2 kg/m3). Note: the ICE3 snow distribution
+  is already partly outside the table (D > 50 mm) from 2-3 g/m3 (Mfrac 0.91 at 3 g/m3, 0.62 at 5 g/m3, C band);
+  the Zh bias stays small up to ~9.5 g/m3 because these very large, low-density flakes scatter little.
+  The 2D maps of plot_tools/plot_tables_2D.py show these areas (hatched where Mfrac < 0.99).
 These combinations are not physical for the species, so no unrealistic low values are expected in normal
 model output. Rain (ICE3 and LIMA), graupel, hail, wet graupel: no bias anywhere.
 Small particles below 10 um (expDmin = -2) are cut, but only in cells below -40 dBZ.

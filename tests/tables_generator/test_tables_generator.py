@@ -703,6 +703,13 @@ class TestGenerateTablesScript:
         r = run_script(script_root, "--default", "--band", "Q")
         assert r.returncode != 0 and "invalid band" in r.stdout
 
+    def test_script_stops_if_programs_not_compiled(self, script_root):
+        """Tmat and TmatInt are not in git: without them the script stops at once and says how to compile them."""
+        (script_root / "tables_generator" / "src" / "Tmat").unlink()
+        r = run_script(script_root, "--default", "--band", "C")
+        assert r.returncode != 0 and "Tmat not found" in r.stdout and "make -f makefile_createTable" in r.stdout
+        assert not list((script_root / "tables_generator" / "tables").rglob("TmatCoef*"))
+
     def test_default_mode_generates_all_tables(self, script_root, report):
         """On a fresh clone, 'generate_tables.sh --default --band C' produces a TmatCoefInt table for all
         8 hydrometeor types in tables/default/."""

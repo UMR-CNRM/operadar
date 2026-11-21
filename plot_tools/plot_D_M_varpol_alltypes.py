@@ -89,11 +89,8 @@ legend_list = typeName
 for plot in listplot:  
     # fig,axes = plt.subplots(nrows= 2,ncols=2,figsize=(15,15))
     #fig,axes = plt.subplots(nrows= 1,ncols=3,figsize=(20,8))
-    fig,axes = plt.subplots(nrows= 1,ncols=1,figsize=(10,10))
-    if (len(listvar))>1:
-        ax = axes.flat
-    else:
-        ax=[axes,]
+    fig,axes = plt.subplots(nrows= 1,ncols=len(listvar),figsize=(10*len(listvar),10),squeeze=False)
+    ax = axes.flat  # one panel per variable of listvar
     
     for ivar,var in enumerate(listvar): 
         print("Plotting "+var+"-"+plot)
