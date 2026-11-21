@@ -266,6 +266,15 @@ generate_tables() {
     echo "All tables are in ${TABLE_FOLDER}/${output_subfolder}/"
 }
 
+# The Fortran programs are not in git: they must be compiled once (and again after a change of the sources)
+for prog in Tmat TmatInt; do
+    if [[ ! -x "${SRC_DIR}/${prog}" ]]; then
+        echo "/!\ Error: ${SRC_DIR}/${prog} not found. Compile the programs first:"
+        echo "    cd ${SRC_DIR} && make -f makefile_createTable && make -f makefile_integrationOverPsd"
+        exit 1
+    fi
+done
+
 # Main execution
 case "$MODE" in
     --default|--David2025AMT|--David2026PhD|--vertical)
