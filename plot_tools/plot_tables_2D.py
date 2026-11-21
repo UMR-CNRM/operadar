@@ -17,7 +17,7 @@ where Mfrac < 0.99 (hatched) the size distribution is cut by the table and the v
 Examples (from the plot_tools folder):
     python plot_tables_2D.py --band C
     python plot_tables_2D.py --band C --micro LIMA --types rr cl ii
-    python plot_tables_2D.py --band W --config default --types ss --vars Zh Zdr --Tc -20
+    python plot_tables_2D.py --band W --config David2025AMT --types ss --vars Zh Zdr --Tc -20
 Figures are written to IMG/tables2D/<config>/<band>/.
 """
 import argparse
@@ -243,7 +243,7 @@ def plot_type(h, band, config, micro, varlist, elev, outdir, tc_user, fw_user, n
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--band", default="C", help="radar band (L, S, C, X, Ku, K, Ka, W). Default: C")
-    parser.add_argument("--config", default="default", help="table folder (default, David2026PhD, vertical...)")
+    parser.add_argument("--config", default="David2026PhD", help="table folder: David2026PhD (default; L, S, C), David2025AMT (all bands), vertical...")
     parser.add_argument("--micro", default="ICE3", choices=list(MOMENTS), help="microphysics scheme. Default: ICE3")
     parser.add_argument("--types", nargs="*", default=["rr", "cl", "cs", "ii", "ss", "gg", "hh", "wg", "wh"],
                         help="hydrometeor types (missing tables are skipped)")

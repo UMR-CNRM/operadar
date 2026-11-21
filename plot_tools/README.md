@@ -45,14 +45,14 @@ by the table**: values there are too low (or meaningless) and are left out of th
 not vary (e.g. rhohv = 1 and Zdr = 0 for spheres) are written as a constant instead of a colour map.
 
 ```bash
-python plot_tables_2D.py --band C                                   # ICE3, all types, default tables
+python plot_tables_2D.py --band C                                   # ICE3, all types, David2026PhD tables
 python plot_tables_2D.py --band C --micro LIMA --types rr cl cs ii  # 2-moment species of LIMA
-python plot_tables_2D.py --band W --types ss --vars Zh Zdr --Tc -20 # W-band snow, two variables
-python plot_tables_2D.py --band C --config David2026PhD --types wg --Fw 0.5
+python plot_tables_2D.py --band W --config David2025AMT --types ss --vars Zh Zdr --Tc -20
+python plot_tables_2D.py --band C --types wg --Fw 0.5 --elev 30     # wet graupel at 30 deg elevation
 ```
 
-Options: `--band`, `--config` (table folder, default `default`), `--micro` (ICE3, LIMA, ICJW, LIMC), `--types`,
-`--vars` (Zh Zdr Kdp Rhohv Ah Zh-ZhR), `--elev` (closest table elevation, default 0), `--Tc` (temperature of the
+Options: `--band`, `--config` (table folder: `David2026PhD` by default, L, S, C; `David2025AMT` for all bands), `--micro` (ICE3, LIMA, ICJW, LIMC), `--types`,
+`--vars` (Zh Zdr Kdp Rhohv Ah Zh-ZhR), `--elev` (elevation, 0 to 90 every 10 deg; default 0), `--Tc` (temperature of the
 M-Fw, M-N and D-Fw maps), `--Fw` (Fw of the M-Tc maps of wet species, default 0.2), `--N` (N of the M-Tc maps of
 2-moment species and ice), `--out`. Figures go to `IMG/tables2D/<config>/<band>/`. Missing tables are skipped.
 The C band set takes about a minute.
@@ -71,11 +71,11 @@ types of one band, at one temperature per type. Edit the variables at the top of
 | `band, color_list, typeh_list` | band, one colour per type, types to plot (e.g. add `'hh'`) |
 | `listplot` | `['M']`, `['D']` or `['M','D']` (one figure each) |
 | `listvar` | variables, one panel each (e.g. `['Zh','Zdr','Kdp']`) |
-| `TmatOption` | table folder per band (`default`, `David2026PhD`...) |
+| `TmatOption` | table folder per band (`David2026PhD` for L, S, C; `David2025AMT` for all bands) |
 | `T_dict` | temperature of each type (hail: 0 °C at most) |
 | `Fw_list` | Fw of the wet graupel/hail curves |
 | `Nii`, `N2M` | concentration of pristine ice and of the other 2-moment species (LIMA rain, cloud) |
-| `ELEVsel` | 0 for ground radars, 90 for vertically pointing radars |
+| `ELEVsel` | elevation in degrees (0 to 90, every 10): 0 for low ground scans, 90 for vertically pointing radars |
 
 Output: `IMG/DistTmat<band><micro><config>T...varpol_alltypes<config>.png`.
 
@@ -85,7 +85,7 @@ One panel per type, one colour per band, with the Rayleigh approximation as dash
 to see where Mie effects start for each band. Edit the top of the file (`micro`, `TmatOption`, `band_list`,
 `typeh_list`, `plot_list`, `var_list`, `ELEVsel`, `T_dict`, `Fw_list`, `expN_list` for 2-moment species) and run
 `python plot_D_M_varpol_Rayleigh.py`. The tables of every band of `band_list` must exist in the folder given by
-`TmatOption` (e.g. `'C':'vertical'` needs `tables/vertical/`).
+`TmatOption` (e.g. `'W':'David2025AMT'` needs `tables/David2025AMT/`).
 
 ## `plot_theoretical_varpol.py`: sensitivity to the table options
 

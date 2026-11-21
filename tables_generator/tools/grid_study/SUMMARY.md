@@ -46,6 +46,23 @@ error of the first diameter bins, negligible.
   with wet hail. Fixed.
 
 ## Applied (2026-11-21, approved)
-All the proposed steps were applied to every param file (`_default`, base, `_David2026PhD`, `_vertical`;
+All the proposed steps were applied to every param file (`_default` (now `_David2025AMT`), base, `_David2026PhD`, `_vertical` (removed since);
 `.ref` files untouched) and `expMstep=0.02` in TmatrixIntegration.f90. Wet hail (not in the study) follows
 wet graupel for Tcstep and Fwstep; its diameter step 0.02 passes at L-X (Zh <= 0.007 dB, Kdp <= 0.4 %, `results/dstep_wh.jsonl`).
+
+## Elevation step (2026-11-21)
+Tables now cover 0 to 90 deg (one table for ground, vertically pointing and spaceborne radars; the `vertical`
+configuration was removed). Reference 0-90 every 5 deg, C, X, Ka, W bands (`exp_elev.py`, per-range errors with
+`analyse_elev.py`, `results/elev_ranges.txt`). Kdp tends to 0 towards 90 deg, so its error is also given relative
+to its 0 deg value.
+
+| step | Zh | Zdr | Kdp (relative to 0 deg value) | elevations |
+|---|---|---|---|---|
+| 10 deg | <= 0.03 dB (wet graupel Ka/W 0.06-0.11) | <= 0.06 dB (rain, wet graupel C/X) | <= 1 % (wet graupel Ka 15 %) | 10 |
+| 15 deg | x2 | x2 | x2 | 7 |
+| 30 deg | up to 0.6 dB | up to 0.47 dB | up to 6 % (Ka wet graupel 70 %) | 4 |
+
+Chosen: 0-90 deg every 10 deg in all David2025AMT and David2026PhD files. A 5 deg step would bring Zdr within
+0.02 dB but doubles the size of the tables again (already x5 with 10 elevations instead of 2).
+Before, tables had 0 and 10 deg only (L to X): operadar used the 10 deg values at higher elevations
+(e.g. C-band rain at 5 g/m3 and 30 deg: Zdr 2.92 dB instead of 2.22 dB, Kdp +29 %).

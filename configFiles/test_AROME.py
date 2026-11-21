@@ -16,7 +16,7 @@ input_filePath  = f"./modelFiles/AROME/"
 output_filePath = f"./operadarFiles/AROME/"
 
 # ----- Lookup tables directory path
-path_tables = f"./tables_generator/tables/default/"
+path_tables = f"./tables_generator/tables/David2026PhD/"   # default configuration (David2025AMT has all the bands)
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'

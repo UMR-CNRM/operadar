@@ -1,0 +1,113 @@
+diff --git a/Generation-of-the-lookup-tables.md b/Generation-of-the-lookup-tables.md
+index f43b974..43278ef 100644
+--- a/Generation-of-the-lookup-tables.md
++++ b/Generation-of-the-lookup-tables.md
+@@ -41,6 +41,7 @@ make -f makefile_createTable
+ make -f makefile_integrationOverPsd
+ ```
+ Two executable named `Tmat` and `TmatInt` should have appeared. Once it's done, check that they are both executable. If not, use `chmod u+x Tmat` and `chmod u+x TmatInt`.  
++:warning: The executables are not stored in git: compile them once after cloning, and again after any change of the Fortran sources (e.g. after a `git pull`). If they are missing, `generate_tables.sh` stops at once and prints these two commands.  
+ These executable are launched by the shell script `generate_tables.sh` located at the root of the project. Thus, tables can be generated for different frequency bands, either with the default configuration or your personal configuration. They are stored under the `tables_generator/tables/` directory.
+ <!--- In `generate_tables.sh`, the creation of the tables is parallelized, and each output of the loop over the hydrometeor types is redirected to a `{band}_{hydrometeor}.log` file in the `./log/` directory. ---> 
+ 
+@@ -48,37 +49,47 @@ Tables are created in a two-step process.
+ 1) For a range of temperature, elevation, liquid water fraction (if applicable) and diameters, scattering coefficients of each hydrometeor class are computed and arranged in a first table by `Tmat`.
+ 2) This first table is red by `TmatInt` and an integration over a given particle size distribution (PSD) is performed, so new tables are created as a function of the hydrometeor content. Here, the PSD is inherited from one of the two French microphysics schemes : ICE3 (1-moment ; [Pinty and Jabouille, 1998](http://195.83.22.22/mesonh/dir_publication/pinty_jabouille_ams_ccp1998.pdf)) or LIMA (2-moments ; [Vié et al. (2016)](https://doi.org/10.5194/gmd-9-567-2016) and [Taufour et al. (2024)](https://doi.org/10.1002/qj.3283)). Currently, tables are generated twice (once with ICE3 PSD and once with LIMA PSD).
+ 
+-## a. Default configuration
+-This mode creates the tables for a given frequency band and for all hydrometeor types (some might be unavailable depending on the chosen band), based on the default configuration files.  These files **should not** be modified.
++## a. Predefined configurations
++These modes create the tables for a given frequency band and for all hydrometeor types (some might be unavailable depending on the chosen band), from predefined parameter files that **should not** be modified. Two configurations are available (see [Lookup table configurations](https://github.com/UMR-CNRM/operadar/wiki/Lookup-table-configurations) for their options and their differences):
++* `--David2026PhD` (L, S, C bands), the **default** configuration: `--default` is an alias for it;
++* `--David2025AMT` (all bands): the options of [David et al. (2025)](https://doi.org/10.5194/amt-18-3715-2025), no canting and spherical pristine ice, identical at every band.
+ 
+-To generate the tables in C band, at the root of the project, run :
++Both cover elevations from 0° to 90° every 10° (ground, vertically pointing and spaceborne radars).
++
++To generate the default tables in C band, at the root of the project, run :
+ ```
+-./generate_tables.sh --default --band C
++./generate_tables.sh --default --band C -j 8
+ ```
+ or
+ ```
+-nohup ./generate_tables.sh --default --band C > resuCband 2>&1 &
++nohup ./generate_tables.sh --default --band C -j 8 > resuCband 2>&1 &
+ ```
+-Tables will be stored under `tables_generator/tables/default/` and named after the hydrometeor type, the frequency band, and the microphysics scheme used for the interpolation over the diameters. For example, `TmatCoefInt_ICE3_Crr` will be the table of scattering coefficients in rain, simulated by a C band radar and with the ICE3 PSD.
++and for another band or configuration, e.g. `./generate_tables.sh --David2025AMT --band W -j 8`.
++The option `-j N` runs `Tmat` and `TmatInt` as N parallel processes (blocks of temperatures; the tables are identical to a run with `-j 1`). Use the number of cores of your machine, e.g. `-j $(nproc)`. With `-j 8`, the whole C band set (ICE3 and LIMA, 10 elevations) takes about 25 minutes for David2025AMT and 30 minutes for David2026PhD (the averaging over the orientations of `canting=orient` costs a little more); the tables of one band take 5 to 15 GB.
++
++Tables will be stored under `tables_generator/tables/<configuration>/` (e.g. `tables/David2026PhD/`) and named after the hydrometeor type, the frequency band, and the microphysics scheme and number of moments used for the integration over the diameters. For example, `TmatCoefInt_ICE3_1M_Crr` will be the table of scattering coefficients in rain, simulated by a C band radar and with the ICE3 PSD (`TmatCoefInt_LIMA_2M_Crr` with the 2-moment LIMA PSD). The single-particle tables are `TmatCoefDiff_Crr`, and the `Tmat` logs `Tmat_Crr.log`.
++
++:warning: Existing tables are kept: `generate_tables.sh` only computes the missing ones. To regenerate a table (e.g. after an update of the code or of the parameter files), delete the old `TmatCoefDiff_*` and `TmatCoefInt_*` files first.
++
++:pencil2: NOTE : Hail and wet hail tables are not computed at Ku, K, Ka and W bands for now (`SKIP_TYPES` in `generate_tables.sh`). Hail tables stop at 0 °C (solid ice cannot be warmer); operadar uses the 0 °C values above.
+ 
+-:pencil2: NOTE : The default configuration for C band contains the options selected in [David et al., 2025](https://doi.org/10.5194/egusphere-2025-685).
+ 
+ ## b. Customized configuration
+-To increase the program's flexibility, you are allowed to modify, for each hydrometeor class and frequency band combination, the parameters used to compute the tables. These files are stored in the `tables_generator/param/` folder, and named as follows : `TmatParam_{band}{hydrometeor}`. **Please do not modify** the `TmatParam_*_default` files.  
+-If you take a closer look at the `TmatParam_Crr` file, you will see that all options are filled in, and are similar to the default configuration file. You can refer to the next section to learn more about the available parameterizations.
++To increase the program's flexibility, you are allowed to modify, for each hydrometeor class and frequency band combination, the parameters used to compute the tables. These files are stored in the `tables_generator/param/` folder, and named as follows : `TmatParam_{band}{hydrometeor}`. **Please do not modify** the `TmatParam_*_David2025AMT` and `TmatParam_*_David2026PhD` files.  
++If you take a closer look at the `TmatParam_Crr` file, you will see that all options are filled in. :warning: These base files are not identical to the predefined configurations: to start from one of them, copy e.g. `TmatParam_Crr_David2026PhD` onto `TmatParam_Crr` before running `--newConf`. You can refer to the next section to learn more about the available parameterizations.
+ 
+ To use these customized files (e.g. for band C), run
+ ```
+ ./generate_tables.sh --newConf nameOfMyNewConf --band C
+ ```
+-Tables will be stored under `tables_generator/tables/nameOfMyNewConf/` and still named `TmatCoefInt_{microphysics}_{band}{hydrometeor}`.
++Tables will be stored under `tables_generator/tables/nameOfMyNewConf/` and still named `TmatCoefInt_{microphysics}_{moments}_{band}{hydrometeor}`.
+ 
+ # Parameterization options and references
+ `TmatParam_{band}{hydrometeor}` are used to launch the creation of the tables for individual hydrometeor type and frequency band. All files contain the following parameterization options that you may want to adjust for a customized configuration of the radar forward operator. Please note that some options are only available for specific types of hydrometeor.
+ 
+ | Key | Description | Used for | Options |
+ | :---: | --- | :---: | --- |
+-|`canting`|Turn on/off the oscillation of the particle|all hydrometeors|<ul><li>`nocant`= no canting</li><li>`analyt`= canting based on the analytical solutions of Ryzhkov et al. 2011</li></ul>|
++|`canting`|Turn on/off the oscillation of the particle|all hydrometeors|<ul><li>`nocant`= no canting</li><li>`orient`= canting by averaging the scattering over the orientations of the particles (Gaussian distribution of the axis around the vertical, of standard deviation `sigbeta`, uniform azimuth), valid at any elevation (recommended)</li><li>`analyt`= canting based on the analytical solutions of Ryzhkov et al. 2011, eq. 20: only valid at low elevation (a warning is printed above 10°)</li></ul>|
+ |`sigbeta`|Standard deviation of the canting angle.<br>If canting is turned off, this parameter will have no effect|all hydrometeors|Any float value (in degree)|
+ |`DIEL`|Complex dielectric function|all hydrometeors|<ul><li>Only applicable for `rr` :</li><ul><li>`Liebe91` [Liebe et al. (1991)](https://doi.org/10.1007/BF01008897)</li></ul><li>Applicable for `ss`, `gg`, `ii`, `hh` :</li><ul><li>`RY19dry` [Ryzhkov et al. (2019)](https://doi.org/10.1007/978-3-030-05093-1_4)</li></ul><li>Applicable for wet hydrometeors (`wg`, `wh`) :</li><ul><li>`LBwetgr` [Le Bastard (2019)](https://theses.hal.science/tel-04169882v1)</li></ul><li>Applicable for all hydrometeors :</li><ul><li>`MGwMA08` [Matrosov (2008)](https://doi.org/10.1109/TGRS.2008.915757) using the Maxwell Garnett weighted rule</li></ul></ul>|
+ |`ARfunc`| Axis ratio function |all hydrometeors|<ul><li>Only applicable for `rr`:</li> <ul><li>`BR02` [Brandes et al. (2002)](https://doi.org/10.1175/1520-0450(2002)041%3C0674:EIREWA%3E2.0.CO;2)</li></ul><li>Only applicable for `ss`:</li><ul><li>`AUds` [Augros et al. (2016)](https://doi.org/10.1002/qj.2572)</li></ul><li>Applicable for `gg` and `hh` :</li> <ul><li>`RYdg` [Ryzhkov et al. (2011)](https://doi.org/10.1175/2010JAMC2363.1)</li></ul><li>Applicable for wet hydrometeors (`wg`, `wh`) :</li><ul><li>`RYwg` [Ryzhkov et al. (2011)](https://doi.org/10.1175/2010JAMC2363.1)</li></ul><li>Applicable for all hydrometeors :</li> <ul><li>`CNST` constant axis ratio</li></ul></ul>|
+@@ -89,6 +100,8 @@ Tables will be stored under `tables_generator/tables/nameOfMyNewConf/` and still
+ 
+ :hammer: **N.B.** The parameters `ELEV`, `Tc`, `expD`, `Fw` + `min`, `max` or `step` (e.g. `ELEVmin` `ELEVmax` `ELEVstep`) are used to compute the scattering coefficients over a range of elevations, temperatures, diameters, and liquid water fraction. For instance, `ELEVmin=0` `ELEVmax=90` `ELEVstep=90` will produce tables with only `0` or `90°` elevation angles (simulate horizontal or vertical pointing radar). 
+ 
++The steps of the predefined configurations were chosen with a grid accuracy study, so that the linear interpolation of operadar stays within 0.05 dB for Zh, 0.02 dB for Zdr and 1 % for Kdp and Ah (elevation step 10°; diameter step `expDstep` 0.02; temperature step 5 °C for ice, snow, rain and cloud (2 °C for Ka-band rain), 10 °C for graupel and hail, 2 °C for wet graupel/hail (1 °C at K, Ka, W); Fw step 0.01). See `tables_generator/tools/grid_study/SUMMARY.md` before changing them. The integrated tables use a content step of 0.02 in log10(M) and, for 2-moment species, a concentration step of 0.1 in log10(N).
++
+ ***
+ 
+ <a name="rho-D_fig"> <img src="https://github.com/user-attachments/assets/938d2079-e345-4049-842b-9b7fffd81e94"> </a>
+@@ -98,3 +111,32 @@ Tables will be stored under `tables_generator/tables/nameOfMyNewConf/` and still
+ 
+ ***
+ 
++# 3. Checking the tables with the plot tools
++The scripts of the `plot_tools/` folder plot the tables (run them from this folder; figures are written to `plot_tools/IMG/`). The full guide, with all the options, is [plot_tools/README.md](https://github.com/UMR-CNRM/operadar/blob/master/plot_tools/README.md).
++
++| Script | What it shows | Configuration |
++|---|---|---|
++| `plot_tables_2D.py` | 2D maps of the full tables: content × temperature, content × Fw, content × N, diameter × temperature, diameter × Fw | command line |
++| `plot_D_M_varpol_alltypes.py` | curves of all types on one figure (one band), as a function of the content M or of the diameter D | variables at the top of the file |
++| `plot_D_M_varpol_Rayleigh.py` | one panel per type, one curve per band, T-matrix and Rayleigh | variables at the top of the file |
++| `plot_theoretical_varpol.py` | sensitivity to the table options (axis ratio, density, dielectric function, Fw, N...) | command line |
++| `plot_2Dmaps.py` | maps of the simulated radar variables (operadar outputs) | variables at the top of the file |
++
++**Start with the 2D maps** to check a new set of tables:
++```
++cd plot_tools
++python plot_tables_2D.py --band C                                   # ICE3, all types, David2026PhD tables
++python plot_tables_2D.py --band C --micro LIMA --types rr cl cs ii  # 2-moment LIMA species
++python plot_tables_2D.py --band W --config David2025AMT --types ss --vars Zh Zdr --Tc -20
++python plot_tables_2D.py --band C --types rr wg --elev 60             # at 60° elevation
++```
++For each type they show Zh, Zdr, Kdp, rhohv, Ah and the difference with the Rayleigh approximation (Mie effects). The maps of the integrated tables also show `Mfrac`, the last column of the `TmatCoefInt_*` files: the fraction of the content whose particles are inside the diameter range of the table. **Hatched areas (Mfrac < 0.99) are where the size distribution is cut by the table, so the values there are too low.** In realistic conditions this only happens for snow above 2-3 g/m³ (ICE3), for very heavy ice crystals and for drizzle-size LIMA cloud drops.
++
++Then use the curves for a closer look, e.g. in `plot_D_M_varpol_alltypes.py` set
++```python
++micro="ICE3"
++band,color_list,typeh_list ='C',['b','k','c','g','gray','gray','r'],['rr','cl','ss','ii','gg','wg','hh']
++listplot=['M','D']
++listvar=['Zh','Zdr','Kdp']
++```
++and run `python plot_D_M_varpol_alltypes.py`. When a requested temperature, Fw or concentration is not on the table grid, the scripts use the closest value and print a warning.
