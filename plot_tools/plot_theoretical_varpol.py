@@ -9,7 +9,7 @@ from plot_tools.utils.sensitivity_test import *
 
 
 Path_tables = "../tables_generator/tables/"
-dir_fig="IMG"
+dir_fig="IMG/"
 
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 Fwchoix=0

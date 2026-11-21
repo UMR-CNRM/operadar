@@ -1,0 +1,92 @@
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/concurrent/futures/process.py", line 254, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+  File "/usr/lib/python3.14/concurrent/futures/process.py", line 203, in _process_chunk
+    return [fn(*args) for args in chunk]
+            ~~^^^^^^^
+  File "/dir/tables_generator/tools/grid_study/study.py", line 50, in _run
+    diff = sb.run_tmat(p)
+  File "/dir/tests/tables_generator/harness.py", line 108, in run_tmat
+    raise RuntimeError(f"Tmat failed ({r.returncode}):\n{r.stderr[-2000:]}")
+RuntimeError: Tmat failed (1):
+ ---------------------------------------
+ Reading :../param/tmp_config
+    type=ii
+    band=W 
+    canting=nocant
+    SIGBETA=   0.0000000000000000     
+    DIEL=RY19dry
+    ARfunc=CNST
+    ARcnst=  0.20000000000000001     
+    DSTYfunc=RHOX
+    Frim=   1.0000000000000000     
+    LAM=  3.1
+    ELEVmin, ELEVmax, ELEVstep:  0.0   0.0 90.0
+    Tcmin, Tcmax, Tcstep:-10.0 -10.0   1.0
+    expDmin, expDmax, expDstep: -3.00   1.30   0.02
+    Fwmin, Fwmax, Fwstep:0.00 0.00 0.10
+ Reading PSD constants : ../param/ICE3_constants.txt
+    espece=ii    
+    aj=  0.81999999999999995     
+    bj=   2.5000000000000000     
+ Output files :
+    ../tables/ii/TmatCoefDiff_Wii
+    ../tables/ii/TmatResu_Wii
+CONVERGENCE IS NOT OBTAINED FOR NPN1=200.  EXECUTION TERMINATED
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_OVERFLOW_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/dir/tables_generator/tools/grid_study/exp_cov.py", line 20, in <module>
+    res = run_all(jobs)
+  File "/dir/tables_generator/tools/grid_study/study.py", line 71, in run_all
+    return {r["name"]: r for r in ex.map(_run, jobs)}
+                                  ~~~~~~^^^^^^^^^^^^
+  File "/usr/lib/python3.14/concurrent/futures/process.py", line 617, in _chain_from_iterable_of_lists
+    for element in iterable:
+                   ^^^^^^^^
+  File "/usr/lib/python3.14/concurrent/futures/_base.py", line 639, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/usr/lib/python3.14/concurrent/futures/_base.py", line 311, in _result_or_cancel
+    return fut.result(timeout)
+           ~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/concurrent/futures/_base.py", line 450, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/concurrent/futures/_base.py", line 395, in __get_result
+    raise self._exception
+RuntimeError: Tmat failed (1):
+ ---------------------------------------
+ Reading :../param/tmp_config
+    type=ii
+    band=W 
+    canting=nocant
+    SIGBETA=   0.0000000000000000     
+    DIEL=RY19dry
+    ARfunc=CNST
+    ARcnst=  0.20000000000000001     
+    DSTYfunc=RHOX
+    Frim=   1.0000000000000000     
+    LAM=  3.1
+    ELEVmin, ELEVmax, ELEVstep:  0.0   0.0 90.0
+    Tcmin, Tcmax, Tcstep:-10.0 -10.0   1.0
+    expDmin, expDmax, expDstep: -3.00   1.30   0.02
+    Fwmin, Fwmax, Fwstep:0.00 0.00 0.10
+ Reading PSD constants : ../param/ICE3_constants.txt
+    espece=ii    
+    aj=  0.81999999999999995     
+    bj=   2.5000000000000000     
+ Output files :
+    ../tables/ii/TmatCoefDiff_Wii
+    ../tables/ii/TmatResu_Wii
+CONVERGENCE IS NOT OBTAINED FOR NPN1=200.  EXECUTION TERMINATED
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_OVERFLOW_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+

@@ -12,11 +12,11 @@ ELEVmin:0.0
 ELEVmax:10.0
 ELEVstep:10.0
 Tcmin:-40.0
-Tcmax:30.0
-Tcstep:1.0
+Tcmax:0.0
+Tcstep:10.0
 expDmin:-1.0
 expDmax:2.0
-expDstep:0.01
+expDstep:0.02
 Fwmin:0.0
 Fwstep:0.1
 Fwmax:0.0

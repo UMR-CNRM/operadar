@@ -195,6 +195,9 @@ REAL*8 :: N_rr,N_ss !,N_rr_inf,N_s2r,N_r2s,N_ss,N_ss_inf,N_d ! rain
 REAL*8 :: N2, N_rr2,N_ss2
 REAL :: vtr,vts,vtm,M_liq,M_ss,M_rr,Mint,phi,RRint !,KAPPA
 REAL :: M_rr2, M_ss2,Mint2,RRint2
+REAL :: Mfrac ! fraction of the content M inside the diameter range of the table
+INTEGER :: idTcFirst, idTcLast
+character(len=32) :: arg
 
 ! Integrated coefficients and dual pol variables
 REAL :: sighhint,sigvvint
@@ -224,6 +227,10 @@ call get_command_argument(3, typeh)
 call get_command_argument(4, band)
 call get_command_argument(5, CCLOUD)
 call get_command_argument(6, MOMENT)
+! Optional arguments 7, 8: first and last temperature index (0-based) to compute,
+! 9: output file. The header always describes the full temperature range, so the
+! outputs of runs on consecutive index ranges can be concatenated (keeping the 3
+! header lines of the first one only).
 
 
 !**************************************************
@@ -235,7 +242,7 @@ testMode=.FALSE. !.TRUE.
 
 ! min/step/max values for the exponant of the hydromet content M (kg/m3):
 expMmin=-7.0 !-7.0
-expMstep=0.01 
+expMstep=0.02 ! 0.01 before 2026-11; 0.02 keeps Zh within 0.03 dB (grid study)
 expMmax=-1.5 !-1.5
 
 ! min/step/max values for the exponant of 2-moment species concentration(/m3)
@@ -413,6 +420,7 @@ ENDIF
 
 IF (.not. testMode) THEN
     nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//trim(band)//typeh
+    IF (command_argument_count() >= 9) call get_command_argument(9, nomfileCoefInt)
     PRINT *,' Creation of ',trim(nomfileCoefInt)
     
     OPEN (6,FILE=trim(nomfileCoefInt))
@@ -439,7 +447,7 @@ IF (.not. testMode) THEN
                   'sighh;sigvv;REdeltaco;IMdeltaco;' &
                   'zhh;zdr;kdp;rhohv;Ah;Av;' &
                   'sighhR;sigvvR;REdeltacoR;IMdeltacoR;' &
-                  'zhhR;zdrR;kdpR;rhohvR;AhR;AvR')
+                  'zhhR;zdrR;kdpR;rhohvR;AhR;AvR;Mfrac')
 ENDIF
 
 !WRITE(0,*) '================== LAM=',LAM
@@ -451,8 +459,18 @@ IF (testMode) THEN
 ELSE
   nTcloop=nTc-1
 ENDIF
+idTcFirst=0
+idTcLast=nTcloop
+IF (command_argument_count() >= 8) THEN
+  call get_command_argument(7, arg)
+  read(arg,*) idTcFirst
+  call get_command_argument(8, arg)
+  read(arg,*) idTcLast
+  idTcFirst=MAX(idTcFirst,0)
+  idTcLast=MIN(idTcLast,nTcloop)
+ENDIF
 
-DO idTc=0,nTcloop
+DO idTc=idTcFirst,idTcLast
   Tc=Tcmin+idTc*Tcstep
   Tk=Tc+273.15 !T (°K) 
   
@@ -662,6 +680,10 @@ DO idTc=0,nTcloop
           if (testMode) WRITE(0,*) "N_ss,N_rr = ",N_ss,N_rr          
                     
         ENDDO !===== End loop over diameters step 0
+
+        ! Fraction of the content inside the diameter range of the table (1 = PSD fully
+        ! covered). Below ~0.99 the PSD is truncated and the radar variables are too low.
+        Mfrac=(M_ss2+M_rr2)/M
         
         IF (testMode) THEN
           WRITE(0,*) " ===== END STEP 0 : ================================="
@@ -1023,13 +1045,13 @@ DO idTc=0,nTcloop
             WRITE (6,5006) Tc,ELEV,P3,M,RRint,sighhint,sigvvint,REAL(deltacoint),&
             IMAG(deltacoint),zhhint,zdrint,kdpint,rhohvint,Ahint,Avint,& 
             sighhRint,sigvvRint,REAL(deltacoRint),IMAG(deltacoRint),& 
-            zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint
+            zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint,Mfrac
     
             5006 FORMAT (F5.1,';',F4.1,';',E9.3,';',E10.4,';',E10.4,';',E10.4,';',&
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&  
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
-                          E10.4,';',E10.4,';',E10.4,';',E10.4)
+                          E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4)
         ENDIF                 
 
 

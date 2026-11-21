@@ -281,6 +281,26 @@ class TestTmat:
             assert rw["zhh"] == pytest.approx(rd["zhh"], abs=0.01)
             assert rw["zdr"] == pytest.approx(rd["zdr"], abs=0.001)
 
+    def test_dry_ice_scattering_constant_above_0C(self, sandbox, report):
+        """Solid ice stays at 0 C, so the ice permittivity is taken at min(T, 0 C): dry hail (and dry graupel)
+        scatter the same at any positive temperature. Hufford's ice formula, used above 0 C before, has a pole at
+        29.06 C that gave hail 11 dB too high at 29 C (and T-matrices that did not converge at Ku band)."""
+        rows = tmat_rows(sandbox, type="hh", band="C", DIEL="RY19dry", ARfunc="RYdg", ARcnst=0.8, Tcmin=-1.0,
+                         Tcmax=30.0, Tcstep=1.0, expDmin=0.0, expDmax=2.0, expDstep=0.25)
+        by_tc = {}
+        for r in rows:
+            by_tc.setdefault(r["Tc"], []).append(r)
+        dmax = max(col(by_tc[0.0], "D"))
+        with report.figure("Dry hail at C band: Zh of the largest stone vs temperature") as ax:
+            ax.plot(sorted(by_tc), [next(r["zhh"] for r in by_tc[t] if r["D"] == dmax) for t in sorted(by_tc)], "o-")
+            ax.set(xlabel="Tc (C)", ylabel=f"Zh (dBZ), D = {dmax:g} mm")
+        # all scattering coefficients; zhh/zhhR (dBZ) also depend on Tc through |K|2 of water, used to convert them
+        keys = [k for k in rows[0] if k not in ("Tc", "zhh", "zhhR")]
+        for tc in (1.0, 10.0, 28.0, 29.0, 30.0):
+            for r, r0 in zip(by_tc[tc], by_tc[0.0]):
+                assert {k: r[k] for k in keys} == {k: r0[k] for k in keys}, (tc, r["D"])
+        assert by_tc[-1.0] != by_tc[0.0]  # below 0 C the ice permittivity still depends on temperature
+
     def test_mgwma08_dielectric_option(self, sandbox, report):
         """Wet graupel with the MGwMA08 dielectric option: with Fw = 0 it equals dry graupel, and a fully melted
         particle (Fw = 1) is brighter than the dry one (the water volume fraction used to be left undefined).
@@ -391,10 +411,10 @@ class TestTmatInt:
 
     def test_coefint_header(self, sphere_rain_table):
         """The TmatCoefInt file has the expected header and one row per content M
-        (10^-7 to 10^-1.5 kg/m3, step 0.01 in log10)."""
+        (10^-7 to 10^-1.5 kg/m3, step 0.02 in log10)."""
         header, rows = sphere_rain_table
         assert header["micro"] == "ICE3" and float(header["LAM"]) == 106.2
-        assert len(rows) == round((-1.5 + 7.0) / 0.01) + 1
+        assert len(rows) == round((-1.5 + 7.0) / 0.02) + 1
         assert rows[0]["M"] == pytest.approx(1e-7, rel=1e-3)
         assert rows[-1]["M"] == pytest.approx(10 ** -1.5, rel=1e-3)
 
@@ -595,17 +615,19 @@ class TestPSD:
 # =============================================================================================
 FAKE_TMAT = """#!/bin/bash
 # mimics Tmat <param> <out coef> <out resu> <first Tc index> <last Tc index>:
-# 3 header lines, then one line per temperature index
+# 3 header lines (line 2 holds Tcmin Tcstep Tcmax in fields 12-14), then one line per temperature index
 echo "$@" >> ../calls_tmat
 t=$(sed -n 's/^type://p' "$1"); [ -n "$t" ] || { echo "cannot read $1" >&2; exit 2; }
-{ echo h1; echo h2; echo h3; for ((i=$4; i<=$5; i++)); do echo "row $i"; done; } > "$2"
+tmin=$(sed -n 's/^Tcmin://p' "$1"); tmax=$(sed -n 's/^Tcmax://p' "$1"); tstep=$(sed -n 's/^Tcstep://p' "$1")
+{ echo h1; echo "a b c d e f g h i j k $tmin $tstep $tmax"; echo h3
+  for ((i=$4; i<=$5; i++)); do echo "row $i"; done; } > "$2"
 { echo r1; for ((i=$4; i<=$5; i++)); do echo "resu $i"; done; } > "$3"
 """
 FAKE_TMATINT = """#!/bin/bash
-# mimics TmatInt <exec_dir> <repo> <type> <band> <micro> <moment>
+# mimics TmatInt <exec_dir> <repo> <type> <band> <micro> <moment> <first Tc> <last Tc> <output>
 echo "$@" >> $1/../calls_tmatint
 [ -f $1/../tables/$2/TmatCoefDiff_$4$3 ] || { echo "missing CoefDiff" >&2; exit 2; }
-echo fake > $1/../tables/$2/TmatCoefInt_$5_$6_$4$3
+{ echo i1; echo i2; echo i3; for ((i=$7; i<=$8; i++)); do echo "int $i"; done; } > "$9"
 """
 HYDRO_LIST = ["cs", "cl", "rr", "ii", "ss", "gg", "hh", "wg"]
 
@@ -640,19 +662,41 @@ class TestGenerateTablesScript:
     """
 
     def test_parallel_blocks_are_concatenated_in_order(self, script_root, report):
-        """With -j 4, Tmat is run as 4 processes on consecutive blocks of temperatures and their outputs are joined
-        in temperature order, with the header written once."""
+        """With -j 4, Tmat and TmatInt are each run as 4 processes on consecutive blocks of temperatures and
+        their outputs are joined in temperature order, with the header written once."""
         run_script(script_root, "--default", "--band", "C", "-j", "4")
         gen = script_root / "tables_generator"
         calls = (gen / "calls_tmat").read_text().splitlines()
         lines = (gen / "tables" / "default" / "TmatCoefDiff_Crr").read_text().splitlines()
-        ntc = 61  # TmatParam_Crr_default: -20..40 C
+        ilines = (gen / "tables" / "default" / "TmatCoefInt_ICE3_1M_Crr").read_text().splitlines()
+        prm = dict(l.split(":", 1) for l in (PARAM / "TmatParam_Crr_default").read_text().splitlines() if ":" in l)
+        tc = [prm["Tcmin"], prm["Tcstep"], prm["Tcmax"]]
+        ntc = round((float(tc[2]) - float(tc[0])) / float(tc[1])) + 1
         report.table("Tmat processes started for rain (arguments: param, outputs, first and last Tc index)",
                      ["call"], [[c.split("/")[-1] if False else " ".join(a.split("/")[-1] for a in c.split())]
                                 for c in calls if "Crr" in c])
         assert sum("Crr" in c for c in calls) == 4
-        assert lines[:3] == ["h1", "h2", "h3"]
+        assert lines[0] == "h1" and lines[2] == "h3" and lines[1].split()[11:] == tc
         assert lines[3:] == [f"row {i}" for i in range(ntc)]
+        tmatint_rr = [c for c in (gen / "calls_tmatint").read_text().splitlines() if " rr " in c]
+        assert len(tmatint_rr) == 4 * len({c.split()[4] for c in tmatint_rr})  # 4 blocks per scheme
+        assert ilines == ["i1", "i2", "i3"] + [f"int {i}" for i in range(ntc)]
+
+    def test_hail_skipped_at_high_bands(self, script_root, report):
+        """Hail and wet hail are not computed at Ku, K, Ka and W (SKIP_TYPES in the script), but still are at C."""
+        gen = script_root / "tables_generator"
+        rows = []
+        for band, hail_expected in (("W", False), ("Ku", False), ("C", True)):
+            (gen / "calls_tmat").unlink(missing_ok=True)
+            r = run_script(script_root, "--default", "--band", band)
+            calls = (gen / "calls_tmat").read_text()
+            rows.append([band, f"{band}hh" in calls, f"{band}rr" in calls])
+            assert (f"{band}hh" in calls) == hail_expected
+            assert f"{band}wh" not in calls
+            assert f"{band}rr" in calls
+            if not hail_expected:
+                assert "SKIPPING hh" in r.stdout
+        report.table("Tmat run for hail / rain", ["band", "hail computed", "rain computed"], rows)
 
     def test_script_rejects_unknown_band(self, script_root):
         """An unknown band (--band Q) is rejected with an error message."""
@@ -759,8 +803,8 @@ class TestGenerateTablesEndToEnd:
         return root
 
     def test_parallel_run_gives_identical_tables(self, small_repo, report):
-        """The tables produced with -j 3 (Tmat split over 3 processes) are byte-identical to those of a
-        sequential run (-j 1), for rain, graupel and wet graupel (2 elevations, 5 temperatures)."""
+        """The tables produced with -j 3 (Tmat and TmatInt each split over 3 processes) are byte-identical to
+        those of a sequential run (-j 1), for rain, graupel and wet graupel (2 elevations, 5 temperatures)."""
         tables = small_repo / "tables_generator" / "tables" / "default"
         results = {}
         for jobs in ("1", "3"):
@@ -772,5 +816,7 @@ class TestGenerateTablesEndToEnd:
         report.table("Files compared", ["file", "lines", "identical"],
                      [[n, results["1"][n].count(b"\n"), results["1"][n] == results["3"].get(n)]
                       for n in sorted(results["1"])])
-        assert len(results["1"]) == 6  # TmatCoefDiff + TmatCoefInt for 3 types
+        ndiff = sum(n.startswith("TmatCoefDiff_") for n in results["1"])
+        nint = sum(n.startswith("TmatCoefInt_") for n in results["1"])
+        assert ndiff == 3 and nint >= 3 and nint % 3 == 0  # 3 types, one TmatCoefInt per type and scheme
         assert results["1"] == results["3"]

@@ -12,7 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-from utils.utils_plot import sample_cmap
+from utils.utils_plot import sample_cmap, select_rows
 
 # --- Configuration ---
 micro = "ICE3"
@@ -68,7 +68,7 @@ Fw_list, Fw_ls = [0.0, 0.1, 0.6, 1.0], ['-.', ':', '--', '-']
 ELEVsel = 90
 Nii = 800
 expN_list, N_ls = [3], ['-.', '-', '--']
-T_dict = {'ii': -30, 'ss': -10, 'gg': 0, 'cl': 10, 'cs': 10, 'rr': 10, 'wg': 10, 'hh': 1, 'wh': 10}
+T_dict = {'ii': -30, 'ss': -10, 'gg': 0, 'cl': 10, 'cs': 10, 'rr': 10, 'wg': 10, 'hh': 0, 'wh': 10}  # dry hail tables stop at 0 C
 delim = {'D': r"\s+", 'M': ';'}
 
 # Colorbar
@@ -132,19 +132,18 @@ for var in var_list:
                 # Gestion des cas spéciaux
                 if typeh in ['wg', 'wh']:
                     for iFw, Fw in enumerate(Fw_list):
-                        ind = np.where((Tcol == T_dict[typeh]) & (ELEV == ELEVsel) & (P3col == Fw))
+                        ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, Fw)
                         label = f"Fw={Fw}"
                         ax[itypeh].plot(x[ind], vn[var][ind], label=label, color=color[band], ls=Fw_ls[iFw], linewidth=3)
                 elif (typeh == 'ii' and plot == 'M') or (plot == 'M' and moments[micro][typeh] == "2M"):
                     expNcol = np.log10(P3col)
                     for iN, expN in enumerate(expN_list):
-                        id = np.argmin(np.abs(expNcol - expN))
-                        expNsel = expNcol[id]
-                        ind = np.where((Tcol == T_dict[typeh]) & (ELEV == ELEVsel) & (expNcol == expNsel))
+                        ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, 10**expN, logP3=True)
+                        expNsel = expNcol[ind][0]
                         label = f" expN={expNsel:.1f}"
                         ax[itypeh].plot(x[ind], vn[var][ind], label=label, color=color[band], ls=N_ls[iN], linewidth=3)
                 else:
-                    ind = np.where((Tcol == T_dict[typeh]) & (ELEV == ELEVsel) & (P3col == Fwsel))
+                    ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, Fwsel)
                     ax[itypeh].plot(x[ind], vn[var][ind], label=band, color=color[band], linewidth=3)
                     if plotR:
                         ax[itypeh].plot(x[ind], vn_R[var][ind], label=f"{band}, Rayleigh", color=color[band], ls='--', linewidth=3)
