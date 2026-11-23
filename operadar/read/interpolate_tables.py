@@ -66,10 +66,13 @@ def get_linear_index(T: np.ndarray, E: np.ndarray, P: np.ndarray, M: np.ndarray,
     Indices are clipped to valid range [0, n-1] for safety.
     """
     # Calculate integer indices
-    iT = np.floor((T - T_min) / step_T).astype(int)
-    iE = np.floor((E - E_min) / step_E).astype(int)
-    iP = np.floor((P - P_min) / step_P).astype(int)
-    iM = np.floor((M - M_min) / step_M).astype(int)
+    # The corners are grid nodes: round to the nearest index. np.floor gave the previous node when the
+    # division fell just below the integer (e.g. (-5.98 + 7) / 0.02 = 50.999...), so that the interpolation
+    # used the values of the previous content (or Fw, N) for part of the grid intervals.
+    iT = np.rint((T - T_min) / step_T).astype(int)
+    iE = np.rint((E - E_min) / step_E).astype(int)
+    iP = np.rint((P - P_min) / step_P).astype(int)
+    iM = np.rint((M - M_min) / step_M).astype(int)
 
     # Clip to valid grid indices
     iT = np.clip(iT, 0, n_T - 1)

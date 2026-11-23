@@ -45,12 +45,15 @@ class Config:
     save_netcdf_single_hydrometeor: bool
     dpol2add: List[str]
     scattering_method: str
-    compute_attenuation: bool
-    radar_altitude: float
     radar_band: str
     distmax_rad: float
     radarloc: Optional[str]
     cnst_angle: float
+    # Optional (older configuration files do not have them)
+    compute_attenuation: bool = False
+    radar_altitude: float = 0.
+    sensitivity_threshold: bool = True
+    Zmin_1km: Optional[float] = None
 
 
 
