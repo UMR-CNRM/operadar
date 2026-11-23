@@ -17,6 +17,7 @@ from typing import List, Union, Optional, Dict
 from operadar.read.model import read_model_file
 from operadar.utils.masking import mask_precipitations
 from operadar.radar.geometry import compute_radar_geometry
+from operadar.radar.sensitivity import apply_sensitivity_threshold, vertical_range
 from operadar.save.append_dpolvar import append_in_input_file
 from operadar.microphysics.mixed_phase import compute_mixed_phase
 from operadar.radar.dualpol_variables import compute_dualpol_variables
@@ -191,7 +192,7 @@ def operadar(filename: str,
                                                            verbose=get_more_details,
                                                            )
         # Compute radar geometry
-        mask_dist_max, elevations = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
+        mask_dist_max, elevations, slant_range = compute_radar_geometry(X=X, Y=Y, Z=Alt, Tc=Tc,
                                                            elev_max=tables_content['ELEVmax']["rr"],
                                                            model=conf.model,
                                                            cnst_angle=conf.cnst_angle,
@@ -244,6 +245,15 @@ def operadar(filename: str,
                                             radar_altitude=conf.radar_altitude)
             dpolDict['Zh_att']=zh_att
             
+        # Radar sensitivity: no variable where Zh is below the minimum detectable reflectivity
+        if getattr(conf, 'sensitivity_threshold', True):
+            if slant_range is None and conf.cnst_angle == 90:
+                slant_range = vertical_range(Alt, getattr(conf, 'radar_altitude', 0.), Tc.shape)
+            dpolDict = apply_sensitivity_threshold(dpolDict, band=conf.radar_band,
+                                                   zmin_1km=getattr(conf, 'Zmin_1km', None),
+                                                   slant_range=slant_range)
+        del slant_range
+
         # Saving file or reinjecting fields into the input file
         var2add=conf.dpol2add
         if (conf.compute_attenuation==True):

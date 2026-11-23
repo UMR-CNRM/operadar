@@ -1,6 +1,6 @@
 type:rr
 band:W
-canting:analyt
+canting:orient
 sigbeta:10.0
 DIEL:Liebe91
 ARfunc:BR02
@@ -9,9 +9,9 @@ DSTYfunc:RHOX
 Frim:1.0
 LAM:3.15
 ELEVmin:0.0
-ELEVmax:10.0
+ELEVmax:90.0
 ELEVstep:10.0
-Tcmin:-20.0
+Tcmin:-60.0
 Tcmax:40.0
 Tcstep:5.0
 expDmin:-2.0

@@ -11,11 +11,11 @@ LAM:53.2
 ELEVmin:0.0
 ELEVmax:90.0
 ELEVstep:10.0
-Tcmin:-60.0
-Tcmax:40.0
+Tcmin:-40.0
+Tcmax:30.0
 Tcstep:2.0
 expDmin:-1.0
-expDmax:1.7
+expDmax:2.0
 expDstep:0.02
 Fwmin:0.0
 Fwstep:0.01

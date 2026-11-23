@@ -13,6 +13,7 @@ import pandas as pd
 import math
 import os
 from utils.utils_plot import select_rows
+from utils.tables import read_table_params, read_table_dataframe
 
 
 micro="ICE3" # ICE3_1M or ICJW_1M
@@ -102,13 +103,13 @@ for plot in listplot:
             table=Path_tables+"/"+TmatOption[band]+"/"+begtable[plot]+band+typeh
 
             # reading table options (from config file)
-            df_param=pd.read_csv(table, sep=delim[plot],nrows=1,engine='python')
+            df_param=pd.DataFrame([read_table_params(table)])
             SIGBETA=int(df_param['SIGBETA'][0])
             ARfunc=df_param['ARfunc'][0]
             ARcnst=df_param['ARcnst'][0]                
                 
             # reading table variables
-            df=pd.read_csv(table, sep=delim[plot],skiprows =2,engine='python')
+            df=read_table_dataframe(table)  # NetCDF (<table>.nc) or text table
             Tcol=df['Tc'].to_numpy()
             ELEV=df['ELEV'].to_numpy()
             if (plot=='M'):
