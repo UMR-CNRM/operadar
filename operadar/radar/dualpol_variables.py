@@ -211,8 +211,13 @@ def dpol_var_from_scatcoefs(wavelength:float,
     if "Kdp" in dpol2add :
         temp_dict["Kdp"] = interpolated_from_table['kdp']
     if "Rhohv" in dpol2add :
-        temp_dict["numerator"] = interpolated_from_table['REdeltaco']**2+interpolated_from_table['IMdeltaco']**2
-        temp_dict["denominator"] = interpolated_from_table['sigvv'] * interpolated_from_table['sighh']
+        # The covariance <Shh Svv*> (REdeltaco + i IMdeltaco) and the cross sections add up over the species:
+        # rhohv of the mixture = 4 pi |sum delta| / sqrt(sum sighh * sum sigvv) (computed in compute_dpol_var).
+        # Summing |delta|^2 and sighh*sigvv species by species ignored the decorrelation between species.
+        temp_dict["REdeltaco"] = interpolated_from_table['REdeltaco']
+        temp_dict["IMdeltaco"] = interpolated_from_table['IMdeltaco']
+        temp_dict["sighh"] = interpolated_from_table['sighh']
+        temp_dict["sigvv"] = interpolated_from_table['sigvv']
     if "Ah" in dpol2add :
         temp_dict["Ah"] = interpolated_from_table['Ah']
     if "Av" in dpol2add :
@@ -225,8 +230,11 @@ def compute_dpol_var(dpolDict:dict[str,np.ndarray],dpol2add:list) -> dict[str,np
     """Compute polarimetric variables."""
     finalDict = {}
     if 'Zh' in dpol2add :
-        finalDict["Zh"] = np.copy(dpolDict["Zhhlin"])
-        finalDict["Zh"][dpolDict["Zhhlin"]>0] = linear_to_dBZ(finalDict["Zh"][dpolDict["Zhhlin"]>0])
+        # NaN where the linear reflectivity is 0 (no signal from the tables): copying the linear value
+        # would write Zh = 0 dBZ there, a false echo that the sensitivity threshold would keep
+        finalDict["Zh"] = np.full_like(dpolDict["Zhhlin"], np.nan, dtype=float)
+        mask_Zh = dpolDict["Zhhlin"] > 0
+        finalDict["Zh"][mask_Zh] = linear_to_dBZ(dpolDict["Zhhlin"][mask_Zh])
     if 'Zdr' in dpol2add :       
         finalDict["Zdr"] = np.full_like(dpolDict["Zhhlin"], np.nan, dtype=float)
         mask_Zdr = (dpolDict["Zhhlin"] > 0) & (dpolDict["Zvvlin"] > 0)
@@ -236,7 +244,13 @@ def compute_dpol_var(dpolDict:dict[str,np.ndarray],dpol2add:list) -> dict[str,np
     if "Kdp" in dpol2add :
         finalDict["Kdp"] = np.copy(dpolDict["Kdp"])
     if 'Rhohv' in dpol2add :
-        finalDict["Rhohv"] = 4*math.pi * np.sqrt(np.divide(dpolDict["numerator"], dpolDict["denominator"]))
+        finalDict["Rhohv"] = np.full_like(dpolDict["sighh"], np.nan, dtype=float)
+        denom = dpolDict["sighh"] * dpolDict["sigvv"]
+        ok = denom > 0
+        finalDict["Rhohv"][ok] = 4*math.pi * np.sqrt((dpolDict["REdeltaco"][ok]**2 + dpolDict["IMdeltaco"][ok]**2)
+                                                    / denom[ok])
+        # the tables store 4 significant digits: rhohv can exceed 1 by up to ~1e-3
+        finalDict["Rhohv"] = np.minimum(finalDict["Rhohv"], 1.)
     if "Ah" in dpol2add :
         finalDict["Ah"] = np.copy(dpolDict["Ah"])
     if "Av" in dpol2add :
