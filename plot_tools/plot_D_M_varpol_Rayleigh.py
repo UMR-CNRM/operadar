@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 from utils.utils_plot import sample_cmap, select_rows
+from utils.tables import read_table_params, read_table_dataframe
 
 # --- Configuration ---
 micro = "ICE3"
@@ -92,13 +93,13 @@ for var in var_list:
                 table = f"{Path_tables}/{TmatOption[band]}/{begtable[plot]}{band}{typeh}"
 
                 # Lecture des paramètres
-                df_param = pd.read_csv(table, sep=delim[plot], nrows=1, engine='python')
+                df_param = pd.DataFrame([read_table_params(table)])
                 SIGBETA = int(df_param['SIGBETA'][0])
                 ARfunc = df_param['ARfunc'][0]
                 ARcnst = df_param['ARcnst'][0]
 
                 # Lecture données
-                df = pd.read_csv(table, sep=delim[plot], skiprows=2, engine='python')
+                df = read_table_dataframe(table)  # NetCDF (<table>.nc) or text table
                 Tcol = df['Tc'].to_numpy()
                 ELEV = df['ELEV'].to_numpy()
 

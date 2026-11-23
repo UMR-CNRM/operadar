@@ -13,14 +13,19 @@ figures are written to `plot_tools/IMG/` (not tracked by git). They need `numpy`
 | [`plot_2Dmaps.py`](#plot_2dmapspy-maps-of-operadar-outputs) | maps of the simulated radar variables (operadar output) | variables at the top of the file |
 | `draft/` | CFADs and other work in progress | |
 
-Tables are read from `../tables_generator/tables/<config>/`:
+Tables are read from `../tables_generator/tables/<config>/`, in NetCDF (`<table>.nc`; text tables of older
+versions are still read):
 - `TmatCoefDiff_<band><type>`: single-particle values as a function of the diameter D (axis "D" in the scripts);
 - `TmatCoefInt_<micro>_<n>M_<band><type>`: values integrated over the size distribution, as a function of the
-  content M (axis "M"). The column `P3` is Fw for wet species and the concentration N for 2-moment species
-  and pristine ice; `Mfrac` is the fraction of M inside the diameter range of the table.
+  content M (axis "M"). The third parameter `P3` is Fw for wet species and the concentration N for 2-moment
+  species and pristine ice; `Mfrac` is the fraction of M inside the diameter range of the table.
+
+The scripts read the tables with `utils/tables.py` (which uses `operadar/read/table_io.py`) as a table with the
+same columns as the former text files. The NetCDF tables can also be plotted directly with xarray, e.g.
+`xr.open_dataset("TmatCoefInt_ICE3_1M_Crr.nc").zdr.sel(Tc=10, ELEV=0, Fw=0).plot(x="M", xscale="log")`.
 
 Types: `rr` rain, `cl`/`cs` cloud water (land/sea), `ii` pristine ice, `ss` snow, `gg` graupel, `hh` hail,
-`wg`/`wh` wet graupel/hail. Bands: L, S, C, X, Ku, K, Ka, W (hail is not computed at Ku, K, Ka, W).
+`wg`/`wh` wet graupel/hail. Bands: L, S, C, X, Ku, K, Ka, W (hail and wet hail are not computed at Ku, K, Ka, W).
 
 When a requested temperature, Fw or concentration is not on the table grid, the scripts use the closest grid
 value and print a warning such as `/!\ P3=800 is not in the table, using the closest value P3=794.0`.

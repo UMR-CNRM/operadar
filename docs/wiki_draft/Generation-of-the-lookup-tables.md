@@ -51,8 +51,8 @@ Tables are created in a two-step process.
 
 ## a. Predefined configurations
 These modes create the tables for a given frequency band and for all hydrometeor types (some might be unavailable depending on the chosen band), from predefined parameter files that **should not** be modified. Two configurations are available (see [Lookup table configurations](https://github.com/UMR-CNRM/operadar/wiki/Lookup-table-configurations) for their options and their differences):
-* `--David2026PhD` (L, S, C bands), the **default** configuration: `--default` is an alias for it;
-* `--David2025AMT` (all bands): the options of [David et al. (2025)](https://doi.org/10.5194/amt-18-3715-2025), no canting and spherical pristine ice, identical at every band.
+* `--David2026PhD` (all bands: L, S, C, X, Ku, K, Ka, W), the **default** configuration: `--default` is an alias for it;
+* `--David2025AMT` (C band): the options of [David et al. (2025)](https://doi.org/10.5194/amt-18-3715-2025), no canting and spherical pristine ice.
 
 Both cover elevations from 0° to 90° every 10° (ground, vertically pointing and spaceborne radars).
 
@@ -64,25 +64,43 @@ or
 ```
 nohup ./generate_tables.sh --default --band C -j 8 > resuCband 2>&1 &
 ```
-and for another band or configuration, e.g. `./generate_tables.sh --David2025AMT --band W -j 8`.
-The option `-j N` runs `Tmat` and `TmatInt` as N parallel processes (blocks of temperatures; the tables are identical to a run with `-j 1`). Use the number of cores of your machine, e.g. `-j $(nproc)`. With `-j 8`, the whole C band set (ICE3 and LIMA, 10 elevations) takes about 25 minutes for David2025AMT and 30 minutes for David2026PhD (the averaging over the orientations of `canting=orient` costs a little more); the tables of one band take 5 to 15 GB.
+and for another band or configuration, e.g. `./generate_tables.sh --default --band W -j 8` or `./generate_tables.sh --David2025AMT --band C -j 8`.
+The option `-j N` runs `Tmat` and `TmatInt` as N parallel processes (blocks of temperatures; the tables are identical to a run with `-j 1`). Use the number of cores of your machine, e.g. `-j $(nproc)`. With `-j 8`, the whole C band set (ICE3 and LIMA, 10 elevations) takes about 25 minutes for David2025AMT and 30 minutes for David2026PhD (the averaging over the orientations of `canting=orient` costs a little more); in NetCDF, the tables of one band take about 1 GB.
 
-Tables will be stored under `tables_generator/tables/<configuration>/` (e.g. `tables/David2026PhD/`) and named after the hydrometeor type, the frequency band, and the microphysics scheme and number of moments used for the integration over the diameters. For example, `TmatCoefInt_ICE3_1M_Crr` will be the table of scattering coefficients in rain, simulated by a C band radar and with the ICE3 PSD (`TmatCoefInt_LIMA_2M_Crr` with the 2-moment LIMA PSD). The single-particle tables are `TmatCoefDiff_Crr`, and the `Tmat` logs `Tmat_Crr.log`.
+Tables will be stored under `tables_generator/tables/<configuration>/` (e.g. `tables/David2026PhD/`) and named after the hydrometeor type, the frequency band, and the microphysics scheme and number of moments used for the integration over the diameters. For example, `TmatCoefInt_ICE3_1M_Crr.nc` will be the table of scattering coefficients in rain, simulated by a C band radar and with the ICE3 PSD (`TmatCoefInt_LIMA_2M_Crr.nc` with the 2-moment LIMA PSD). The single-particle tables are `TmatCoefDiff_Crr.nc`, and the `Tmat` logs `Tmat_Crr.log`.
 
-:warning: Existing tables are kept: `generate_tables.sh` only computes the missing ones. To regenerate a table (e.g. after an update of the code or of the parameter files), delete the old `TmatCoefDiff_*` and `TmatCoefInt_*` files first.
+### Table format (NetCDF)
+`Tmat` and `TmatInt` write text tables, which `generate_tables.sh` converts to NetCDF (`<table>.nc`, about 10 times smaller) before deleting the text files. The conversion needs a Python with `xarray` and `netCDF4` (the operadar environment): activate it before running the script, or give it with `PYTHON=/path/to/python ./generate_tables.sh ...`. The option `--text` keeps the text tables (no conversion).
 
-:pencil2: NOTE : Hail and wet hail tables are not computed at Ku, K, Ka and W bands for now (`SKIP_TYPES` in `generate_tables.sh`). Hail tables stop at 0 °C (solid ice cannot be warmer); operadar uses the 0 °C values above.
+In a NetCDF table, each column of the former text table is a variable on the grid of the table:
+* `TmatCoefInt_*`: dimensions `(Tc, ELEV, Fw, M)` for 1-moment species, `(Tc, ELEV, N, M)` for 2-moment species and pristine ice (M in kg/m³, N in m⁻³);
+* `TmatCoefDiff_*`: dimensions `(Tc, ELEV, Fw, D)` (D in mm).
+
+Variables: `sighh`, `sigvv`, `REdeltaco`, `IMdeltaco`, `zhh`, `zdr`, `kdp`, `rhohv`, `Ah`, `Av` (T-matrix), the same with the suffix `R` (Rayleigh), `RR` (rain rate) and `Mfrac` for the integrated tables, and `Dm`, `Deq`, `Deqm`, `Deqr`, `Deqrm` for the single-particle tables. The header parameters (`Tcmin`, `Tcstep`, `ELEVmax`, `expMmin`, `LAM`, `canting`, `ARfunc`...) are global attributes. Values are stored in single precision (as computed by the Fortran programs) and compressed.
+
+The tables can be read and plotted directly with `xarray`, e.g.
+```python
+import xarray as xr
+ds = xr.open_dataset("tables_generator/tables/David2026PhD/TmatCoefInt_ICE3_1M_Crr.nc")
+ds.zdr.sel(Tc=10, ELEV=0, Fw=0).plot(x="M", xscale="log")
+ds.kdp.sel(Tc=10, Fw=0).sel(M=1e-3, method="nearest").plot()   # Kdp as a function of the elevation
+```
+or looked at with `ncdump -h` or `ncview`. operadar reads only the variables it needs. `operadar/read/table_io.py` converts tables between the two formats (`python operadar/read/table_io.py to-netcdf TABLE` converts a text table, e.g. from an older version; `to-text TABLE.nc` writes a single-particle table back to text, which `generate_tables.sh` does automatically when `TmatInt` needs it).
+
+:warning: Existing tables are kept: `generate_tables.sh` only computes the missing ones. To regenerate a table (e.g. after an update of the code or of the parameter files), delete the old `TmatCoefDiff_*` and `TmatCoefInt_*` files (`.nc` or text) first.
+
+:pencil2: NOTE : Hail and wet hail tables are not computed at Ku, K, Ka and W bands for now (`SKIP_TYPES` in `generate_tables.sh`). Dry graupel and hail tables stop at 0 °C (solid ice cannot be warmer); operadar uses the 0 °C values above. Wet graupel and wet hail tables go up to 30 °C.
 
 
 ## b. Customized configuration
 To increase the program's flexibility, you are allowed to modify, for each hydrometeor class and frequency band combination, the parameters used to compute the tables. These files are stored in the `tables_generator/param/` folder, and named as follows : `TmatParam_{band}{hydrometeor}`. **Please do not modify** the `TmatParam_*_David2025AMT` and `TmatParam_*_David2026PhD` files.  
-If you take a closer look at the `TmatParam_Crr` file, you will see that all options are filled in. :warning: These base files are not identical to the predefined configurations: to start from one of them, copy e.g. `TmatParam_Crr_David2026PhD` onto `TmatParam_Crr` before running `--newConf`. You can refer to the next section to learn more about the available parameterizations.
+If you take a closer look at the `TmatParam_Crr` file, you will see that all options are filled in. The base files `TmatParam_{band}{hydrometeor}` are the default configuration (David2026PhD) at all bands, so a new configuration only needs the options you want to change. You can refer to the next section to learn more about the available parameterizations.
 
 To use these customized files (e.g. for band C), run
 ```
 ./generate_tables.sh --newConf nameOfMyNewConf --band C
 ```
-Tables will be stored under `tables_generator/tables/nameOfMyNewConf/` and still named `TmatCoefInt_{microphysics}_{moments}_{band}{hydrometeor}`.
+The base files are copied to `TmatParam_{band}{hydrometeor}_nameOfMyNewConf` (kept for traceability) and the tables are stored under `tables_generator/tables/nameOfMyNewConf/`, still named `TmatCoefInt_{microphysics}_{moments}_{band}{hydrometeor}.nc`.
 
 # Parameterization options and references
 `TmatParam_{band}{hydrometeor}` are used to launch the creation of the tables for individual hydrometeor type and frequency band. All files contain the following parameterization options that you may want to adjust for a customized configuration of the radar forward operator. Please note that some options are only available for specific types of hydrometeor.
@@ -130,7 +148,7 @@ python plot_tables_2D.py --band C --micro LIMA --types rr cl cs ii  # 2-moment L
 python plot_tables_2D.py --band W --config David2025AMT --types ss --vars Zh Zdr --Tc -20
 python plot_tables_2D.py --band C --types rr wg --elev 60             # at 60° elevation
 ```
-For each type they show Zh, Zdr, Kdp, rhohv, Ah and the difference with the Rayleigh approximation (Mie effects). The maps of the integrated tables also show `Mfrac`, the last column of the `TmatCoefInt_*` files: the fraction of the content whose particles are inside the diameter range of the table. **Hatched areas (Mfrac < 0.99) are where the size distribution is cut by the table, so the values there are too low.** In realistic conditions this only happens for snow above 2-3 g/m³ (ICE3), for very heavy ice crystals and for drizzle-size LIMA cloud drops.
+For each type they show Zh, Zdr, Kdp, rhohv, Ah and the difference with the Rayleigh approximation (Mie effects). The maps of the integrated tables also show `Mfrac`, a variable of the `TmatCoefInt_*` tables: the fraction of the content M carried by particles inside the diameter range of the table, computed from the size distribution. **Hatched areas (Mfrac < 0.99) are where the size distribution is cut by the table, so the values there are too low.** In realistic conditions this only happens for ICE3 snow above about 6 g/m³, for very heavy ice crystals and for drizzle-size LIMA cloud drops.
 
 Then use the curves for a closer look, e.g. in `plot_D_M_varpol_alltypes.py` set
 ```python

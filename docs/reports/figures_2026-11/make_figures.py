@@ -6,7 +6,10 @@ Figures 1-5 come from plot_tools (plot_tables_2D.py, plot_D_M_varpol_alltypes.py
 """
 import os
 import numpy as np
+import sys
 import pandas as pd
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "operadar", "read"))
+from table_io import read_table_dataframe  # noqa: E402
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -25,13 +28,8 @@ def nearest(values, x):
 def load(config, name, Tc, P3=None, elev=None):
     """Rows of TmatCoefInt_<name> at the grid values closest to Tc and P3 (and elev)."""
     path = f"{TAB}/{config}/TmatCoefInt_{name}"
-    keep = []
-    for chunk in pd.read_csv(path, sep=";", skiprows=2, usecols=COLS, chunksize=2_000_000,
-                             dtype={"rhohv": str}):
-        keep.append(chunk[np.abs(chunk.Tc - Tc) < 1e-3])
-    df = pd.concat(keep)
-    # rhohv is NaN/Infinity where Zh < -150 dBZ (see the wiki page): read it as a number
-    df["rhohv"] = pd.to_numeric(df.rhohv, errors="coerce")
+    df = read_table_dataframe(path, COLS)  # NetCDF (<path>.nc) or text table, rhohv 'Infinity' read as NaN
+    df = df[np.abs(df.Tc - Tc) < 1e-3]
     if df.empty:
         raise ValueError(f"{path}: Tc={Tc} not on the grid")
     if P3 is not None:

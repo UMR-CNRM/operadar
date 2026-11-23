@@ -13,12 +13,15 @@ then are reported as "BUG FIXED?" as a reminder to remove the marker. (None at t
 from __future__ import annotations
 
 import math
+import os
+import sys
 import re
 import shutil
 import stat
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from harness import (LAM_MM, MICRO_KEYS, PARAM, PARAM_LAYOUT, REPO, SRC, Sandbox, build, default_param,
@@ -140,8 +143,8 @@ class TestParameterFiles:
         averaging (canting=orient), valid at all the elevations of the tables."""
         files = sorted(PARAM.glob(f"TmatParam_*{typeh}_{config}"))
         assert files, f"no {typeh} file for {config}"
-        if config == "David2025AMT":
-            assert len(files) == 8, [f.name for f in files]
+        # David2025AMT is kept at C band only; David2026PhD (the default) exists at the 8 bands
+        assert len(files) == (1 if config == "David2025AMT" else 8), [f.name for f in files]
         keys = ("canting", "sigbeta", "DIEL", "ARfunc", "ARcnst", "DSTYfunc", "Frim")
         opts = {f.name: tuple(self.parse(f)[k] for k in keys) for f in files}
         assert len(set(opts.values())) == 1, opts
@@ -150,6 +153,38 @@ class TestParameterFiles:
         assert (p["canting"], p["sigbeta"], p["ARfunc"]) == (cant, sig, arf)
         if arc is not None:
             assert p["ARcnst"] == pytest.approx(arc)
+
+    @pytest.mark.parametrize("typeh", ["rr", "cl", "cs", "ii", "ss", "gg", "hh", "wg", "wh"])
+    def test_base_files_are_david2026phd(self, typeh):
+        """The base files TmatParam_<band><type> copied by --newConf are the David2026PhD configuration at the
+        8 bands (same microphysical options, temperature and elevation ranges as the default configuration)."""
+        keys = ("canting", "sigbeta", "DIEL", "ARfunc", "ARcnst", "DSTYfunc", "Frim",
+                "ELEVmin", "ELEVmax", "ELEVstep", "Tcmin", "Tcmax")
+        ref = self.parse(PARAM / f"TmatParam_C{typeh}_David2026PhD")
+        for band in ["L", "S", "C", "X", "Ku", "K", "Ka", "W"]:
+            base = PARAM / f"TmatParam_{band}{typeh}"
+            assert base.exists(), base.name
+            p = self.parse(base)
+            assert all(p[k] == ref[k] for k in keys), (base.name, {k: (p[k], ref[k]) for k in keys if p[k] != ref[k]})
+            phd = PARAM / f"TmatParam_{band}{typeh}_David2026PhD"
+            assert phd.read_text() == base.read_text(), f"{base.name} differs from {phd.name}"
+
+    @pytest.mark.parametrize("path", [p for p in PREDEFINED_FILES if re.match(r"TmatParam_[A-Za-z]+(gg|hh|wg|wh)_", p.name)],
+                             ids=lambda p: p.name)
+    def test_graupel_hail_temperature_ranges(self, path):
+        """Dry graupel and hail cover -40 to 0 C (solid ice is computed at min(T, 0 C): rows above 0 C would be
+        identical); wet graupel and wet hail -40 to 30 C (the water permittivity depends on the temperature)."""
+        p = self.parse(path)
+        wet = re.match(r"TmatParam_[A-Za-z]+w[gh]_", path.name) is not None
+        assert (p["Tcmin"], p["Tcmax"]) == ((-40.0, 30.0) if wet else (-40.0, 0.0))
+
+    @pytest.mark.parametrize("path", [p for p in PARAM_FILES if re.match(r"TmatParam_[A-Za-z]+wh", p.name)],
+                             ids=lambda p: p.name)
+    def test_wet_hail_covers_hail_sizes(self, path):
+        """Wet hail covers the same diameters as hail (up to 100 mm): in the mixed phase all the hail content
+        is moved to wet hail, so a smaller table would cut the large hailstones."""
+        hail = PARAM / path.name.replace("wh", "hh", 1)
+        assert self.parse(path)["expDmax"] >= self.parse(hail)["expDmax"] == 2.0
 
     @pytest.mark.parametrize("path", PREDEFINED_FILES, ids=lambda p: p.name)
     def test_predefined_configs_cover_0_to_90deg(self, path):
@@ -164,6 +199,14 @@ class TestParameterFiles:
         """Snow parameter files start at D = 0.01 mm (expDmin = -2): the ICE3 snow distribution at low content
         is made of very small particles, which a 0.1 mm lower limit misses (Zh of -290 dBZ at 1 mg/m3)."""
         assert self.parse(path)["expDmin"] <= -2.0
+
+    @pytest.mark.parametrize("path", [p for p in PARAM_FILES if re.match(r"TmatParam_[A-Za-z]+ss", p.name)],
+                             ids=lambda p: p.name)
+    def test_snow_tables_reach_100_mm(self, path):
+        """Snow tables go up to at least 100 mm (158 mm below W band, where the T-matrix does not converge
+        beyond ~100 mm): with 50 mm, only 87 % of the ICE3 snow mass was inside the table at 3 g/m3."""
+        p = self.parse(path)
+        assert p["expDmax"] >= (2.0 if "Wss" in path.name else 2.2)
 
     def test_mass_diameter_constants_consistent_between_schemes(self, report):
         """The mass-diameter coefficients a, b of each species are identical in all *_constants.txt files.
@@ -740,7 +783,7 @@ echo "$@" >> $1/../calls_tmatint
 [ -f $1/../tables/$2/TmatCoefDiff_$4$3 ] || { echo "missing CoefDiff" >&2; exit 2; }
 { echo i1; echo i2; echo i3; for ((i=$7; i<=$8; i++)); do echo "int $i"; done; } > "$9"
 """
-HYDRO_LIST = ["cs", "cl", "rr", "ii", "ss", "gg", "hh", "wg"]
+HYDRO_LIST = ["cs", "cl", "rr", "ii", "ss", "gg", "hh", "wg", "wh"]
 
 
 @pytest.fixture
@@ -758,9 +801,12 @@ def script_root(tmp_path):
     return root
 
 
-def run_script(root, *args):
-    return subprocess.run(["bash", "generate_tables.sh", *args], cwd=root, capture_output=True, text=True,
-                          timeout=60)
+def run_script(root, *args, text=True, env=None):
+    """Run generate_tables.sh; with text=True (default) the tables stay text files (--text), since the fake
+    programs write placeholder files that cannot be converted to NetCDF."""
+    extra = ["--text"] if text else []
+    return subprocess.run(["bash", "generate_tables.sh", *args, *extra], cwd=root, capture_output=True, text=True,
+                          timeout=120, env=env)
 
 
 class TestGenerateTablesScript:
@@ -794,20 +840,20 @@ class TestGenerateTablesScript:
         assert ilines == ["i1", "i2", "i3"] + [f"int {i}" for i in range(ntc)]
 
     def test_hail_skipped_at_high_bands(self, script_root, report):
-        """Hail and wet hail are not computed at Ku, K, Ka and W (SKIP_TYPES in the script), but still are at C."""
+        """Hail and wet hail are not computed at Ku, K, Ka and W (SKIP_TYPES in the script), but are at C."""
         gen = script_root / "tables_generator"
         rows = []
         for band, hail_expected in (("W", False), ("Ku", False), ("C", True)):
             (gen / "calls_tmat").unlink(missing_ok=True)
-            r = run_script(script_root, "--David2025AMT", "--band", band)
+            r = run_script(script_root, "--David2026PhD", "--band", band)
             calls = (gen / "calls_tmat").read_text()
-            rows.append([band, f"{band}hh" in calls, f"{band}rr" in calls])
+            rows.append([band, f"{band}hh" in calls, f"{band}wh" in calls, f"{band}rr" in calls])
             assert (f"{band}hh" in calls) == hail_expected
-            assert f"{band}wh" not in calls
+            assert (f"{band}wh" in calls) == hail_expected
             assert f"{band}rr" in calls
             if not hail_expected:
                 assert "SKIPPING hh" in r.stdout
-        report.table("Tmat run for hail / rain", ["band", "hail computed", "rain computed"], rows)
+        report.table("Tmat run for hail / wet hail / rain", ["band", "hail", "wet hail", "rain"], rows)
 
     def test_script_rejects_unknown_band(self, script_root):
         """An unknown band (--band Q) is rejected with an error message."""
@@ -825,11 +871,12 @@ class TestGenerateTablesScript:
         assert not (tables / "default").exists()
 
     def test_default_on_band_without_files_gives_available_bands(self, script_root):
-        """David2026PhD only exists for L, S and C: '--default --band W' stops at once and lists the bands of
+        """David2025AMT only exists at C band: '--David2025AMT --band W' stops at once and lists the bands of
         the configuration (and the other configurations) instead of failing on every type."""
-        r = run_script(script_root, "--default", "--band", "W")
+        r = run_script(script_root, "--David2025AMT", "--band", "W")
         assert r.returncode != 0
-        assert "no parameter files for W band" in r.stdout and "C L S" in r.stdout and "David2025AMT" in r.stdout
+        assert "no parameter files for W band" in r.stdout and "available for David2025AMT: C" in r.stdout
+        assert "David2026PhD" in r.stdout
         assert "PROCESSING" not in r.stdout
 
     def test_script_stops_if_programs_not_compiled(self, script_root):
@@ -841,7 +888,7 @@ class TestGenerateTablesScript:
 
     def test_predefined_mode_generates_all_tables(self, script_root, report):
         """On a fresh clone, 'generate_tables.sh --David2025AMT --band C' produces a TmatCoefInt table for all
-        8 hydrometeor types in tables/David2025AMT/."""
+        9 hydrometeor types in tables/David2025AMT/."""
         r = run_script(script_root, "--David2025AMT", "--band", "C")
         out = script_root / "tables_generator" / "tables" / "David2025AMT"
         report.table("Tables produced", ["type", "TmatCoefDiff", "TmatCoefInt"],
@@ -851,7 +898,7 @@ class TestGenerateTablesScript:
         assert not missing, f"no table produced for {missing}"
 
     def test_predefined_mode_works_when_type_folders_exist(self, script_root):
-        """If the tables/<type>/ folders already exist, --David2025AMT produces both tables for all 8 types."""
+        """If the tables/<type>/ folders already exist, --David2025AMT produces both tables for all 9 types."""
         for h in HYDRO_LIST:
             (script_root / "tables_generator" / "tables" / h).mkdir()
         run_script(script_root, "--David2025AMT", "--band", "C")
@@ -872,7 +919,7 @@ class TestGenerateTablesScript:
 
     def test_newconf_mode_runs_generator(self, script_root, report):
         """'--newConf myconf --band C' copies each base file TmatParam_C<type> to TmatParam_C<type>_myconf and
-        produces both tables for the 8 types in tables/myconf/."""
+        produces both tables for the 9 types in tables/myconf/."""
         r = run_script(script_root, "--newConf", "myconf", "--band", "C")
         gen = script_root / "tables_generator"
         out = gen / "tables" / "myconf"
@@ -886,7 +933,7 @@ class TestGenerateTablesScript:
 
     def test_script_can_be_launched_from_another_directory(self, script_root, tmp_path):
         """The script finds its folders from its own location, so it also works when launched from elsewhere."""
-        r = subprocess.run(["bash", str(script_root / "generate_tables.sh"), "--David2025AMT", "--band", "C"],
+        r = subprocess.run(["bash", str(script_root / "generate_tables.sh"), "--David2025AMT", "--band", "C", "--text"],
                            cwd=tmp_path, capture_output=True, text=True, timeout=60)
         assert r.returncode == 0, r.stdout
         assert (script_root / "tables_generator" / "tables" / "David2025AMT" / "TmatCoefInt_ICE3_1M_Crr").exists()
@@ -947,8 +994,8 @@ class TestGenerateTablesEndToEnd:
             shutil.rmtree(tables, ignore_errors=True)
             r = run_script(small_repo, "--David2025AMT", "--band", "C", "-j", jobs)
             results[jobs] = {f.name: f.read_bytes() for f in tables.glob("TmatCoef*")}
-            assert r.returncode == 1  # the other 5 types have no parameter file in this small copy
-            assert "5 step(s) failed" in r.stdout
+            assert r.returncode == 1  # the other 6 types have no parameter file in this small copy
+            assert "6 step(s) failed" in r.stdout
         report.table("Files compared", ["file", "lines", "identical"],
                      [[n, results["1"][n].count(b"\n"), results["1"][n] == results["3"].get(n)]
                       for n in sorted(results["1"])])
@@ -956,3 +1003,43 @@ class TestGenerateTablesEndToEnd:
         nint = sum(n.startswith("TmatCoefInt_") for n in results["1"])
         assert ndiff == 3 and nint >= 3 and nint % 3 == 0  # 3 types, one TmatCoefInt per type and scheme
         assert results["1"] == results["3"]
+
+    def test_netcdf_tables(self, small_repo, report):
+        """Without --text, each table is converted to <table>.nc and the text file is deleted. The NetCDF tables
+        hold the same values (float32), on the grid (Tc, ELEV, Fw or N, M / D) with the header parameters as
+        attributes. If a TmatCoefInt table is missing, the TmatCoefDiff text file is written back from the
+        NetCDF file for TmatInt, which gives the same integrated table as the original text file."""
+        import xarray as xr
+        sys.path.insert(0, str(REPO / "operadar" / "read"))
+        import table_io
+        (small_repo / "operadar" / "read").mkdir(parents=True)
+        shutil.copy(REPO / "operadar" / "read" / "table_io.py", small_repo / "operadar" / "read")
+        env = dict(os.environ, PYTHON=sys.executable)
+        tables = small_repo / "tables_generator" / "tables" / "David2025AMT"
+        run_script(small_repo, "--David2025AMT", "--band", "C", "-j", "2")           # text reference
+        text = {f.name: table_io.read_table_columns(str(f), inf_to_nan=False) for f in tables.glob("TmatCoef*")}
+        shutil.rmtree(tables)
+        r = run_script(small_repo, "--David2025AMT", "--band", "C", "-j", "2", text=False, env=env)
+        assert "6 step(s) failed" in r.stdout, r.stdout + r.stderr
+        files = sorted(f.name for f in tables.glob("TmatCoef*"))
+        assert files == sorted(n + ".nc" for n in text), files  # only NetCDF files are left
+        rows = []
+        for name, ref in text.items():
+            nc = table_io.read_table_columns(str(tables / (name + ".nc")), list(ref), inf_to_nan=False)
+            worst = max(float(np.nanmax(np.abs(nc[c] - ref[c]) / np.maximum(np.abs(ref[c]), 1e-30))) for c in ref)
+            same_nan = all(np.array_equal(np.isnan(nc[c]), np.isnan(ref[c])) for c in ref)
+            rows.append([name, "%.1e" % worst, same_nan])
+            assert worst < 1e-6 and same_nan, name
+        report.table("NetCDF tables compared with the text tables", ["table", "max relative difference", "same NaN"], rows)
+        with xr.open_dataset(tables / "TmatCoefInt_ICE3_1M_Cwg.nc") as ds:
+            assert list(ds.zhh.dims) == ["Tc", "ELEV", "Fw", "M"] and ds.attrs["Tcmin"] == -4.0
+        with xr.open_dataset(tables / "TmatCoefDiff_Crr.nc") as ds:
+            assert list(ds.sighh.dims) == ["Tc", "ELEV", "Fw", "D"]
+        # integrated table missing: TmatCoefDiff written back to text for TmatInt, same result
+        (tables / "TmatCoefInt_ICE3_1M_Crr.nc").unlink()
+        r = run_script(small_repo, "--David2025AMT", "--band", "C", text=False, env=env)
+        assert "Writing" in r.stdout and not (tables / "TmatCoefDiff_Crr").exists()
+        again = table_io.read_table_columns(str(tables / "TmatCoefInt_ICE3_1M_Crr.nc"), inf_to_nan=False)
+        ref = text["TmatCoefInt_ICE3_1M_Crr"]
+        assert all(np.allclose(again[c], ref[c], rtol=1e-6, equal_nan=True) for c in ref)
+

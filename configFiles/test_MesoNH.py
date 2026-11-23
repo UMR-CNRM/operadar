@@ -62,6 +62,13 @@ dpol2add = ['Zh','Zdr','Kdp']
 #                                 of the chosen methods in this dictionnary
 scattering_method = "Tmatrix"
 
+# ----- Radar sensitivity : Zh, Zdr, Kdp and Rhohv are set to NaN where Zh is below the minimum detectable
+#       reflectivity Zmin(r) = Zmin_1km + 20 log10(r / 1 km), r = range from the radar (when radarloc is set, or
+#       for a vertical pointing radar, cnst_angle=90); constant Zmin_1km when the range is not known.
+#       Zmin_1km = None uses a default per band (dBZ at 1 km): L, S, C, X: -30 ; Ku, K, Ka: -40 ; W: -50
+sensitivity_threshold = True
+Zmin_1km = None
+
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)
 distmax_rad = 1000.*1000             # maximum radius of the radar data to compute pseudo-observations

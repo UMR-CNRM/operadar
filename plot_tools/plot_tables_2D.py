@@ -28,6 +28,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from utils.tables import read_table_params, read_table_dataframe, table_exists
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TABLES = os.path.join(HERE, "..", "tables_generator", "tables")
@@ -69,13 +70,11 @@ DEFAULT_VARS = ["Zh", "Zdr", "Kdp", "Rhohv", "Ah", "Zh-ZhR"]
 
 def read_table(path, kind, elev):
     """Header parameters and data (rows at the elevation closest to elev) of a Diff or Int table."""
-    sep = r"\s+" if kind == "Diff" else ";"
-    header = pd.read_csv(path, sep=sep, nrows=1, engine="python")
-    df = pd.read_csv(path, sep=sep, skiprows=2, engine="c" if kind == "Int" else "python")
-    df.columns = [c.strip() for c in df.columns]
+    header = pd.Series(read_table_params(path))
+    df = read_table_dataframe(path)  # NetCDF table (<path>.nc) or text table
     elevs = np.unique(df["ELEV"])
     e = elevs[np.argmin(np.abs(elevs - elev))]
-    return header.iloc[0], df[df["ELEV"] == e], e
+    return header, df[df["ELEV"] == e], e
 
 
 def closest(values, target, log=False):
@@ -198,7 +197,7 @@ def plot_type(h, band, config, micro, varlist, elev, outdir, tc_user, fw_user, n
 
     # --- Integrated table (as a function of the content M)
     path = os.path.join(folder, f"TmatCoefInt_{micro}_{nmom}M_{band}{h}")
-    if os.path.exists(path):
+    if table_exists(path):
         hd, df, e = read_table(path, "Int", elev)
         base = f"{band} band, {name}, {micro} {nmom}M ({config}), elev {e:g}°"
         if h in WET:
@@ -223,7 +222,7 @@ def plot_type(h, band, config, micro, varlist, elev, outdir, tc_user, fw_user, n
 
     # --- Single-particle table (as a function of the diameter D)
     path = os.path.join(folder, f"TmatCoefDiff_{band}{h}")
-    if os.path.exists(path):
+    if table_exists(path):
         hd, df, e = read_table(path, "Diff", elev)
         base = f"{band} band, {name}, single particle ({config}), elev {e:g}°"
         if h in WET:

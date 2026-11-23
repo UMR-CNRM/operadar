@@ -9,9 +9,11 @@ MODE=""
 NEW_CONF=""
 BAND=""
 JOBS=1   # number of Tmat processes run in parallel (option -j)
+KEEP_TEXT=false  # option --text: keep the text tables, no NetCDF conversion
+PYTHON="${PYTHON:-python3}"  # Python with xarray and netCDF4, used to convert the tables to NetCDF
 
 # Parameters list
-HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg") #"wh" "ws"
+HYDRO_LIST=("cs" "cl" "rr" "ii" "ss" "gg" "hh" "wg" "wh") #"ws"
 BAND_LIST=("L" "S" "C" "X" "Ku" "K" "Ka" "W") #
 # Types skipped for some bands (not needed for now). Remove an entry to compute those tables again.
 declare -A SKIP_TYPES=(["Ku"]="hh wh" ["K"]="hh wh" ["Ka"]="hh wh" ["W"]="hh wh")
@@ -26,6 +28,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PARAM_FOLDER="${SCRIPT_DIR}/tables_generator/param"
 TABLE_FOLDER="${SCRIPT_DIR}/tables_generator/tables"
 SRC_DIR="${SCRIPT_DIR}/tables_generator/src"
+TABLE_IO="${SCRIPT_DIR}/operadar/read/table_io.py"
 
 # Validation functions
 validate_value() {
@@ -44,9 +47,13 @@ Usage:
                     (--default is an alias for --${DEFAULT_ALIAS})
   NEWCONF MODE:     $0 --newConf <folder_name> --band <value>
 
-Option:
+Options:
   -j, --jobs <N>    run N Tmat and TmatInt processes in parallel (each computes a
                     block of temperatures), e.g. -j \$(nproc). Default: 1.
+  --text            keep the tables as text files (no conversion to NetCDF).
+                    By default each table is converted to <table>.nc (about 10 times
+                    smaller) and the text file is deleted; this needs a Python with
+                    xarray and netCDF4 (set PYTHON=/path/to/python if not python3).
 
 Bands: ${BAND_LIST[@]}
 
@@ -80,6 +87,9 @@ while [[ $# -gt 0 ]]; do
             shift
             [[ "$1" =~ ^[1-9][0-9]*$ ]] || { echo "/!\ Error: -j/--jobs expects a positive integer."; exit 1; }
             JOBS="$1"
+            ;;
+        --text)
+            KEEP_TEXT=true
             ;;
         --band)
             shift
@@ -172,6 +182,12 @@ run_tmatint() {
     return $status
 }
 
+# Convert a text table to NetCDF (<table>.nc) and delete the text file, unless --text
+to_netcdf() {
+    [[ $KEEP_TEXT == true ]] && return 0
+    "$PYTHON" "$TABLE_IO" to-netcdf "$1" > /dev/null || { echo "/!\ Error: conversion of $1 to NetCDF failed (text file kept)"; return 1; }
+}
+
 # Core table generation function
 FAILURES=0
 
@@ -237,7 +253,19 @@ generate_tables() {
 
         # Scattering coefficients as a function of the diameter (Tmat), if not already there
         local coefdiff="${TABLE_FOLDER}/${output_subfolder}/TmatCoefDiff_${BAND}${H}"
-        if [[ ! -f "$coefdiff" ]]; then
+        local missing_int=false
+        for MICRO in "${MICRO_LIST[@]}"; do
+            MOMENT=$(grep "^${MICRO}" "$PARAM_FILE" | cut -d: -f2)
+            OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
+            [[ -f "$OUT_FILE" || -f "$OUT_FILE.nc" ]] || missing_int=true
+        done
+        if [[ ! -f "$coefdiff" && -f "$coefdiff.nc" && $missing_int == true ]]; then
+            # TmatInt reads the text file: write it back from the NetCDF file
+            echo "Writing $coefdiff from $coefdiff.nc for TmatInt"
+            "$PYTHON" "$TABLE_IO" to-text "$coefdiff.nc" "$coefdiff" > /dev/null || {
+                echo "Failed to write $coefdiff from the NetCDF file"; FAILURES=$((FAILURES+1)); continue; }
+        fi
+        if [[ ! -f "$coefdiff" && ! -f "$coefdiff.nc" ]]; then
             if run_tmat "$PARAM_FILE" "$coefdiff.part" \
                         "${TABLE_FOLDER}/${output_subfolder}/TmatResu_${BAND}${H}" \
                         "${TABLE_FOLDER}/${output_subfolder}/Tmat_${BAND}${H}.log"; then
@@ -257,8 +285,10 @@ generate_tables() {
             MOMENT=$(grep "^${MICRO}" "$PARAM_FILE" | cut -d: -f2)
             OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
 
-            if [[ ! -f "$OUT_FILE" ]]; then
-                if run_tmatint "$output_subfolder" "$H" "$MICRO" "$MOMENT" "$OUT_FILE"; then
+            if [[ -f "$OUT_FILE" && ! -f "$OUT_FILE.nc" && $KEEP_TEXT == false ]]; then
+                to_netcdf "$OUT_FILE" || FAILURES=$((FAILURES+1))  # text table left by an earlier run
+            elif [[ ! -f "$OUT_FILE" && ! -f "$OUT_FILE.nc" ]]; then
+                if run_tmatint "$output_subfolder" "$H" "$MICRO" "$MOMENT" "$OUT_FILE" && to_netcdf "$OUT_FILE"; then
                     echo "Successfully generated tables for ${H} with ${MICRO} microphysics"
                 else
                     echo "Failed to generate tables for ${H} with ${MICRO}"
@@ -268,6 +298,21 @@ generate_tables() {
                 echo "Using existing table: $OUT_FILE"
             fi
         done
+
+        # The text TmatCoefDiff file is no longer needed once all the TmatCoefInt tables exist
+        missing_int=false
+        for MICRO in "${MICRO_LIST[@]}"; do
+            MOMENT=$(grep "^${MICRO}" "$PARAM_FILE" | cut -d: -f2)
+            OUT_FILE="${TABLE_FOLDER}/${output_subfolder}/TmatCoefInt_${MICRO}_${MOMENT}_${BAND}${H}"
+            [[ -f "$OUT_FILE.nc" ]] || missing_int=true
+        done
+        if [[ -f "$coefdiff" && $KEEP_TEXT == false && $missing_int == false ]]; then
+            if [[ -f "$coefdiff.nc" ]]; then
+                rm -f "$coefdiff"
+            else
+                to_netcdf "$coefdiff" || FAILURES=$((FAILURES+1))
+            fi
+        fi
     done
 
     echo ""
@@ -286,6 +331,13 @@ for prog in Tmat TmatInt; do
         exit 1
     fi
 done
+
+# The conversion to NetCDF needs xarray and netCDF4
+if [[ $KEEP_TEXT == false ]] && ! "$PYTHON" -c "import xarray, netCDF4" 2>/dev/null; then
+    echo "/!\ Error: '$PYTHON' cannot import xarray and netCDF4, needed to write the tables in NetCDF."
+    echo "    Activate the operadar environment, set PYTHON=/path/to/python, or use --text to keep text tables."
+    exit 1
+fi
 
 # Main execution
 case "$MODE" in

@@ -1,16 +1,18 @@
-This page summarises the predefined configurations of the lookup tables (`David2026PhD`, `David2025AMT`), what each one is for, how they differ, and the points still to be checked. All values come from the parameter files `tables_generator/param/TmatParam_<band><type>_<config>` (state of November 2026).
+This page summarises the predefined configurations of the lookup tables (`David2026PhD`, `David2025AMT`), what each one is for, how they differ, and the points still to be checked. All values come from the parameter files `tables_generator/param/TmatParam_<band><type>_<config>` (state of 23 November 2026).
 
 # 1. Overview
 
 | Configuration | Bands | Purpose | Command |
 |---|---|---|---|
-| `David2026PhD` (**default**) | L, S, C | Options of C. David's PhD thesis (2026, configuration NEW of Table 4.3): canting of all ice and rain particles, oblate pristine ice (AR 0.2) and snow (AR 0.6) | `./generate_tables.sh --David2026PhD --band C -j 8` or `./generate_tables.sh --default --band C -j 8` |
-| `David2025AMT` | L, S, C, X, Ku, K, Ka, W | Options of [David et al. (2025), AMT](https://doi.org/10.5194/amt-18-3715-2025) (configuration REF of the thesis): no canting, spherical pristine ice | `./generate_tables.sh --David2025AMT --band X -j 8` |
-| *base files* `TmatParam_<band><type>` | all | Templates copied by `--newConf <name>` for a new configuration (see section 5) | `./generate_tables.sh --newConf myConf --band C` |
+| `David2026PhD` (**default**) | L, S, C, X, Ku, K, Ka, W | Options of C. David's PhD thesis (2026, configuration NEW of Table 4.3): canting of all ice and rain particles, oblate pristine ice (AR 0.2) and snow (AR 0.6) | `./generate_tables.sh --David2026PhD --band C -j 8` or `./generate_tables.sh --default --band C -j 8` |
+| `David2025AMT` | C | Options of [David et al. (2025), AMT](https://doi.org/10.5194/amt-18-3715-2025) (configuration REF of the thesis): no canting, spherical pristine ice | `./generate_tables.sh --David2025AMT --band C -j 8` |
+| *base files* `TmatParam_<band><type>` | all | Templates copied by `--newConf <name>` for a new configuration: the David2026PhD configuration, extended to all bands (see section 5) | `./generate_tables.sh --newConf myConf --band C` |
 
-`--default` is an alias for `--David2026PhD`: it uses the `TmatParam_*_David2026PhD` files and writes the tables to `tables_generator/tables/David2026PhD/`. For the bands without David2026PhD files (X, Ku, K, Ka, W) the script stops and points to `--David2025AMT`.
+`--default` is an alias for `--David2026PhD`: it uses the `TmatParam_*_David2026PhD` files and writes the tables to `tables_generator/tables/David2026PhD/`. David2025AMT is kept at C band only (to reproduce the publication); for another band the script stops and lists the available bands.
 
-All configurations cover **elevations from 0° to 90° every 10°**, so the same tables serve ground radars at any elevation, vertically pointing radars and spaceborne radars (there is no separate `vertical` configuration any more). Hail and wet hail are not computed at Ku, K, Ka and W bands, and wet hail is not computed at all for now (`HYDRO_LIST` in `generate_tables.sh`).
+All configurations cover **elevations from 0° to 90° every 10°**, so the same tables serve ground radars at any elevation, vertically pointing radars and spaceborne radars (there is no separate `vertical` configuration any more). Hail and wet hail are computed at L, S, C and X bands (not at Ku, K, Ka and W: `SKIP_TYPES` in `generate_tables.sh`).
+
+The tables are written in **NetCDF** (`<table>.nc`, about 10 times smaller than the former text files, see the page *Generation of the lookup tables*).
 
 Wavelengths (`LAM`, mm): L 190.4, S 106.2, C 53.2, X 31.9, Ku 20.0, K 15.0, Ka 8.4, W 3.15.
 
@@ -20,11 +22,12 @@ Wavelengths (`LAM`, mm): L 190.4, S 106.2, C 53.2, X 31.9, Ku 20.0, K 15.0, Ka 8
 |---|---|---|---|---|
 | `rr` rain | `Liebe91` | `BR02` (Brandes et al. 2002) | water | 0.01-10 |
 | `cl`, `cs` cloud | `Liebe91` | spheres | water | 0.01-2 |
-| `ii` pristine ice | `RY19dry` | `CNST` (section 3) | `RHOX` (m(D) law, capped at 916 kg/m³) | 0.01-10 (0.01-9.55 for David2025AMT at Ku band: the T-matrix of a 10 mm ice sphere does not converge at Ku band) |
-| `ss` snow | `RY19dry` | `AUds` or `CNST` (section 3) | `RHOX` | 0.01-50 |
+| `ii` pristine ice | `RY19dry` | `CNST` (section 3) | `RHOX` (m(D) law, capped at 916 kg/m³) | 0.01-10 |
+| `ss` snow | `RY19dry` | `AUds` or `CNST` (section 3) | `RHOX` | 0.01-158 (0.01-100 at W band, where the T-matrix does not converge beyond ~100 mm) |
 | `gg` graupel | `RY19dry` | `RYdg` (Ryzhkov et al. 2011, eq. 13): 1 - 0.02 D for D ≤ 10 mm, 0.8 above (note: David et al. 2025 write "set to 0.8", but this law was used) | `RHOX` | 0.1-50 (0.05-50 at Ku-W) |
 | `hh` hail | `RY19dry` | `RYdg`, 0.8 for D > 10 mm | `RHOX` | 0.1-100 |
 | `wg` wet graupel | `LBwetgr` (Le Bastard 2019) | `RYwg` (Ryzhkov et al. 2011) | `RHOX` + melt water | 0.1-50 (0.05-31.6 at Ku-W) |
+| `wh` wet hail | `LBwetgr` | `RYwg` | `RHOX` + melt water | 0.1-100 (same as hail) |
 
 Temperature ranges (°C):
 
@@ -32,15 +35,18 @@ Temperature ranges (°C):
 |---|---|---|
 | rain, cloud | -20 to 40 | -60 to 40 |
 | pristine ice, snow | -75 to 10 | -75 to 10 |
-| graupel | -40 to 10 | -60 to 10 (L, C), -40 to 10 (S) |
-| hail | -40 to 0 | -40 to 30 (section 5) |
-| wet graupel | -40 to 10 | -40 to 10 (C, S), -60 to 30 (L) |
+| graupel, hail | -40 to 0 | -40 to 0 |
+| wet graupel, wet hail | -40 to 30 | -40 to 30 |
+
+Dry graupel and hail stop at 0 °C: solid ice is computed at min(T, 0 °C) and nothing else depends on the temperature, so rows above 0 °C would be identical. Wet species go up to 30 °C because the water permittivity is computed at the true temperature. In operadar the melting (mixed) phase is not defined by the temperature but where rain coexists with graupel or hail, with Fw = rr / (rr + gg + hh): it can occur below 0 °C (supercooled rain) or well above 0 °C (graupel falling below the melting layer). With the mixed phase parametrizations `Fw_pos` and `Fw_posg`, the graupel and hail of the mixed phase are moved to wet graupel and **wet hail** (add `'hh':1,'wh':1` to `hydrometeors_moments` in the configuration file; wet hail tables exist at L, S, C and X bands). Without wet hail in the configuration, hail stays dry in the mixed phase and is computed at 0 °C.
 
 operadar uses the values at the closest table bound outside these ranges.
 
 Grid steps: elevation 10°; diameter 0.02 in log10(D); temperature 5 °C (ice, snow, rain, cloud; 2 °C for Ka-band rain), 10 °C (graupel, hail), 2 °C for wet graupel (1 °C at K, Ka, W); Fw 0.01. They were chosen with a grid accuracy study (interpolation errors ≤ 0.05 dB on Zh, ≤ 0.02 dB on Zdr (0.06 dB along elevation), ≤ 1 % on Kdp), see `tables_generator/tools/grid_study/SUMMARY.md`.
 
 Particle size distributions: ICE3 (1 moment) for all types; LIMA with 2 moments for rain, cloud and pristine ice.
+
+ICE3 snow: the size distribution of ICE3 snow contains very large, low-density flakes at high content. With the diameter range above, the fraction of the snow mass inside the table (`Mfrac`) is 1.00 up to 5 g/m³ and 0.98 at 7 g/m³ (S band; before November 2026 the tables stopped at 50 mm: 0.91 at 3 g/m³ and 0.62 at 5 g/m³ at C band).
 
 # 3. Options that differ: canting and particle shape
 
@@ -77,11 +83,13 @@ Elevation: Zdr and Kdp decrease with elevation (rain at C band, 5 g/m³: Zdr 3.0
 
 # 5. Points still to check
 
-1. **Hail up to 30 °C and wet hail up to 40 °C in David2026PhD**: solid ice is computed at 0 °C above 0 °C, so these temperatures only add identical rows; `Tcmax 0` as in David2025AMT gives the same results.
-2. **The base files used by `--newConf`** are neither David2025AMT nor David2026PhD (e.g. `TmatParam_Crr` has canting 10°, `TmatParam_Xii` has `Frim 0.0`), and they still have the old elevations. A user who creates a new configuration should start from a copy of one of the predefined configurations. *Proposal: make the base files a copy of David2026PhD (L, S, C) and David2025AMT (other bands).*
-3. **ICE3 snow at high content**: the snow size distribution goes beyond the table maximum (50 mm) above 2-3 g/m³ (fraction of the mass inside the table 0.91 at 3 g/m³, 0.62 at 5 g/m³ at C band). If simulations have more snow than that, increase `expDmax` for snow.
-4. **Size of the tables**: with 10 elevations, the tables are 5 times larger than with 2 (94 GB for David2025AMT with its 8 bands, 39 GB for David2026PhD with L, S, C; 5 to 15 GB per band). operadar reads each table entirely (all 26 columns); reading only the columns it needs would divide the memory by about 3.
+1. **Temperature ranges of graupel and hail (decided 2026-11-23)**: dry graupel and hail -40 to 0 °C, wet graupel and wet hail -40 to 30 °C in both configurations (tables regenerated).
+2. **The base files used by `--newConf` (decided 2026-11-23)** are now the David2026PhD configuration: exact copies of the David2026PhD files at L, S and C bands, and for the other bands (X, Ku, K, Ka, W) the David2025AMT file of the band (wavelength, grids) with the David2026PhD physical options (canting, ARfunc/ARcnst, Tcmin/Tcmax). A new configuration starts from David2026PhD and only the changed options need editing.
+3. **ICE3 snow at high content (done 2026-11-23)**: `expDmax` of snow raised to 2.2 (158 mm; 2.0 at W band), see section 2.
+4. **Size of the tables (done 2026-11-23)**: the tables are written in NetCDF (about 10 times smaller) and operadar reads only the variables it needs (about 3 times less memory, 10 times faster). David2025AMT is kept at C band only.
+5. **Wet hail (done 2026-11-23)**: wet hail tables computed at L, S, C and X bands for both configurations.
+6. **Radar sensitivity (done 2026-11-23)**: operadar removes Zh, Zdr, Kdp and Rhohv below the minimum detectable reflectivity (configuration options `sensitivity_threshold`, `Zmin_1km`), see the operadar documentation.
 
 # 6. Note on the rhohv column of the tables
 
-In cells with an extremely small signal (Zh below about -150 dBZ), the `rhohv` and `rhohvR` columns of the `TmatCoefInt_*` files contain `NaN` or `Infinity` (single-precision underflow of σhh·σvv). operadar is not affected: it reads σhh, σvv and δco and computes rhohv itself. Only plots of the `rhohv` column of the tables see these values (`plot_tables_2D.py` ignores them).
+In cells with an extremely small signal (Zh below about -150 dBZ), the `rhohv` and `rhohvR` variables of the `TmatCoefInt_*` tables are `NaN` (single-precision underflow of σhh·σvv; `Infinity` in the text files written by `TmatInt`, read as `NaN`). operadar is not affected: it reads σhh, σvv and δco and computes rhohv itself, and such cells are far below the radar sensitivity threshold. Only plots of the `rhohv` variable of the tables see these values (`plot_tables_2D.py` ignores them).

@@ -16,7 +16,7 @@ input_filePath  = f"./modelFiles/"
 output_filePath = f"./modelFiles/"
 
 # ----- Lookup tables directory path
-path_tables = f"./tables_generator/tables/David2026PhD/"   # default configuration (David2025AMT has all the bands)
+path_tables = f"./tables_generator/tables/David2026PhD/"   # default configuration, all bands (David2025AMT: C band only)
 
 # ----- Model name : can be 'Arome' or 'MesoNH'
 model = 'Arome'
@@ -29,7 +29,7 @@ microphysics_scheme = 'ICE3'
 
 # ----- Number of moments for each hydrometeor of the microphysics scheme
 #       /!\ Depending on your simulation, please chose cloud water (cc) over land or sea
-hydrometeors_moments = {'cc':1,'rr':1,'ss':1,'gg':1,'ii':1,'wg':1}
+hydrometeors_moments = {'cc':1,'rr':1,'ss':1,'gg':1,'ii':1,'wg':1}   # add 'hh':1,'wh':1 for hail and wet hail (L, S, C, X bands)
 cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land) or cs (sea) lookup table
 
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
@@ -68,6 +68,13 @@ scattering_method = "Tmatrix"
 compute_attenuation = False # True
 radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)
 
+
+# ----- Radar sensitivity : Zh, Zdr, Kdp and Rhohv are set to NaN where Zh is below the minimum detectable
+#       reflectivity Zmin(r) = Zmin_1km + 20 log10(r / 1 km), r = range from the radar (when radarloc is set, or
+#       for a vertical pointing radar, cnst_angle=90); constant Zmin_1km when the range is not known.
+#       Zmin_1km = None uses a default per band (dBZ at 1 km): L, S, C, X: -30 ; Ku, K, Ka: -40 ; W: -50
+sensitivity_threshold = True
+Zmin_1km = None
 
 # ----- Radar simulation options 
 radar_band = 'C'                    # radar band (C, X, S, W or K)

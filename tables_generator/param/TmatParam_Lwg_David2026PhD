@@ -11,7 +11,7 @@ LAM:190.4
 ELEVmin:0.0
 ELEVmax:90.0
 ELEVstep:10.0
-Tcmin:-60.0
+Tcmin:-40.0
 Tcmax:30.0
 Tcstep:2.0
 expDmin:-1.0

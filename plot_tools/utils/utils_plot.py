@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from .tables import read_table_params, read_table_dataframe, table_exists
 
 # ====== BASIC DEFINITIONS ====== #
 # Plot style
@@ -176,7 +177,7 @@ def read_table(table_path,delim,axeX,method):
     dpol={'Tmatrix':{},'Rayleigh':{}}
     settings={}
     # reading table options (from config file)
-    df_param=pd.read_csv(table_path, sep=delim,nrows=1,engine='python')
+    df_param=pd.DataFrame([read_table_params(table_path)])
     settings['SIGBETA']=int(df_param['SIGBETA'][0])
     settings['ARfunc']=df_param['ARfunc'][0]
     settings['ARcnst']=df_param['ARcnst'][0]
@@ -185,7 +186,7 @@ def read_table(table_path,delim,axeX,method):
     settings['Frim']=df_param['Frim'][0]
     
     # reading table variables
-    df=pd.read_csv(table_path, sep=delim,skiprows=2, engine='c')
+    df=read_table_dataframe(table_path)  # NetCDF (<table>.nc) or text table
     Tcol=df['Tc'].to_numpy()
     ELEVcol=df['ELEV'].to_numpy()
     if (axeX=='M'): P3col=df['P3'].to_numpy()                            
@@ -522,7 +523,7 @@ def get_colors(dictParam:dict,
     elif type(asLegend) is list :
         nb_colors = 0
         for arf, ar, cant, dsty, Frim, diel in combinations :
-            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
+            if table_exists(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
                 nb_colors += 1
         nb_colors = nb_colors * len(Fw) * len(Nc)
     
@@ -549,7 +550,7 @@ def get_combinations(dictParam:dict,
     final_combinations = []
     for arf, ar, cant, dsty, Frim, diel in combinations :
         filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
-        if os.path.isfile(filepath):
+        if table_exists(filepath):
             final_combinations += [(arf, ar, cant, dsty, Frim, diel)]
     if len(final_combinations) < 1 : sys.exit()
     return final_combinations
