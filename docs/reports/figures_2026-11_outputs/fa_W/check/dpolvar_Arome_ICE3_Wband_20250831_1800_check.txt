@@ -1,0 +1,25 @@
+=== operadarFiles/AROME/fa_2026-11-24/dpolvar_Arome_ICE3_Wband_20250831_1800.nc
+Arome ICE3 W band  2025-08-31 18:00  grid {'hydrometeor': 6, 'level': 90, 'y': 130, 'x': 119}
+attributes: horizontal_resolution=1300, model=Arome, microphysics=ICE3, radar_band=W, mixed_phase_type=Fw_posg, radar_location=None, scattering_method=Tmatrix, tables_configuration=David2026PhD, tables_path=./tables_generator/tables/David2026PhD/, sensitivity_threshold=True, cc_moment=1, rr_moment=1, ss_moment=1, gg_moment=1, ii_moment=1, wg_moment=1
+T: -61.1 to 25.2 degC
+
+variable        valid   NaN %       min        P1       P50       P99       max
+Zh             859681    38.3   -49.986   -37.340     7.504    24.301    27.832
+Zdr            859681    38.3     0.000     0.000     0.040     2.612     4.260
+Kdp            859681    38.3   -10.269    -1.531     0.000     2.730     5.998
+Ah             957004    31.3     0.000     0.000     0.413    13.997    44.775
+Zh_att         859681    38.3   -50.000   -47.553    -1.508    21.504    26.793
+
+content         max (g/m3)   % > 0
+cloud water          1.371   31.68
+rain                 3.779   57.79
+snow                 1.356   47.77
+graupel              4.048   36.23
+pristine ice         0.797   30.62
+wet graupel          4.614    5.54
+Fw of the wet species: 77165 points, median 0.94
+
+Checks:
+  (info) 42744 points (8.19 % of the points with contents >= 0.1 g/m3) have Ah but no Zh: removed by the radar sensitivity (Zh_att below the threshold after attenuation)
+  (info) 24333 points with Kdp < -1 deg/km: expected at W band (Mie resonance of the raindrops: Kdp of rain and melting particles becomes negative)
+  nothing suspicious

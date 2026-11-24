@@ -1,0 +1,29 @@
+A = April 2026: /dir/modelFiles/AROME/ncfiles/dpolvar_Arome_ICE3_Cband_20250831_1800.nc
+B = November 2026: /dir/operadarFiles/AROME/dpolvar_Arome_ICE3_Cband_20250831_1800.nc
+B - A, points where both exist and max(Zh_A, Zh_B) >= 0 dBZ
+variable points                n      mean      RMSE   |d| P99    corr
+Zh       all              735128    -0.013     3.757     0.229  0.9497
+Zh       T >= 4           375754    -0.045     0.079     0.174  1.0000
+Zh       0 <= T < 4        51224    -0.053     0.112     0.295  1.0000
+Zh       T < 0            308150     0.034     5.802     0.264  0.8679
+         values only in A: 1392, only in B: 0
+Zdr      all              728631    -0.001     0.005     0.011  0.9999
+Zdr      T >= 4           375754    -0.001     0.003     0.011  1.0000
+Zdr      0 <= T < 4        51146    -0.003     0.015     0.047  0.9997
+Zdr      T < 0            301731    -0.000     0.005     0.002  0.9995
+         values only in A: 64, only in B: 0
+Kdp      all              735128    -0.001     0.010     0.013  0.9996
+Kdp      T >= 4           375754    -0.001     0.003     0.012  0.9999
+Kdp      0 <= T < 4        51224    -0.005     0.029     0.073  0.9995
+Kdp      T < 0            308150    -0.000     0.009     0.001  0.9992
+         values only in A: 1392, only in B: 0
+Ah       all              735128    -0.000     0.001     0.001  0.9999
+Ah       T >= 4           375754    -0.000     0.000     0.001  0.9999
+Ah       0 <= T < 4        51224    -0.000     0.002     0.007  0.9999
+Ah       T < 0            308150    -0.000     0.001     0.000  0.9999
+         values only in A: 1392, only in B: 0
+Zh_att   all              416856     0.006     1.894     0.174  0.9845
+Zh_att   T >= 4           368749    -0.044     0.078     0.174  1.0000
+Zh_att   0 <= T < 4        48107     0.391     5.570     6.829  0.8930
+Zh_att   T < 0                 0       nan       nan       nan     nan
+         values only in A: 67, only in B: 481708

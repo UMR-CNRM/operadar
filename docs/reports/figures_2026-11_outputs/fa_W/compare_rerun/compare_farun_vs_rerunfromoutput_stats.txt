@@ -1,0 +1,23 @@
+A = rerun from output: /dir/operadarFiles/AROME/rerun_2026-11-23/dpolvar_Arome_ICE3_Wband_20250831_1800.nc
+B = fa run: /dir/operadarFiles/AROME/fa_2026-11-24/dpolvar_Arome_ICE3_Wband_20250831_1800.nc
+B - A, points where both exist and max(Zh_A, Zh_B) >= 0 dBZ
+variable points                n      mean      RMSE   |d| P99    corr
+Zh       all              627799     0.000     0.000     0.000  1.0000
+Zh       T >= 4           369731     0.000     0.000     0.000  1.0000
+Zh       0 <= T < 4        48996     0.000     0.000     0.000  1.0000
+Zh       T < 0            209072     0.000     0.000     0.000  1.0000
+         values only in A: 69931, only in B: 0
+Zdr      all              627799    -0.000     0.000     0.000  1.0000
+Zdr      T >= 4           369731     0.000     0.000     0.000  1.0000
+Zdr      0 <= T < 4        48996    -0.000     0.000     0.000  1.0000
+Zdr      T < 0            209072    -0.000     0.000     0.000  1.0000
+         values only in A: 69931, only in B: 0
+Kdp      all              627799     0.000     0.000     0.000  1.0000
+Kdp      T >= 4           369731     0.000     0.000     0.000  1.0000
+Kdp      0 <= T < 4        48996     0.000     0.000     0.000  1.0000
+Kdp      T < 0            209072     0.000     0.000     0.000  1.0000
+         values only in A: 69931, only in B: 0
+Ah       all              667571     0.000     0.000     0.000  1.0000
+Ah       T >= 4           369798     0.000     0.000     0.000  1.0000
+Ah       0 <= T < 4        49840     0.000     0.000     0.000  1.0000
+Ah       T < 0            247933    -0.000     0.000     0.000  1.0000
