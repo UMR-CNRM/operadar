@@ -104,3 +104,45 @@ Details and figures in `2026-11_operadar_output_analysis.md`, sections 6-8.
   does not fit in memory (23 GB available).
 * The former outputs (AROME of 20 Nov., MesoNH) contain false echoes at exactly 0 dBZ (6497 and 1 365 628
   points); `plot_output_check.py` now detects them.
+
+## 7. Update of 24 Nov. (evening): ICJW and LIMC, MesoNH ice concentration
+
+Two more bugs, also on master:
+
+* **1-moment ice of ICJW and LIMC was interpolated with the wrong variable** (`formats_data.Fw_or_Nc`): only
+  `'ICE3'` and a misspelled `'IJW'` used the concentration for 1-moment pristine ice, so ICJW and LIMC ice was
+  looked up with the liquid fraction Fw (≈ 0) on the concentration axis of the tables. Ice now always uses the
+  concentration, for all schemes. Test in `tests/test_dualpol_variables.py`.
+* **MesoNH 1-moment ice concentration multiplied by the air density**: `CIT` is already in m⁻³, but the reader
+  multiplied it by ρ (correct only for the 2-moment concentrations `CRAIN`/`CICE`/`CCLOUD`, in kg⁻¹). The
+  concentrations are now chosen from the number of moments of each species, not from the scheme name: 1-moment
+  ice = `CIT` (m⁻³, or 800 m⁻³ if absent), 2-moment species = C × ρ. LIMC ("LIMA chaud") is 2-moment for
+  cloud water and rain only; its ice is 1-moment. Tests in `tests/test_read_mesonh.py`.
+
+**Impact of the CIT fix on MesoNH 3BL13 (ICE3, C band, same subdomain as section 6):** the ice concentration
+increases by a factor 3.3 (median, = 1/ρ aloft), the ice crystals get smaller and Zh decreases with altitude:
+
+| Altitude | 0-4 km | 4-6 km | 6-8 km | 8-10 km | 10-12 km | 12-14 km | 14-16 km |
+|---|---|---|---|---|---|---|---|
+| ΔZh (dB) | 0.00 | -0.18 | -0.57 | -1.16 | -2.55 | -4.65 | -6.13 |
+
+Mean over all points: Zh -1.41 dB, Zdr +0.07 dB, Kdp +0.002 °/km; ice-dominated points: Zh -5.4 dB.
+The output of section 6 was computed before this fix (output with the fix:
+`operadarFiles/MesoNH/2026-11-24_CITfix/`).
+
+**ICJW and LIMC check (C band).** Integrated tables were computed for ICJW and LIMC from the David2026PhD C-band
+scattering tables (test tables in `tables_generator/tables/_test_ICJW_LIMC/`, not delivered). The four schemes
+were run on the same AROME fields (ICE3 output of the .fa file; for the 2-moment species the concentrations
+are derived from the ICE3 size distributions, ice at 800 m⁻³), one output per species:
+
+* ICJW = ICE3 and LIMC = LIMA bit for bit for cloud, rain, ice, graupel and wet graupel;
+* ICJW snow = LIMC snow bit for bit;
+* the snow differs, as expected: ICJW/LIMC use the Wurtz (2023) snow (slope λ function of T only, N0 ∝ content),
+  ICE3/LIMA the ICE3 snow (λ from the content). At very small contents (~10⁻⁴ g m⁻³, -55 °C) the ICE3 snow
+  gives Zh of -100 to -400 dBZ (NaN on 1831 points where Z underflows), the Wurtz snow about -30 dBZ; at high
+  contents (1-10 g m⁻³) the Wurtz snow is weaker (median 14 dBZ instead of 32 dBZ).
+
+ICJW on the real .fa file (C band, David2026PhD scattering, sensitivity threshold;
+`operadarFiles/AROME/fa_ICJW_2026-11-24/`) vs ICE3 (section 6): contents and concentrations identical, Zh +0.20 dB
+on average (0 below 2 km, +0.6 dB at 2-4 km, -1.5 dB at 6-8 km, +1.4 to +2.1 dB above 8 km), Zdr -0.05 dB,
+Kdp +0.003 °/km; 22 172 more points above the sensitivity threshold (weak snow). Points with Zh > 40 dBZ unchanged.

@@ -1,5 +1,6 @@
 """Conversion of the summed linear reflectivities into polarimetric variables."""
 import numpy as np
+import pytest
 
 from operadar.radar.dualpol_variables import compute_dpol_var
 
@@ -48,3 +49,16 @@ def test_rhohv_mixture_decorrelation():
 
 def test_rhohv_capped_at_one():
     assert rhohv_of_sum([species(1., 1., 1.0008)]) == 1.
+
+
+# The ice tables are computed as a function of the concentration for every scheme: 1-moment ice of ICJW and
+# LIMC must use the concentration, as ICE3 (before Nov. 2026 only 'ICE3' and a misspelled 'IJW' did)
+@pytest.mark.parametrize("micro", ["ICE3", "ICJW", "LIMA", "LIMC"])
+def test_ice_uses_the_concentration_column_for_every_scheme(micro):
+    from operadar.utils.formats_data import Fw_or_Nc
+    conc, fw = np.array([800.]), np.array([0.])
+    moments = {'ii': 2 if micro == "LIMA" else 1, 'rr': 2 if micro.startswith("LIM") else 1, 'ss': 1}
+    field, col = Fw_or_Nc(moments, 'ii', conc, fw, micro)
+    assert col == 'Nc' and field is conc
+    assert Fw_or_Nc(moments, 'ss', conc, fw, micro)[1] == 'Fw'
+    assert Fw_or_Nc(moments, 'rr', conc, fw, micro)[1] == ('Nc' if micro.startswith("LIM") else 'Fw')

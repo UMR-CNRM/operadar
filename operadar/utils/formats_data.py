@@ -62,14 +62,13 @@ def Fw_or_Nc(momentsDict:dict[str,int],
     * all other species (graupel / snow / wet graupel / wet snow ? )=> treated as 1-moment but can have a variable wet fraction
     => 3d parameter = Fw
     """
-    if momentsDict[hydrometeor] == 2 :
+    # 2-moment species, and pristine ice whatever its number of moments: the tables of ice are computed as a
+    # function of the concentration for all the schemes (ICE3, ICJW, LIMA, LIMC), see read/lookup_tables.py.
+    # (Before Nov. 2026 only 'ICE3' and a misspelled 'IJW' used the concentration for 1-moment ice: ICJW and
+    # LIMC ice were interpolated with Fw on the concentration axis.)
+    if momentsDict[hydrometeor] == 2 or hydrometeor == 'ii':
         col_name = 'Nc'
         field_temp = concentration
-    # ------ ICE3/ICJW specific ------ #
-    elif hydrometeor=='ii' and (micro=='ICE3' or micro=='IJW'):
-        col_name = 'Nc'
-        field_temp = concentration
-    # -------------------------------- #
     else:
         col_name = "Fw"
         field_temp = Fw
