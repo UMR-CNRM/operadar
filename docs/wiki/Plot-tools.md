@@ -1,5 +1,3 @@
-<!-- New wiki page "Plot-tools". Link it from Home.md (see Home-plot-tools-link.md) -->
-
 The folder `plot_tools/` contains scripts to check and analyse the **operadar outputs** (CFADs as in David et
 al. 2025, quick look, cross-sections, comparison of two runs, storm swaths) and to look at the **lookup
 tables**. This page explains how to use them; all options are listed in
