@@ -1,0 +1,22 @@
+=== /dir/modelFiles/MesoNH/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc
+MesoNH ICE3 C band  2024-01-15 04:00  grid {'hydrometeor': 6, 'level': 82, 'y': 1201, 'x': 1201}
+attributes: horizontal_resolution=2500, model=MesoNH, microphysics=ICE3, radar_band=C, mixed_phase_type=Fw_posg, radar_location=None, scattering_method=Tmatrix, cc_moment=1, rr_moment=1, ss_moment=1, gg_moment=1, ii_moment=1, wg_moment=1
+T: -98.0 to 33.4 degC
+
+variable        valid   NaN %       min        P1       P50       P99       max
+Zh           12543287    89.4  -450.944  -291.811     0.000    45.683    60.013
+Zdr          11177659    90.5    -0.052     0.000     0.393     2.808     5.729
+Kdp          12543287    89.4     0.000     0.000     0.001     1.314    13.596
+
+content         max (g/m3)   % > 0
+cloud water          2.440    1.49
+rain                10.172    7.86
+snow                 1.464   60.46
+graupel              4.006   53.89
+pristine ice         1.558    5.03
+wet graupel          4.753    0.21
+Fw of the wet species: 249525 points, median 0.62
+
+Checks:
+  /!\ 1590817 points with Zh < -30 dBZ (min -451): radar sensitivity not applied (operadar option sensitivity_threshold, or older file), Zmin_1km set lower in the configuration, or ranges below 1 km
+  /!\ 1365628 points with exactly Zh = 0 dBZ: false echoes of operadar versions before Nov. 2026 (linear Z = 0 written as 0 dBZ), recompute the file

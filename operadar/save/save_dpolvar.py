@@ -71,6 +71,10 @@ def save_netcdf(X:np.ndarray,
                               mixed_phase_type = config.mixed_phase_parametrization,
                               radar_location = str(config.radarloc),
                               scattering_method = config.scattering_method,
+                              # lookup tables: configuration = name of the table folder (David2026PhD, David2025AMT...)
+                              tables_configuration = Path(str(config.path_tables)).name,
+                              tables_path = str(config.path_tables),
+                              sensitivity_threshold = str(getattr(config, 'sensitivity_threshold', True)),
                               )
     dataset_attributes.update({f'{key}_moment':value for key,value in config.hydrometeors_moments.items()})
         

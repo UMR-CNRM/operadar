@@ -1,0 +1,19 @@
+A = 20 Nov. run: /dir/modelFiles/MesoNH/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc
+B = rerun 24 Nov.: /dir/operadarFiles/MesoNH/2026-11-24/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc
+B - A, points where both exist and max(Zh_A, Zh_B) >= 0 dBZ
+variable points                n      mean      RMSE   |d| P99    corr
+Zh       all             1955916     0.012     0.032     0.141  1.0000
+Zh       T >= 4          1052976     0.002     0.004     0.015  1.0000
+Zh       0 <= T < 4        86850    -0.023     0.056     0.156  1.0000
+Zh       T < 0            816090     0.028     0.046     0.166  1.0000
+         values only in A: 209896, only in B: 0
+Zdr      all             1955916    -0.001     0.042     0.094  0.9967
+Zdr      T >= 4          1052976    -0.001     0.003     0.008  1.0000
+Zdr      0 <= T < 4        86850    -0.082     0.187     0.575  0.9605
+Zdr      T < 0            816090     0.006     0.022     0.062  0.9989
+         values only in A: 134906, only in B: 0
+Kdp      all             1955916    -0.002     0.055     0.038  0.9960
+Kdp      T >= 4          1052976     0.000     0.004     0.001  1.0000
+Kdp      0 <= T < 4        86850    -0.070     0.240     1.263  0.9738
+Kdp      T < 0            816090     0.003     0.031     0.013  0.9769
+         values only in A: 209896, only in B: 0

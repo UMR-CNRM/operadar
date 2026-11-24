@@ -1,0 +1,24 @@
+=== ../operadarFiles/AROME/dpolvar_Arome_ICE3_Cband_20250831_1800.nc
+Arome ICE3 C band  2025-08-31 18:00  grid {'hydrometeor': 6, 'level': 90, 'y': 130, 'x': 119}
+attributes: horizontal_resolution=1300, model=Arome, microphysics=ICE3, radar_band=C, mixed_phase_type=Fw_posg, radar_location=None, scattering_method=Tmatrix, cc_moment=1, rr_moment=1, ss_moment=1, gg_moment=1, ii_moment=1, wg_moment=1
+T: -61.1 to 25.2 degC
+
+variable        valid   NaN %       min        P1       P50       P99       max
+Zh             957004    31.3  -417.753   -99.016    17.335    42.254    51.956
+Zdr            950507    31.7     0.000     0.000     0.036     1.582     2.745
+Kdp            957004    31.3     0.000     0.000     0.002     1.025     8.647
+Ah             957004    31.3     0.000     0.000     0.000     0.105     0.998
+Zh_att         952815    31.6  -149.983   -78.970    17.435    42.116    51.013
+
+content         max (g/m3)   % > 0
+cloud water          1.371   31.68
+rain                 3.779   57.79
+snow                 1.356   47.77
+graupel              4.048   36.23
+pristine ice         0.797   30.62
+wet graupel          4.614    5.54
+Fw of the wet species: 77165 points, median 0.94
+
+Checks:
+  /!\ 46279 points with Zh < -30 dBZ (min -418): radar sensitivity not applied (operadar option sensitivity_threshold, or older file), Zmin_1km set lower in the configuration, or ranges below 1 km
+  /!\ 6497 points with exactly Zh = 0 dBZ: false echoes of operadar versions before Nov. 2026 (linear Z = 0 written as 0 dBZ), recompute the file

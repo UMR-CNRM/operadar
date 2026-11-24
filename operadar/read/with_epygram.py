@@ -91,7 +91,7 @@ def get_contents_T_R_qv(epygram_file,
     # Gas constant computation for the mix dry air/vapour 
     Rd = epygram.profiles.Rd # dry air
     Rv = epygram.profiles.Rv # water vapour
-    R = Rd + q["vv"]*(Rv-Rd) - Rd*np.sum(q[x] for x in hydrometeors)
+    R = Rd + q["vv"]*(Rv-Rd) - Rd*sum(q[x] for x in hydrometeors)  # np.sum(generator): error in numpy >= 2.3
     
     # Transformation of specific content to contents (M in kg/m3)
     M  = {h:q[h]*pressure/(R*T) for h in hydrometeors}

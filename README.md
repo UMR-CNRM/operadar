@@ -38,7 +38,7 @@ Steps to create the tables are available in [Generation of the lookup tables](ht
 3) Finally, a shell executable is provided to launch the forward operator for one file at a time. However, `operadar` can be used within other algorithm, to loop on multiple files and eventually with varying configurations over files that share certain common parameters. Explanations are in [Execution of the forward operator](https://github.com/UMR-CNRM/operadar/wiki/Execution-of-the-forward-operator)
 
 # Checking the lookup tables
-Plot scripts to look at the tables (curves and 2D maps of the full tables) and at the operadar outputs are in `plot_tools/`; see [plot_tools/README.md](plot_tools/README.md).
+Plot scripts to look at the tables (curves and 2D maps of the full tables) and to analyse the operadar outputs (CFADs as in David et al. 2025, quick look and sanity checks, cross-sections, comparison of two runs, storm swaths) are in `plot_tools/`; see [plot_tools/README.md](plot_tools/README.md) and the wiki page [Plot tools](https://github.com/UMR-CNRM/operadar/wiki/Plot-tools).
 The changes made to the table generator in November 2026 are described in [docs/reports/2026-11_lookup_tables_update.md](docs/reports/2026-11_lookup_tables_update.md).
 
 # Contributing

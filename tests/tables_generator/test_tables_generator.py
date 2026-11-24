@@ -203,10 +203,11 @@ class TestParameterFiles:
     @pytest.mark.parametrize("path", [p for p in PARAM_FILES if re.match(r"TmatParam_[A-Za-z]+ss", p.name)],
                              ids=lambda p: p.name)
     def test_snow_tables_reach_100_mm(self, path):
-        """Snow tables go up to at least 100 mm (158 mm below W band, where the T-matrix does not converge
-        beyond ~100 mm): with 50 mm, only 87 % of the ICE3 snow mass was inside the table at 3 g/m3."""
+        """Snow tables go up to 158 mm below W band, and to 91 mm at W band, where the T-matrix does not
+        converge beyond ~91 mm (expDmax 2.0 failed in Nov. 2026): with 50 mm, only 87 % of the ICE3 snow mass
+        was inside the table at 3 g/m3."""
         p = self.parse(path)
-        assert p["expDmax"] >= (2.0 if "Wss" in path.name else 2.2)
+        assert p["expDmax"] >= (1.96 if "Wss" in path.name else 2.2)
 
     def test_mass_diameter_constants_consistent_between_schemes(self, report):
         """The mass-diameter coefficients a, b of each species are identical in all *_constants.txt files.

@@ -1,0 +1,23 @@
+=== /dir/operadarFiles/MesoNH/2026-11-24/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc
+MesoNH ICE3 C band  2024-01-15 04:00  grid {'hydrometeor': 6, 'level': 82, 'y': 313, 'x': 293}
+attributes: horizontal_resolution=2500, model=MesoNH, microphysics=ICE3, radar_band=C, mixed_phase_type=Fw_posg, radar_location=None, scattering_method=Tmatrix, tables_configuration=David2026PhD, tables_path=./tables_generator/tables/David2026PhD/, sensitivity_threshold=True, cc_moment=1, rr_moment=1, ss_moment=1, gg_moment=1, ii_moment=1, wg_moment=1
+T: -92.3 to 33.4 degC
+
+variable        valid   NaN %       min        P1       P50       P99       max
+Zh            2726524    63.7   -29.999   -27.026    11.495    49.444    59.992
+Zdr           2726524    63.7     0.000     0.002     0.504     2.284     3.608
+Kdp           2726524    63.7     0.000     0.000     0.010     2.559    13.601
+Ah            2917659    61.2     0.000     0.000     0.000     0.223     1.803
+Zh_att        2726524    63.7   -30.000   -27.102    11.436    48.883    58.787
+
+content         max (g/m3)   % > 0
+cloud water          2.414    4.36
+rain                10.172   28.49
+snow                 1.464   82.62
+graupel              3.749   77.95
+pristine ice         1.558   16.90
+wet graupel          4.536    1.33
+Fw of the wet species: 100393 points, median 0.59
+
+Checks:
+  nothing suspicious
