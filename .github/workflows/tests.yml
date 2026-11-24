@@ -1,0 +1,29 @@
+# Install operadar as described in docs/wiki/Installation-tutorial.md and run the tests (including the
+# consistency of the documentation with the code: tests/test_docs.py), for every supported Python version.
+# The tests that need the lookup tables (not in the repository) are skipped.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]   # keep consistent with requires-python in pyproject.toml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install operadar (editable, as in the installation guide)
+        run: |
+          python -m pip install -U pip setuptools wheel
+          pip install --prefer-binary -e ".[dev]"
+          pip check
+      - name: Tests
+        run: pytest -q

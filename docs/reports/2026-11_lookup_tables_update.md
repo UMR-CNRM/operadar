@@ -211,7 +211,7 @@ pytest tests/tables_generator tests/test_mixed_phase.py tests/test_tables_io_sen
   ≤ 0.06 dB on Zdr and ≤ 1 % of the 0 degree value on Kdp (grid study, `results/elev_ranges.txt`). The tables are
   5 times larger.
 - Summary of the configurations, their differences and their impact on the radar variables:
-  `docs/wiki_draft/Lookup-table-configurations.md` (wiki page draft).
+  `docs/wiki/Lookup-table-configurations.md` (wiki page).
 - **Canting at any elevation** (new option `canting: orient`, used by David2026PhD). The analytical angular moments
   of Ryzhkov et al. (2011, eq. 20) (`canting: analyt`) assume a horizontal beam; at higher elevations they were
   applied to the amplitudes of an aligned particle (at 90 degrees: same result as without canting). `orient`
@@ -321,7 +321,7 @@ known with the radar geometry (`radarloc`) and for a vertically pointing radar (
 |altitude − radar_altitude|); otherwise the threshold is constant. New configuration options
 `sensitivity_threshold = True` and `Zmin_1km = None` (default per band: -30 dBZ at L, S, C, X; -40 at Ku, K, Ka;
 -50 at W; these are orders of magnitude, to be set for a given radar). Description for the wiki:
-`docs/wiki_draft/Simulation-configuration-sensitivity.md`.
+`docs/wiki/Simulation-configuration.md` (section Radar sensitivity).
 
 ---
 
@@ -370,6 +370,6 @@ wet graupel) and `_backup_snow_2026-11-23/` (snow).
 | Redraw the report figures with the new tables (annex C graupel/hail maps made with the old ranges) | after the run |
 | Commit the 23 November changes | after your review |
 | Push the branch and open a pull request to `master` | after your OK |
-| Copy `docs/wiki_draft/` to the GitHub wiki (+ section of `Simulation-configuration-sensitivity.md`) | after your OK |
+| Publish `docs/wiki/` to the GitHub wiki (automatic on master, `.github/workflows/wiki.yml`) | after your OK |
 | Delete `tables/vertical/`, `tables/default_old/`, the two `_backup_*` folders | your choice |
 | Stray PNGs in `operadar/radar/` | left untracked on purpose |

@@ -65,6 +65,8 @@ pytest
 
 
 Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch. Then, install operadar as a package with the aforementioned procedure.
+**Documentation:** the wiki pages are generated from [docs/wiki/](docs/wiki/) (published to the wiki when master changes): edit them there, in the same pull request as the code. `tests/test_docs.py` checks that they stay consistent with the code (configuration options, `operadar()` arguments, files named, links, Python versions), and the tests run on GitHub for every push and pull request.
+
 To ask for integration of your modifications, please open a pull request following https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#making-a-pull-request.
 
 # License
