@@ -10,9 +10,9 @@
  *
 """
 
-# ----- INPUT file path (path to folder containing the files)
+# ----- INPUT file path (path to folder containing the files), e.g. "./modelFiles/AROME/" or "./modelFiles/MesoNH/"
 input_filePath  = f"./modelFiles/"
-# ----- OUPUT file(s) directory
+# ----- OUPUT file(s) directory, e.g. "./operadarFiles/AROME/" (keeps the outputs apart from the model files)
 output_filePath = f"./modelFiles/"
 
 # ----- Lookup tables directory path
@@ -35,6 +35,8 @@ cloud_water_over='land'     # 'land' or 'sea' --> will read either the cl (land)
 # ----- Subdomain : written as [lon_min,lon_max,lat_min,lat_max] for a real case
 #                           or as [i_min,i_max,j_min,j_max] for an idealized case
 #                           or None (will use all the points in the file)
+#       e.g. [2.0,4.0,45.0,46.5] (AROME, south-east of France), [53.,60.,-24.,-17.] (MesoNH 3BL13, cyclone near
+#       La Reunion). Large MesoNH domains (e.g. 1202 x 1202 x 82) do not fit in ~23 GB of memory: use a subdomain.
 subDomain = None
 
 # ----- Mixed phase simulation : can be 'T_pos' or 'Fw_pos' or 'Fw_posg'.
@@ -63,7 +65,10 @@ dpol2add = ['Zh','Zdr','Kdp']
 scattering_method = "Tmatrix"
 
 # ---- Compute attenuation for vertical pointing radar
-# If compute_attenuation = True, Ah must be included in dpol2add
+# If compute_attenuation = True, Ah must be included in dpol2add (e.g. dpol2add = ['Zh','Zdr','Kdp','Ah']);
+# Zh_att is then added to the output. The attenuation is integrated along the vertical from radar_altitude
+# (radar at the ground looking up, or airborne radar), whatever cnst_angle: use cnst_angle = 90 below for
+# Zh, Zdr, Kdp consistent with that geometry (with cnst_angle = 0, Zdr and Kdp are those of a horizontal beam).
 
 compute_attenuation = False # True
 radar_altitude = 0 # Radar altitude in meters (can be the aircraft altitude for an onboard radar)

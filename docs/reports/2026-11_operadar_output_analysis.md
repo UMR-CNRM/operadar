@@ -228,7 +228,7 @@ them, the 99th percentile of |difference| in ice is 0.26 dB.
 
 The problems of section 2 were fixed in the code on 23 Nov. (commit c8c545e and the uncommitted changes of
 `dualpol_variables.py` / `forward_operator.py`). The case was recomputed from the AROME `.fa` file with the
-current code, the David2026PhD tables and the configuration `test_AROME` (attenuation computed for a radar at
+current code, the David2026PhD tables and the configuration `test_AROME` (now `test_AROME_Cband`, see section 9; attenuation computed for a radar at
 the ground, `radar_altitude = 0`):
 
 ```bash
@@ -376,7 +376,7 @@ Other W band figures: `fa_W/check/` (maps, joint distributions, temperature), `f
 | | |
 |---|---|
 | Model file | `modelFiles/MesoNH/3BL13.1.MXX25.004.nc` (40 GB): MesoNH, ICE3, 15 January 2024 04 UTC, 1202 x 1202 points at 2.5 km, 82 levels, 5-32° S, 41-70° E |
-| Former output | `modelFiles/MesoNH/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc` (20 Nov., whole domain; the tables are not recorded, probably `improved`, the path of `test_MesoNH`) |
+| Former output | `modelFiles/MesoNH/dpolvar_MesoNH_ICE3_Cband_20240115_0400.nc` (20 Nov., whole domain; the tables are not recorded, probably `improved`, the path of the former `test_MesoNH`) |
 | New run | current code, David2026PhD tables, C band, attenuation, **subdomain 53-60° E, 24-17° S** (293 x 313 points), `configFiles/_verif_mesonh_C.py`: `operadarFiles/MesoNH/2026-11-24/` |
 
 ```bash
@@ -491,11 +491,13 @@ subdomain (Zh 41.8 dBZ and Zdr 1.23 dB at the ground).
 1. ~~Recompute the AROME file with the current code~~, ~~write the table configuration in the outputs~~ and
    ~~check Zh_att from the .fa file~~: done (sections 6-7). The 0 dBZ false echoes and the values below
    -30 dBZ are gone.
-2. **Geometry of the attenuation in the test configurations:** `test_AROME` and `test_MesoNH` compute Zh,
+2. ~~**Geometry of the attenuation in the test configurations**~~ (done 24 Nov.: renamed `test_AROME_Cband` and
+   `test_MesoNH_Cband`, without attenuation, `test_MesoNH` corrected (it pointed to the removed `improved`
+   tables and wrote into `modelFiles/`), and new example `test_AROME_Wband_vertical`: W band, `cnst_angle = 90`,
+   attenuation from the ground). They computed Zh,
    Zdr and Kdp for a horizontal beam (`cnst_angle = 0`) but the attenuation for a radar at the ground looking
    up (`radar_altitude = 0`). A real vertically pointing radar would see Zdr and Kdp close to 0. This
-   is fine for a test, but the combination should be explained in the template, or `cnst_angle = 90` used
-   when the vertical attenuation is wanted.
+   is fine for a test; the template now explains it and `test_AROME_Wband_vertical` uses `cnst_angle = 90`.
 3. **MesoNH on large domains:** the whole 1202 x 1202 x 82 domain does not fit in 23 GB. Processing by
    blocks of columns (or float32 fields) would allow it; meanwhile use `subDomain`.
 4. Former outputs (AROME of 20 Nov., MesoNH) contain false 0 dBZ echoes: recompute them before any statistics.

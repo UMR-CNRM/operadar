@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 name = "operadar"
 version = "1.0.1"
 description = "Radar forward operator developed at the National Centre for Meteorological Research, France"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.14"   # epygram FA library (falfilfa4py): no wheel for 3.14 yet
 
 # Authors – you can list multiple authors if needed
 authors = [
@@ -25,7 +25,7 @@ authors = [
 # Installed with pip install -e .
 dependencies = [
     "pyproj",
-    "numpy==2.2.6",
+    "numpy>=2.0",
     "xarray>=2023.2",
     "pandas",
     "netCDF4",
@@ -40,6 +40,9 @@ dependencies = [
     "h5py",
 ]
 
+# Optional dependencies: pip install -e ".[dev]" (to run the tests: pytest)
+[project.optional-dependencies]
+dev = ["pytest"]
 
 # URL for the home‑page / source repository
 [project.urls]
@@ -61,3 +64,9 @@ include-package-data = true
 where = ["."]           # top‑level directory
 include = ["operadar*"] # include the main package (adjust if your package lives under src/)
 exclude = ["tests*", "plot_tools*", "docs*"]   # the same exclusions you had
+
+# ------------------------------------------------------------
+# Tests: "pytest" from the repository root runs tests/ only
+# ------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
