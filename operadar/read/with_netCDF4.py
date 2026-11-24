@@ -60,8 +60,9 @@ def get_subdomain_indices(mnhFile:Dataset,
         lon_min, lon_max, lat_min, lat_max = get_lat_lon_from_subdomain(subDomain)
         mask_zoom = ((LON>lon_min) &(LON<lon_max) & (LAT>lat_min) & (LAT<lat_max) )
         [ilon,jlat]=np.where(mask_zoom)
-        i_min, i_max = np.nanmin(ilon), np.nanmax(ilon)
-        j_min, j_max = np.nanmin(jlat), np.nanmax(jlat)  
+        # +1: the indices are used as slice ends (exclusive), the last row/column inside the box is kept
+        i_min, i_max = np.nanmin(ilon), np.nanmax(ilon) + 1
+        j_min, j_max = np.nanmin(jlat), np.nanmax(jlat) + 1
     else :
         i_min, i_max = subDomain[0], subDomain[1]
         j_min, j_max = subDomain[2], subDomain[3]
@@ -97,14 +98,15 @@ def get_contents(mnhFile:Dataset,
                  rho3D:np.ndarray,
                  i_min:int, i_max:int,
                  j_min:int, j_max:int,
-                 )->tuple(dict[str,np.ndarray],np.ndarray):
+                 )->tuple[dict[str,np.ndarray],np.ndarray]:
     contents = {}
     for key in hydrometeors:
         contents[key] = np.empty(temperature.shape)
         contents[key] = mnhFile.variables[name_var_hydro[key]][0,:,:,:][:,i_min:i_max,j_min:j_max]*rho3D[:,:,:] # kg/kg of dry air
         contents[key][contents[key]==999.] = float('nan')
-    qv=np.empty(temperature.shape)
-    mnhFile.variables[name_var_hydro['vv']][0,:,:,:][:,i_min:i_max,j_min:j_max]
+    # water vapour mixing ratio (kg/kg), used for the gas attenuation (it was read but not kept: qv was undefined)
+    qv = np.array(mnhFile.variables[name_var_hydro['vv']][0,:,:,:][:,i_min:i_max,j_min:j_max], dtype=float)
+    qv[qv==999.] = float('nan')
     return contents,qv
 
 
