@@ -504,3 +504,12 @@ subdomain (Zh 41.8 dBZ and Zdr 1.23 dB at the ground).
 5. With observations of the case (on a Cartesian grid), the same commands give the simulation-observation
    comparison of David et al. (2025): `compute_cfad.py OBS.nc --label obs --core-dbz 48`, then
    `plot_cfad.py obs.nc core.nc --figs summary freq --diff`.
+6. ~~**Gas attenuation lost outside the hydrometeors**~~ (fixed 24 Nov.): Ah is NaN where there is no
+   hydrometeor, so the total extinction was NaN there and the vertical integration counted it as 0: the gas
+   attenuation in clear air and the half-layers at the cloud edges were ignored. Ah = NaN is now taken as 0
+   hydrometeor extinction. On the AROME W-band vertical run, Zh_att changes by at most 0.2 dB (the clear air is
+   mostly above the clouds here): the numbers of section 7 are unchanged. It matters more under a cloud base
+   in moist air (W band, ~0.5 dB/km one-way at the ground). The attenuation is now tested in
+   `tests/test_attenuation.py` (analytical profiles, airborne radar, level order, terrain, Ah conversion, gas
+   attenuation against ITU-R P.676 orders of magnitude); the W-band checks that were run as `__main__` of
+   `attenuation.py` (broken since a variable was renamed) and the plotting code were removed.
