@@ -111,25 +111,55 @@ def get_contents(mnhFile:Dataset,
 
 
 
+# Number concentration variables of the 2-moment species (current name, former name)
+MESONH_CONCENTRATIONS = {'rr': ('CRAIN', 'CRAINT'), 'ii': ('CICE', 'CICET'), 'cc': ('CCLOUD', 'CCLOUDT')}
+# Pristine ice concentration of the 1-moment schemes when it is not in the file (as for AROME)
+DEFAULT_ICE_CONCENTRATION = 800.
+
+
+def read_concentration(mnhFile:Dataset, names:tuple, rho3D:np.ndarray,
+                       i_min:int, i_max:int, j_min:int, j_max:int) -> np.ndarray|None:
+    """Number concentration (m-3) of the first variable of `names` found in the file, None if none is found.
+    The variables in kg-1 (LIMA prognostic concentrations) are multiplied by the dry air density; the
+    variables in m-3 (CIT of the 1-moment schemes) are kept."""
+    for name in names:
+        if name in mnhFile.variables:
+            var = mnhFile.variables[name]
+            field = np.array(var[0,:,:,:][:,i_min:i_max,j_min:j_max], dtype=float)
+            field[field==999.] = float('nan')
+            units = getattr(var, 'units', '').replace(' ', '')
+            if 'kg-1' in units or 'kg^-1' in units or '/kg' in units:
+                field *= rho3D
+            elif units not in ('m-3', 'm^-3', '/m3'):
+                print(f"\tWarning: unknown units '{units}' for {name}: taken as m-3")
+            return field
+    return None
+
+
 def get_concentrations(mnhFile:Dataset,
-                       microphysics_scheme:str,
+                       hydrometeorMoments:dict[str,int],
                        hydrometeors:list,
                        temperature:np.ndarray,
                        rho3D:np.ndarray,
                        i_min:int, i_max:int,
                        j_min:int, j_max:int,):
-    concentrations = {}
-    for key in hydrometeors:
-        concentrations[key] = np.zeros(temperature.shape)
-    
-    if microphysics_scheme[0:2]=="IC":
-        concentrations['ii'] = mnhFile.variables['CIT'][0,:,:,:][:,i_min:i_max,j_min:j_max]
-        concentrations['ii'][concentrations['ii']==999.] = float('nan')
-    if microphysics_scheme[0:3] =="LIM" :
-        concentrations['rr'] = mnhFile.variables['CRAIN'][0,:,:,:][:,i_min:i_max,j_min:j_max] #former name: CRAINT
-        concentrations['rr'][concentrations['rr']==999.]=float('nan')
-        concentrations['ii'] = mnhFile.variables['CICE'][0,:,:,:][:,i_min:i_max,j_min:j_max] #former name: CICET
-        concentrations['ii'][concentrations['ii']==999.]=float('nan')
-    concentrations['rr']*=rho3D
-    concentrations['ii']*=rho3D
+    """Number concentrations (m-3), depending on the number of moments of each species (and not on the name
+    of the scheme: LIMC is 2-moment for cloud water and rain only, its ice is 1-moment as in ICE3/ICJW):
+    * 2-moment species: prognostic concentration (CRAIN, CICE, CCLOUD), in kg-1 -> times the dry air density
+    * 1-moment pristine ice: diagnosed concentration CIT (m-3), or 800 m-3 if not in the file (as for AROME)
+    * other 1-moment species: not used (0)."""
+    concentrations = {key: np.zeros(temperature.shape) for key in hydrometeors}
+    for h in hydrometeors:
+        if hydrometeorMoments.get(h, 1) == 2:
+            names = MESONH_CONCENTRATIONS.get(h)
+            field = None if names is None else read_concentration(mnhFile, names, rho3D, i_min, i_max, j_min, j_max)
+            if field is None:
+                raise KeyError(f"{h} is 2-moment but its concentration ({names}) is not in the file")
+            concentrations[h] = field
+        elif h == 'ii':
+            field = read_concentration(mnhFile, ('CIT',), rho3D, i_min, i_max, j_min, j_max)
+            if field is None:
+                print(f"\tCIT not in the file: pristine ice concentration = {DEFAULT_ICE_CONCENTRATION:g} m-3")
+                field = np.full(temperature.shape, DEFAULT_ICE_CONCENTRATION)
+            concentrations[h] = field
     return concentrations

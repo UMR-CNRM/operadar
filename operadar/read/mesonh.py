@@ -95,7 +95,7 @@ def read_mesonh(filePath:Path,
                      )
     if verbose : print('\t\tGot 3D contents in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    Nc = readnc.get_concentrations(mnhFile=mnh_file, microphysics_scheme=micro,
+    Nc = readnc.get_concentrations(mnhFile=mnh_file, hydrometeorMoments=hydrometeorMoments,
                             hydrometeors=hydromet_list, temperature=Tc, rho3D=rho3D,
                             i_min=i_min, i_max=i_max,
                             j_min=j_min, j_max=j_max,
