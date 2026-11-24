@@ -35,6 +35,7 @@ def read_model_file(filePath, modelname, micro_scheme, real_case, domain, hydrom
 fo.read_model_file = read_model_file
 fo.format_temporal_variable = lambda filePath, model_type, real_case: pd.Timestamp(ds.time.values)
 
-fo.operadar(filename='historic.arome.franmg-01km30+0018:00.fa', configuration=load_configuration_file('test_AROME'),
+fo.operadar(filename='historic.arome.franmg-01km30+0018:00.fa', configuration=load_configuration_file('test_AROME_Cband'),
             radar_band=band, tables_path='./tables_generator/tables/David2026PhD/',
-            out_dir_path=out_dir, compute_attenuation=False, subDomain=None)
+            out_dir_path=out_dir, compute_attenuation=False, subDomain=None,
+            dpol2add=['Zh', 'Zdr', 'Kdp', 'Ah'])

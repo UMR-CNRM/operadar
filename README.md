@@ -35,7 +35,7 @@ Install `operadar` in a dedicated virtual environment: [Installation-tutorial](h
 1) To work properly, lookup tables should be generated **before** running `operadar` (unless you have a direct access to the tables).
 Steps to create the tables are available in [Generation of the lookup tables](https://github.com/UMR-CNRM/operadar/wiki/Generation-of-the-lookup-tables).<br>*--> If you already have access to the tables, you may skip this step.*
 2) A configuration file is red by `operadar` to compute the polarimetric fields, according to your chosen parameterization. See [Simulation configuration](https://github.com/UMR-CNRM/operadar/wiki/Simulation-configuration) for extended explanations.
-3) Finally, a shell executable is provided to launch the forward operator for one file at a time. However, `operadar` can be used within other algorithm, to loop on multiple files and eventually with varying configurations over files that share certain common parameters. Explanations are in [Execution of the forward operator](https://github.com/UMR-CNRM/operadar/wiki/Execution-of-the-forward-operator)
+3) Finally, a shell executable is provided to launch the forward operator for one file at a time. However, `operadar` can be used within other algorithm, to loop on multiple files and eventually with varying configurations over files that share certain common parameters. Explanations are in [Execution of the forward operator](https://github.com/UMR-CNRM/operadar/wiki/Execution-of-operadar)
 
 # Checking the lookup tables
 Plot scripts to look at the tables (curves and 2D maps of the full tables) and to analyse the operadar outputs (CFADs as in David et al. 2025, quick look and sanity checks, cross-sections, comparison of two runs, storm swaths) are in `plot_tools/`; see [plot_tools/README.md](plot_tools/README.md) and the wiki page [Plot tools](https://github.com/UMR-CNRM/operadar/wiki/Plot-tools).
@@ -53,9 +53,14 @@ You should also cite the Fortran 77 T-matrix code that is employed to generate t
 * Mishchenko, M. I., & Travis, L. D. (1994). T-matrix computations of light scattering by large spheroidal particles. Optics Communications, 109(1), 16–21. [http://www.sciencedirect.com/science/article/pii/0030401894907315](http://www.sciencedirect.com/science/article/pii/0030401894907315)
 
 # Testing
-- After installing environment, run:
+- After installing the environment (Python 3.12 or 3.13), run:
 ```bash
 python -c "import operadar; import epygram; print('operadar OK, epygram', getattr(epygram,'__version__','unknown'))"
+```
+- To run the tests (from the repository root):
+```bash
+pip install -e ".[dev]"
+pytest
 ```
 
 
