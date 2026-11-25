@@ -16,3 +16,11 @@ tables_generator/src/TmatInt
 tables_generator/src/libFortran/
 plot_tools/IMG/
 plot_tools/nohupOUT/
+tests/tables_generator/report/
+
+# Reference articles and theses (PDF, not distributed with the code)
+docs/references/
+# Large intermediate results of the grid study
+tables_generator/tools/grid_study/results/*.pkl
+# HTML version of the reports (built locally, figures embedded)
+docs/reports/*.html

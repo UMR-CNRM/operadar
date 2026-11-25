@@ -16,7 +16,7 @@ def compute_radar_geometry(X:np.ndarray,
                            radarloc:str|list|None,
                            cnst_angle:int,
                            distmax_rad:float=255e3,
-                           )-> tuple[np.ndarray,np.ndarray]:
+                           )-> tuple[np.ndarray,np.ndarray,np.ndarray|None]:
     """Mimic radar geometry in the model grid.
 
     Args:
@@ -32,6 +32,8 @@ def compute_radar_geometry(X:np.ndarray,
     Returns:
         distance_mask (np.ndarray) : mask of the grid points within the maximum radar radius (3D).
         elev (np.ndarray) : corresponding elevation value for each grid point (3D).
+        slant_range (np.ndarray|None) : distance between the radar and each grid point (m, 3D), None when
+                                        the radar geometry is not simulated (radarloc=None or Arome).
     """
 
     print("Compute radar geometry") ; deb_timer = tm.time()
@@ -41,6 +43,7 @@ def compute_radar_geometry(X:np.ndarray,
         print('\tNot computing radar geometry : radarloc =',radarloc)
         elev = np.full(Tc.shape,cnst_angle) 
         distance_mask = (elev >= 0.)
+        slant_range = None
     
     else :
         if type(radarloc)==str and radarloc=="center" :
@@ -52,9 +55,10 @@ def compute_radar_geometry(X:np.ndarray,
             print(f'\tComputing radar geometry at latitude {radar_lat}° and longitude {radar_lon}°.')
         distance_mask, radar_dist_3D = compute_distance_mask(X, Y, Z, X0, Y0, Z0, distmax_rad)
         elev = compute_radar_elevation(radar_dist_3D, Z, elev_max)
+        slant_range = np.sqrt(radar_dist_3D**2 + (np.broadcast_to(Z, radar_dist_3D.shape) - Z0)**2)
         
     print("\t--> Done in",round(tm.time()- deb_timer,2),"seconds")   
-    return distance_mask, elev
+    return distance_mask, elev, slant_range
     
     
     

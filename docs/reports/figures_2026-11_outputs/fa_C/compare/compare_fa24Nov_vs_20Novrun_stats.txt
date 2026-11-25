@@ -1,0 +1,28 @@
+A = 20 Nov. run: /dir/operadarFiles/AROME/dpolvar_Arome_ICE3_Cband_20250831_1800.nc
+B = fa 24 Nov.: /dir/operadarFiles/AROME/fa_2026-11-24/dpolvar_Arome_ICE3_Cband_20250831_1800.nc
+B - A, points where both exist and max(Zh_A, Zh_B) >= 0 dBZ
+variable points                n      mean      RMSE   |d| P99    corr
+Zh       all              731733     0.109     0.194     0.653  0.9999
+Zh       T >= 4           375751     0.032     0.075     0.173  1.0000
+Zh       0 <= T < 4        51140     0.002     0.109     0.221  1.0000
+Zh       T < 0            304842     0.223     0.286     0.707  0.9999
+         values only in A: 51181, only in B: 0
+Zdr      all              731733     0.114     0.389     1.362  0.5918
+Zdr      T >= 4           375751    -0.050     0.058     0.124  1.0000
+Zdr      0 <= T < 4        51140    -0.165     0.265     0.760  0.9567
+Zdr      T < 0            304842     0.363     0.590     1.409  0.0633
+         values only in A: 44684, only in B: 0
+Kdp      all              731733     0.006     0.116     0.357  0.9681
+Kdp      T >= 4           375751    -0.008     0.015     0.059  0.9999
+Kdp      0 <= T < 4        51140    -0.128     0.346     1.650  0.9821
+Kdp      T < 0            304842     0.047     0.109     0.221  0.9255
+         values only in A: 51181, only in B: 0
+Ah       all              738230     0.000     0.001     0.003  0.9997
+Ah       T >= 4           375751     0.000     0.000     0.002  0.9996
+Ah       0 <= T < 4        51218    -0.000     0.003     0.015  0.9997
+Ah       T < 0            311261    -0.000     0.001     0.002  0.9998
+Zh_att   all              731733     0.109     0.194     0.652  0.9999
+Zh_att   T >= 4           375751     0.031     0.075     0.173  1.0000
+Zh_att   0 <= T < 4        51140     0.001     0.109     0.217  1.0000
+Zh_att   T < 0            304842     0.223     0.285     0.705  0.9999
+         values only in A: 46992, only in B: 0

@@ -1,6 +1,6 @@
 type:gg
 band:C
-canting:analyt
+canting:orient
 sigbeta:40.0
 DIEL:RY19dry
 ARfunc:RYdg
@@ -9,11 +9,11 @@ DSTYfunc:RHOX
 Frim:1.0
 LAM:53.2
 ELEVmin:0.0
-ELEVmax:10.0
+ELEVmax:90.0
 ELEVstep:10.0
-Tcmin:-60.0
-Tcmax:10.0
-Tcstep:1.0
+Tcmin:-40.0
+Tcmax:0.0
+Tcstep:10.0
 expDmin:-1.0
 expDmax:1.7
 expDstep:0.02

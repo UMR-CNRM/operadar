@@ -12,13 +12,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 import os
+from utils.utils_plot import select_rows
+from utils.tables import read_table_params, read_table_dataframe
 
 
 micro="ICE3" # ICE3_1M or ICJW_1M
-moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
-         "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","ii":"1M"},
-         "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"2M"},
-         "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","ii":"1M"}
+moments={"ICE3":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","hh":"1M","ii":"1M"},
+         "ICJW":{"rr":"1M","ss":"1M","gg":"1M","wg":"1M","cl":"1M","cs":"1M","hh":"1M","ii":"1M"},
+         "LIMA":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","hh":"1M","ii":"2M"},
+         "LIMC":{"rr":"2M","ss":"1M","gg":"1M","wg":"1M","cl":"2M","cs":"2M","hh":"1M","ii":"1M"}
          }
 
 Path_tables = "../tables_generator/tables/"
@@ -29,8 +31,8 @@ band,color_list,typeh_list ='C',['b','k','c','g','gray','gray'],['rr','cl','ss',
 #band,color_list,typeh_list ='W',['b','k'],['rr','ii']
 
 listplot=['M'] #,'M']
-#TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'default','W':'default'}
-TmatOption={'L':'default','C':'default','K':'default','W':'default'}
+#TmatOption={'L':'David2026PhD','C':'David2026PhD','K':'David2025AMT','W':'David2025AMT'}
+TmatOption={'L':'David2025AMT','C':'David2025AMT','K':'David2025AMT','W':'David2025AMT'}
 pltunit={'D':'mm','M':r'kg m$^{-3}$'}
 pltX={'D':'Deq','M':'M'}
 listvar=['Zh'] #,'Zdr','Kdp'] #,'Rhohv','Ah','Av']
@@ -74,7 +76,8 @@ Fwsel=0 # selected Fw for all species except graupel (= 0 because only graupe ca
 Fw_list,Fw_ls=[0.0,0.1,0.6,1.0],['-.',':','--','-']
 ELEVsel=0 #0 for ground radars, 90 for RASTA or BASTA
 Nii=800 #selected number concentration for primary ice
-T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':10,'rr':10,'wg':0,'hh':1,'wh':0}
+N2M=1000 #selected number concentration (/m3) for the other 2-moment species (e.g. LIMA rain and cloud)
+T_dict = {'ii':-30,'ss':-10,'gg':0,'cl':10,'rr':10,'wg':0,'hh':0,'wh':0}  # dry hail tables stop at 0 C
 Fw_list,Fw_ls=[0.1,0.6,0.9],['-.',':','--']
 #T_list={'ii':[-30,-20,-10],'ss':[-20,-10,0],'gg':[-20,-10,0],'tt':[-10,0,10],'rr':[0,10,25],'wg':[-10,0],'hh':[-15,0,15],'wh':[-10,0,10]}
 
@@ -87,11 +90,8 @@ legend_list = typeName
 for plot in listplot:  
     # fig,axes = plt.subplots(nrows= 2,ncols=2,figsize=(15,15))
     #fig,axes = plt.subplots(nrows= 1,ncols=3,figsize=(20,8))
-    fig,axes = plt.subplots(nrows= 1,ncols=1,figsize=(10,10))
-    if (len(listvar))>1:
-        ax = axes.flat
-    else:
-        ax=[axes,]
+    fig,axes = plt.subplots(nrows= 1,ncols=len(listvar),figsize=(10*len(listvar),10),squeeze=False)
+    ax = axes.flat  # one panel per variable of listvar
     
     for ivar,var in enumerate(listvar): 
         print("Plotting "+var+"-"+plot)
@@ -103,13 +103,13 @@ for plot in listplot:
             table=Path_tables+"/"+TmatOption[band]+"/"+begtable[plot]+band+typeh
 
             # reading table options (from config file)
-            df_param=pd.read_csv(table, sep=delim[plot],nrows=1,engine='python')
+            df_param=pd.DataFrame([read_table_params(table)])
             SIGBETA=int(df_param['SIGBETA'][0])
             ARfunc=df_param['ARfunc'][0]
             ARcnst=df_param['ARcnst'][0]                
                 
             # reading table variables
-            df=pd.read_csv(table, sep=delim[plot],skiprows =2,engine='python')
+            df=read_table_dataframe(table)  # NetCDF (<table>.nc) or text table
             Tcol=df['Tc'].to_numpy()
             ELEV=df['ELEV'].to_numpy()
             if (plot=='M'):
@@ -117,7 +117,7 @@ for plot in listplot:
             else:
                 P3col=df['Fw'].to_numpy()
 
-            vn['Zh'],vn['Zdr']=df['zhh'].to_numpy(),df['zdr'].to_numpy()
+            vn['Zh'],vn['Zdr']=df['zhh'].to_numpy(dtype=float),df['zdr'].to_numpy(dtype=float)
             vn['Rhohv'],vn['Kdp']=df['rhohv'].to_numpy(),df['kdp'].to_numpy()
             vn['Ah'],vn['Av']=df['Ah'].to_numpy(),df['Av'].to_numpy()
             x=df[pltX[plot]].to_numpy()
@@ -125,22 +125,22 @@ for plot in listplot:
             
             if (typeh=='wg' or typeh=='wh'):
                 for iFw,Fw in enumerate(Fw_list):
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fw)) 
+                    ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, Fw)
                     label=legend_list[typeh]+" Fw="+str(Fw)+" T="+str(T_dict[typeh])+u'\u00B0C'
                     ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],ls=Fw_ls[iFw],linewidth=lw)#,s=0.5)
                 if (ivar==2):
                     ax[ivar].legend(loc = 'best',fontsize=pol_legend)   
             else:                
-                if (typeh=='ii' and plot=='M') :
-                    id=np.argmin(np.abs(P3col-Nii)) # position of closest concentration to Nii
-                    P3sel=P3col[id]
-                    label=legend_list[typeh]+" Nii="+str(P3sel)+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == P3sel))
-                    vn[var][ind]=np.array(vn[var][ind], dtype=float)
+                if plot=='M' and (typeh=='ii' or moments[micro][typeh]=="2M") :
+                    # P3 is the number concentration: closest value to Nii (ice) or N2M (other 2-moment species)
+                    Nsel = Nii if typeh=='ii' else N2M
+                    ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, Nsel, logP3=True)
+                    P3sel=P3col[ind][0]
+                    label=legend_list[typeh]+" N="+str(P3sel)+" T="+str(T_dict[typeh])+u'\u00B0C'
                     ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],linewidth=lw)#,s=0.5)  
                 else:
                     label=legend_list[typeh]+" T="+str(T_dict[typeh])+u'\u00B0C'
-                    ind = np.where((Tcol == T_dict[typeh])*(ELEV == ELEVsel)*(P3col == Fwsel))           
+                    ind = select_rows(Tcol, ELEV, P3col, T_dict[typeh], ELEVsel, Fwsel)           
                     ax[ivar].plot(x[ind],vn[var][ind],label = label,color=color_list[itypeh],linewidth=lw)#,s=0.5)               
                 
             #end choice wg

@@ -423,6 +423,7 @@ C     ***********************************************************************
       REAL*8 radar_cnst,K2,LIGHTSPEED !K2=diel factor computed from EPSW
       INTEGER NELEV,NTc,ND,idELEV,idTc,idD
       REAL*8 SIGBETA,SIGBETAr,SIGBETAwg ! canting angle width
+      REAL*8 SIGBETAeff ! width used for the current particle (SIGBETA is never modified)
       REAL*8 Fwmin, Fwstep, Fwmax,Fw,Fw_lim
 
       REAL*8 FREQ,Tk,expD,Deqm
@@ -436,9 +437,12 @@ C     ***********************************************************************
       CHARACTER*4 ARfunc
       CHARACTER*4 DSTYfunc
       CHARACTER*7 DIEL
-      CHARACTER*30 nomfileCoef
-      CHARACTER*26 nomfileResu
-      CHARACTER*26 nomfileParam  
+      CHARACTER*1024 nomfileCoef
+      CHARACTER*1024 nomfileResu
+      CHARACTER*1024 nomfileParam  
+      CHARACTER*32 arg
+      INTEGER idTcFirst, idTcLast, NMAXT, iRow, nRows
+      CHARACTER*400, ALLOCATABLE :: rows(:) ! output lines of one temperature
 
       REAL*8 zhh,zvv,zdr,kdp,rhohv,sighh,sigvv,Ah,Av ! Tmatrix
       REAL*8 zhhR,zvvR,zdrR,kdpR,rhohvR,sighhR,sigvvR ! Rayleigh spheroids
@@ -447,6 +451,15 @@ C     ***********************************************************************
       REAL*8 A1,A2,A3,A4,A5,A7
       COMPLEX*16 Saa,Sbb,Saaf,Sbbf,deltaco
       COMPLEX*16 SaaR,SbbR,deltacoR ! Rayleigh
+      COMPLEX*16 SaaRel ! Rayleigh amplitude in vertical polarisation at the elevation ELEV
+      ! canting=orient: amplitudes (backward B, forward F) parallel (P) and perpendicular (O)
+      ! to the plane (beam, symmetry axis), for angles CHI = 0, CHISTEP, ..., 90 deg between
+      ! the beam and the symmetry axis (T-matrix, and Rayleigh with suffix R)
+      INTEGER NCHI, J
+      REAL*8 CHISTEP
+      PARAMETER (CHISTEP=1D0, NCHI=90)
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      COMPLEX*16 SPBR(0:NCHI),SOBR(0:NCHI)
       
       REAL*8 aj,bj,aSnow,bSnow
       REAL*8 P
@@ -471,12 +484,26 @@ C     ***********************************************************************
       WRITE(0,*) '---------------------------------------'
       
       !-- Input files
+      ! Optional arguments (all optional, defaults = historical behaviour):
+      !   1: parameter file  (default ../param/tmp_config)
+      !   2: output TmatCoefDiff file (default ../tables/<type>/TmatCoefDiff_<band><type>)
+      !   3: output TmatResu file     (default ../tables/<type>/TmatResu_<band><type>)
+      !   4,5: first and last temperature index to compute (0-based, default all).
+      !        The header is always written for the full temperature range, so the
+      !        outputs of several runs on consecutive index ranges can be concatenated
+      !        (keeping the 3 header lines of the first one only).
       nomfileParam='../param/tmp_config' 
-      WRITE(0,*) 'Reading :',nomfileParam
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 1) 
+     &   CALL GET_COMMAND_ARGUMENT(1, nomfileParam)
+      WRITE(0,*) 'Reading :',trim(nomfileParam)
       
       
       !-----Reading of parameters
-      OPEN (5,FILE=nomfileParam)
+      OPEN (5,FILE=trim(nomfileParam),STATUS='OLD',iostat=ios)
+      IF (ios .NE. 0) THEN
+        WRITE(0,*) 'ERROR: cannot open ',trim(nomfileParam)
+        STOP 1
+      ENDIF
       READ (5,1)typeh
     1 FORMAT (5X,A2)
       READ (5,22)band
@@ -528,6 +555,12 @@ C     ***********************************************************************
       WRITE (0,*) '   type=',typeh
       WRITE (0,*) '   band=',band
       WRITE (0,*) '   canting=',canting !,"ok"
+      IF (canting.NE."nocant" .AND. canting.NE."analyt" .AND.
+     &    canting.NE."orient") THEN
+        WRITE(0,*) "canting options: nocant, analyt or orient"
+        WRITE(0,*) "current ",canting
+        STOP 1
+      ENDIF
       WRITE (0,*) '   SIGBETA=',SIGBETA !,"ok"
       WRITE (0,*) '   DIEL=',DIEL !,"ok" options: 
       WRITE (0,*) '   ARfunc=',ARfunc !,"ok"  options: BR02, CNST, AUds   
@@ -550,9 +583,19 @@ C     ***********************************************************************
       Hydromet_const_file = '../param/ICE3_constants.txt'
       WRITE(0,*) "Reading PSD constants : ",Hydromet_const_file
       OPEN(unit=333,file = Hydromet_const_file,action="read",iostat=ios)
+      IF (ios .NE. 0) THEN
+        WRITE(0,*) 'ERROR: cannot open ',Hydromet_const_file
+        STOP 1
+      ENDIF
       READ(333,*) ! Read the first line of the file
+      espece='  '
       DO WHILE (espece /= typeh) 
-            READ(333,*) espece,aj,bj
+            READ(333,*,iostat=ios) espece,aj,bj
+            IF (ios .NE. 0) THEN
+              WRITE(0,*) 'ERROR: type ',typeh,' not found in ',
+     &                   Hydromet_const_file
+              STOP 1
+            ENDIF
       ENDDO
       WRITE (0,*) '   espece=',espece
       WRITE (0,*) '   aj=',aj
@@ -566,10 +609,14 @@ C     ***********************************************************************
      & //typeh
       nomfileCoef='../tables/'//typeh//'/TmatCoefDiff_'//trim(band)
      & //typeh
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 2) 
+     &   CALL GET_COMMAND_ARGUMENT(2, nomfileCoef)
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 3) 
+     &   CALL GET_COMMAND_ARGUMENT(3, nomfileResu)
 
 
-      WRITE(0,*) '   ',nomfileCoef
-      WRITE(0,*) '   ',nomfileResu
+      WRITE(0,*) '   ',trim(nomfileCoef)
+      WRITE(0,*) '   ',trim(nomfileResu)
 
       OPEN (4,FILE=trim(nomfileResu)) 
       OPEN (7,FILE=trim(nomfileCoef)) 
@@ -602,21 +649,45 @@ C     ***********************************************************************
      
       !==============================================================
       
-      NTc=nint((Tcmax-Tcmin)/Tcstep)+1 !========= Loop over temperature (°C)
-      DO idTc=0,NTc-1 
+      NTc=nint((Tcmax-Tcmin)/Tcstep)+1
+      NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1
+      IF (canting.EQ."analyt" .AND. SIGBETA.GT.0 .AND.
+     &    ELEVmax.GT.10.01) THEN
+        WRITE(0,*) "WARNING: canting=analyt (angular moments of ",
+     &   "Ryzhkov et al. 2011, eq. 20) is only valid at low ",
+     &   "elevation; ELEVmax=",ELEVmax,". Use canting=orient."
+      ENDIF
+      NFw=nint((Fwmax-Fwmin)/Fwstep)+1
+      ND=nint((expDmax-expDmin)/expDstep)+1
+
+      ! Range of temperatures computed by this run (arguments 4 and 5)
+      idTcFirst=0
+      idTcLast=NTc-1
+      IF (COMMAND_ARGUMENT_COUNT() .GE. 5) THEN
+        CALL GET_COMMAND_ARGUMENT(4, arg)
+        READ(arg,*) idTcFirst
+        CALL GET_COMMAND_ARGUMENT(5, arg)
+        READ(arg,*) idTcLast
+        idTcFirst=MAX(idTcFirst,0)
+        idTcLast=MIN(idTcLast,NTc-1)
+        WRITE(0,*) '   temperature indexes:',idTcFirst,' to ',idTcLast
+      ENDIF
+
+      ! The T-matrix of a particle does not depend on the elevation: it is
+      ! computed once per (Tc, Fw, D) and only the amplitudes (AMPL) are
+      ! computed for each elevation. Lines are kept in memory for one
+      ! temperature and written in the usual order Tc > ELEV > Fw > D.
+      nRows=NELEV*NFw*ND
+      ALLOCATE(rows(nRows))
+
+      DO idTc=idTcFirst,idTcLast !========= Loop over temperature (°C)
         Tc=Tcmin+idTc*Tcstep  
         Tk=Tc+273.15 !T (°K)
         
-        NELEV=nint((ELEVmax-ELEVmin)/ELEVstep)+1 !========= Loop over elevation
-        DO idELEV=0,NELEV-1
-          ELEV=ELEVmin+idELEV*ELEVstep
-          
-          NFw=nint((Fwmax-Fwmin)/Fwstep)+1 !========= Loop over liquid water fraction
-          DO idF=0,NFw-1
+          DO idF=0,NFw-1 !========= Loop over liquid water fraction
             Fw=Fwmin+idF*Fwstep
 
-            ND=nint((expDmax-expDmin)/expDstep)+1 !========= Loop over diameters(mm) 
-            DO idD=0,ND-1
+            DO idD=0,ND-1 !========= Loop over diameters(mm) 
               expD=expDmin+idD*expDstep
               D=10**(expD)
 
@@ -647,6 +718,7 @@ C ============================================================================
         AR=ARdg             ! AR initial (dry graupel) 
         Dm=D*(AR**(-1.0/3.))   ! Dm        
         CALL QRHOX(aj,bj,D,Dm,P,RHOP)  ! RHOP
+        RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
 
         ! Max mass water fraction before a shell is forming (all cavities are filled)          
         Fw_lim=(1/RHOI-1/RHOP)/(1/RHOI-1/RHOP-1/RHOLW) ! eq 19 doc ou 4.4 PhD Le Bastard
@@ -721,11 +793,13 @@ C ============================================================================
           ELSE 
             CALL QRHOX(aj,bj,D,Dm,P,RHOP)
           ENDIF ! RHOP
+          RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
           Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
           CALL AR_BRANDES(Deqr,ARr)    ! ARr
         ! ----- Other particles : RHOP from m-D relationship ICE3/LIMA
         ELSE
           CALL QRHOX(aj,bj,D,Dm,P,RHOP)
+          RHOP=MIN(RHOP,RHOI) ! m(D) law can give rho > solid ice for small D
           Deqr=D*(RHOP/RHOLW)**(1.0/3) ! Deqr
           CALL AR_BRANDES(Deqr,ARr)    ! ARr
         ENDIF
@@ -771,6 +845,7 @@ C ========================================================================
           
       ELSE IF (DIEL .EQ. "MGwMA08") THEN
           CALL QEPSXdry(EPSI,EPSA,RHOP,RHOI,EPSXd)
+          CALL VolWaterFraction(RHOP,RHOLW,Fw,FVW) ! was never computed
           CALL QEPSX_MaxGarW_MA08(EPSXd,EPSW,EPSI,FVW,EPSX) 
 
       ENDIF ! End choices for dielectric constant   
@@ -779,14 +854,17 @@ C ========================================================================
 C =================== END dielectric constant EPSX ====================
 
 C =================== SIGBETA : width of canting angle distribution =====
+        ! SIGBETA must not be overwritten: it is the dry-particle value read in the
+        ! parameter file and is reused for every diameter, Fw, elevation and temperature
+        SIGBETAeff=SIGBETA
         IF (Fw .GT. 0) THEN
           CALL CANTING_RY11wetg(Fw,SIGBETA,SIGBETAr,SIGBETAwg)
-          SIGBETA=SIGBETAwg 
+          SIGBETAeff=SIGBETAwg
         ENDIF
 C =================== END width of canting angle distribution===========
 
       ! Saving in resu file diameters, density RHOP, diel EPSX and axis ratio AR 
-      WRITE(4,*)  D,Deq,Fw,Fw_lim,RHOP,EPSX,RHOI,EPSI,AR,SIGBETA
+      WRITE(4,*)  D,Deq,Fw,Fw_lim,RHOP,EPSX,RHOI,EPSI,AR,SIGBETAeff
 
 C ========================================================================   
 C             COMPUTE dpol var with Rayleigh and Tmatrix 
@@ -803,19 +881,45 @@ C ========================================================================
       !---------- Radar constant 
       CALL QEPSW(Tk,FREQ,EPSW)
       QMW=SQRT(EPSW) 
-      K2=((QMW**2-1.)/(QMW**2+2.))**2 
+      K2=ABS((QMW**2-1.)/(QMW**2+2.))**2 ! |K|^2 (not Re(K^2))
       radar_cnst = (1D12*(LAM*1D-3)**4)/(K2*(P**5D0)) !1D12 pr Cnst en mm4 au lieu de m4
                       
-      ! --------- Scattering with T-matrix 
-      CALL TMD(LAM,ELEV,Deq,AR,EPSX,Saa,Sbb,Saaf,Sbbf)
+      ! --------- T-matrix of the particle (independent of the elevation)
+      CALL TMD_TMAT(LAM,Deq,AR,EPSX,NMAXT)
      
-      ! --------- Scattering with Rayleigh
+      ! --------- Scattering with Rayleigh (amplitudes along the symmetry axis a and
+      !           perpendicular to it b, for a beam perpendicular to the axis)
       CALL COMPUTE_SCATTERING_RAYLEIGH(LAM,Deq,AR,EPSX,
      &     SaaR,SbbR)                                  
       
+      IF (canting .EQ. "analyt") 
+     &    CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETAeff,P,A1,A2,A3,A4,
+     &                                    A5,A7)
+
+      IF (canting .EQ. "orient") THEN
+        ! Amplitudes as a function of the angle CHI between the beam and the axis
+        CALL AMPL_VS_CHI(LAM,NMAXT,NCHI,CHISTEP,SPB,SOB,SPF,SOF)
+        ! Rayleigh: the polarisation in the plane (beam, axis) sees the axis
+        ! with a weight sin^2(CHI); backward = forward
+        DO J=0,NCHI
+          SPBR(J)=SbbR+(SaaR-SbbR)*DSIN(J*CHISTEP*P/180D0)**2
+          SOBR(J)=SbbR
+        ENDDO
+      ENDIF
+
+      DO idELEV=0,NELEV-1 !========= Loop over elevation
+      ELEV=ELEVmin+idELEV*ELEVstep
+
+      ! --------- Scattering amplitudes with T-matrix for this elevation
+      !           (symmetry axis vertical)
+      CALL TMD_AMPL(LAM,ELEV,NMAXT,Saa,Sbb,Saaf,Sbbf)
+      ! --------- Rayleigh amplitude in vertical polarisation at this elevation
+      !           (the vertical polarisation sees the vertical axis with a weight cos^2(ELEV))
+      SaaRel=SbbR+(SaaR-SbbR)*DCOS(ELEV*P/180D0)**2
+
       ! Canting is considered with analytical angular momentums
+      ! (Ryzhkov et al. 2011, eq. 20: valid at low elevation only)
       IF (canting .EQ. "analyt") THEN
-          CALL ANGULAR_MOMENTS_ANALYTICAL(SIGBETA,P,A1,A2,A3,A4,A5,A7)
 
           ! ---------- Dual pol var using T-matrix    
           CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,Saa,Sbb,Saaf,
@@ -823,33 +927,36 @@ C ========================================================================
      &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
       
           ! ---------- Dual pol var using Rayleigh
-          CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,SaaR,SbbR,SaaR,
-     &               SbbR,A1,A2, A3, A4, A5, A7,
+          CALL COMPUTE_VARPOL_CANTING(LAM,radar_cnst,SaaRel,SbbR,
+     &               SaaRel,SbbR,A1,A2, A3, A4, A5, A7,
+     &               sighhR,sigvvR,deltacoR,
+     &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
+
+      ! Canting by averaging over the orientations (valid at any elevation)
+      ELSE IF (canting .EQ. "orient") THEN
+          CALL COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETAeff,
+     &               NCHI,CHISTEP,SPB,SOB,SPF,SOF,
+     &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
+          CALL COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETAeff,
+     &               NCHI,CHISTEP,SPBR,SOBR,SPBR,SOBR,
      &               sighhR,sigvvR,deltacoR,
      &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
       
-      ELSE IF (canting .EQ. "nocant") THEN ! no canting 
+      ELSE ! no canting 
           ! ---------- Dual pol var using T-matrix    
           CALL COMPUTE_VARPOL(LAM,radar_cnst,Saa,Sbb,Saaf,Sbbf,
      &               sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
             
           ! ---------- Dual pol var using Rayleigh
-          CALL COMPUTE_VARPOL(LAM,radar_cnst,SaaR,SbbR,SaaR,SbbR,
+          CALL COMPUTE_VARPOL(LAM,radar_cnst,SaaRel,SbbR,SaaRel,SbbR,
      &               sighhR,sigvvR,deltacoR,
      &               zhhR,zdrR,kdpR,rhohvR,AhR,AvR)
-
-      ELSE
-          WRITE(0,*) "canting options: analyt or nocant"
-          WRITE(0,*) "current ",canting
-          STOP      
       ENDIF
 
     
-      ! --------- Writing scattering coefficients 
-      ! NB : The 3 first lines (written previously)
-      ! describe the content of the file
-      
-      WRITE (7,5002) Tc,ELEV,Fw,D,Dm,Deq,Deqm,Deqr,Deqrm,sighh,
+      ! --------- Scattering coefficients, kept in memory (see above)
+      iRow=idELEV*NFw*ND+idF*ND+idD+1
+      WRITE (rows(iRow),5002) Tc,ELEV,Fw,D,Dm,Deq,Deqm,Deqr,Deqrm,sighh,
      & sigvv,REAL(deltaco),AIMAG(deltaco),zhh,zdr,kdp,rhohv,Ah,Av,
      & sighhR,sigvvR,REAL(deltacoR),AIMAG(deltacoR),
      & zhhR,zdrR,kdpR,rhohvR,AhR,AvR
@@ -864,18 +971,22 @@ C ========================================================================
       !WRITE (0,*) Tc,Deq,sighh,sighhR,zhh,zhhR,zdr,zdrR    
  
   
-      ITIME=MCLOCK()
-      TIME=DFLOAT(ITIME)/6000D0
-      !PRINT 5010,TIME
- 5010 FORMAT (' time =',F8.2,' min')
-
+      ENDDO !fin boucle ELEV
       ENDDO !fin boucle Deq 
       ENDDO!fin boucle Fw
-      ENDDO !fin boucle ELEV
+
+      ! --------- Writing scattering coefficients of this temperature
+      ! NB : The 3 first lines (written previously)
+      ! describe the content of the file
+      DO iRow=1,nRows
+        WRITE (7,'(A)') trim(rows(iRow))
+      ENDDO
+      FLUSH(7)
       ENDDO !fin boucle T°  
  
+      DEALLOCATE(rows)
       CLOSE(7)
-      CLOSE(8)
+      CLOSE(4)
       
       WRITE(0,*) 'SAVED !'
       WRITE(0,*) '---------------------------------------'
@@ -891,6 +1002,150 @@ C ============================================================================
 C ===============            VARPOL SUBROUTINES              =================
 C ============================================================================
       
+C     =============================================================
+      SUBROUTINE AMPL_VS_CHI(LAM,NMAX,NCHI,CHISTEP,SPB,SOB,SPF,SOF)
+C     =============================================================
+      ! Backward (B) and forward (F) scattering amplitudes of the axisymmetric
+      ! particle whose T-matrix was computed by TMD_TMAT, for a beam making an
+      ! angle CHI = J*CHISTEP (J=0..NCHI, 0 to 90 deg) with the symmetry axis,
+      ! in the basis parallel (P) / perpendicular (O) to the plane (beam, axis).
+      ! In that basis the amplitude matrix of an axisymmetric particle is
+      ! diagonal. TMD_AMPL (axis vertical) at the elevation 90-CHI gives them:
+      ! Saa = parallel, Sbb = perpendicular.
+      INTEGER NMAX,NCHI,J
+      REAL*8 LAM,CHISTEP
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      DO J=0,NCHI
+        CALL TMD_AMPL(LAM,90D0-J*CHISTEP,NMAX,SPB(J),SOB(J),
+     &                SPF(J),SOF(J))
+      ENDDO
+      RETURN
+      END
+C     ========= END AMPL_VS_CHI
+
+C     =============================================================
+      SUBROUTINE COMPUTE_VARPOL_ORIENT(LAM,radar_cnst,ELEV,SIGBETA,
+     &                 NCHI,CHISTEP,SPB,SOB,SPF,SOF,
+     &                 sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av)
+C     =============================================================
+      ! Dual-pol variables of canted particles at any elevation, by averaging
+      ! over the orientations of the symmetry axis.
+      !
+      ! Orientations: the symmetry axis n makes an angle BETA with the vertical,
+      ! with a Gaussian distribution of standard deviation SIGBETA on the sphere,
+      ! p(BETA) ~ exp(-BETA^2/(2 SIGBETA^2)) sin(BETA), and a uniform azimuth
+      ! ALPHA (same distribution as the orientation averaging of pytmatrix and
+      ! hydroscatt). It has no preferred horizontal direction, so at vertical
+      ! incidence Zdr = 0 and Kdp = 0. For small SIGBETA it gives the analytical
+      ! angular moments of Ryzhkov et al. (2011, eq. 20) used by canting=analyt
+      ! (e.g. 4e-4 for SIGBETA = 10 deg); for large SIGBETA (40 deg) these
+      ! moments are themselves an approximation (two independent tilts, not
+      ! isotropic in azimuth) and the results differ at low elevation.
+      !
+      ! Amplitudes: for each orientation, CHI = angle between the beam k and n;
+      ! the amplitudes SP (in the plane (k,n)) and SO (perpendicular) at CHI are
+      ! interpolated from AMPL_VS_CHI, then expressed in the radar basis:
+      !   Shh = SO + (SP-SO) x,  Svv = SO + (SP-SO) (1-x),
+      !   x = (n.h)^2 / (1-(n.k)^2)   (squared cosine between h and the plane)
+      ! with k = (cos E, 0, sin E), h = (0,1,0), v = (-sin E, 0, cos E).
+      ! With SIGBETA = 0 this gives exactly COMPUTE_VARPOL (no canting).
+      !
+      ! Quadrature: trapezoidal rule in BETA on [0, min(NSIG*SIGBETA, 180 deg)]
+      ! (NB points) and in ALPHA on [0, 360 deg[ (NA points).
+      !
+      ! in: LAM, radar_cnst, ELEV (deg), SIGBETA (deg), NCHI, CHISTEP, SPB, SOB,
+      !     SPF, SOF (backward and forward amplitudes vs CHI)
+      ! out: sighh,sigvv,deltaco,zhh,zdr,kdp,rhohv,Ah,Av (as COMPUTE_VARPOL)
+      IMPLICIT NONE
+      INTEGER NCHI, NB, NA, I, J, K, NBEFF, NAEFF
+      REAL*8 NSIG
+      PARAMETER (NB=61, NA=24, NSIG=5D0)
+      REAL*8 LAM,radar_cnst,ELEV,SIGBETA,CHISTEP
+      COMPLEX*16 SPB(0:NCHI),SOB(0:NCHI),SPF(0:NCHI),SOF(0:NCHI)
+      REAL*8 sighh,sigvv,zhh,zdr,kdp,rhohv,Ah,Av
+      COMPLEX*16 deltaco
+      REAL*8 P,SIG,E,KX,KZ,BETA,ALPHA,BMAX,W,WSUM,NX,NY,NZ,NK,X,CHI,F
+      COMPLEX*16 SPb1,SOb1,SPf1,SOf1,SHH,SVV,SHHF,SVVF
+      REAL*8 SUMHH,SUMVV
+      COMPLEX*16 SUMHV,SUMFHH,SUMFVV
+
+      P=DACOS(-1D0)
+      SIG=SIGBETA*P/180D0
+      E=ELEV*P/180D0
+      KX=DCOS(E)
+      KZ=DSIN(E)
+      NBEFF=NB
+      NAEFF=NA
+      IF (SIG .LE. 0D0) THEN
+        NBEFF=1
+        NAEFF=1
+      ENDIF
+      BMAX=MIN(NSIG*SIG,P)
+
+      SUMHH=0D0
+      SUMVV=0D0
+      SUMHV=(0D0,0D0)
+      SUMFHH=(0D0,0D0)
+      SUMFVV=(0D0,0D0)
+      WSUM=0D0
+      DO I=1,NBEFF
+        BETA=0D0
+        W=1D0
+        IF (NBEFF .GT. 1) THEN
+          BETA=(I-1)*BMAX/(NBEFF-1)
+          W=DEXP(-BETA**2/(2D0*SIG**2))*DSIN(BETA)
+          IF (I.EQ.1 .OR. I.EQ.NBEFF) W=0.5D0*W
+        ENDIF
+        IF (W .LE. 0D0 .AND. NBEFF .GT. 1) CYCLE
+        DO J=1,NAEFF
+          ALPHA=(J-1)*2D0*P/NAEFF
+          ! symmetry axis
+          NX=DSIN(BETA)*DCOS(ALPHA)
+          NY=DSIN(BETA)*DSIN(ALPHA)
+          NZ=DCOS(BETA)
+          NK=ABS(NX*KX+NZ*KZ)
+          IF (NK .GT. 1D0) NK=1D0
+          CHI=DACOS(NK)*180D0/P
+          ! squared cosine between h and the plane (k,n)
+          IF (1D0-NK**2 .GT. 1D-12) THEN
+            X=NY**2/(1D0-NK**2)
+          ELSE
+            X=0.5D0 ! axis along the beam: SP=SO, x has no effect
+          ENDIF
+          ! linear interpolation in CHI
+          K=INT(CHI/CHISTEP)
+          IF (K .GE. NCHI) K=NCHI-1
+          F=CHI/CHISTEP-K
+          SPb1=(1-F)*SPB(K)+F*SPB(K+1)
+          SOb1=(1-F)*SOB(K)+F*SOB(K+1)
+          SPf1=(1-F)*SPF(K)+F*SPF(K+1)
+          SOf1=(1-F)*SOF(K)+F*SOF(K+1)
+          SHH=SOb1+(SPb1-SOb1)*X
+          SVV=SOb1+(SPb1-SOb1)*(1D0-X)
+          SHHF=SOf1+(SPf1-SOf1)*X
+          SVVF=SOf1+(SPf1-SOf1)*(1D0-X)
+          SUMHH=SUMHH+W*ABS(SHH)**2
+          SUMVV=SUMVV+W*ABS(SVV)**2
+          SUMHV=SUMHV+W*SHH*DCONJG(SVV)
+          SUMFHH=SUMFHH+W*SHHF
+          SUMFVV=SUMFVV+W*SVVF
+          WSUM=WSUM+W
+        ENDDO
+      ENDDO
+
+      sighh=4*P*SUMHH/WSUM
+      sigvv=4*P*SUMVV/WSUM
+      deltaco=SUMHV/WSUM
+      zhh=10*LOG10(radar_cnst*sighh)
+      zdr=zhh-10*LOG10(radar_cnst*sigvv)
+      rhohv=4*P*ABS(deltaco)/SQRT(sighh*sigvv)
+      kdp=LAM*180/P*1D-3*DBLE((SUMFHH-SUMFVV)/WSUM)
+      Ah=LAM*8.686*1D-3*AIMAG(SUMFHH/WSUM)
+      Av=LAM*8.686*1D-3*AIMAG(SUMFVV/WSUM)
+      RETURN
+      END
+C     ========= END COMPUTE_VARPOL_ORIENT
+
 C     =============================================================
       SUBROUTINE COMPUTE_VARPOL_CANTING(LAM,radar_cnst,Saa,Sbb,Saaf,
      &                 Sbbf,A1,A2, A3, A4, A5, A7,
@@ -1326,7 +1581,11 @@ C     ###################################
       REAL*8 ZTHETA
       COMPLEX*16 EPSI
 
-      ZTHETA=1-300./PTEMP
+      ! Solid ice cannot be warmer than 0 C (a melting particle stays at 0 C).
+      ! Hufford's formula is only valid for ice: above 0 C its imaginary part
+      ! grows quickly and has a pole at 29.06 C ((0.0073-ZTHETA) = 0), which
+      ! gave hail tables 11 dB too high at 29 C and non-converging T-matrices.
+      ZTHETA=1-300./MIN(PTEMP,273.15D0)
     
       EPSI=3.15+(0.,1.)*((50.4-62*ZTHETA)*1.E5*EXP(22.1*ZTHETA)/PFREQ+
      &    ((0.502+0.131*ZTHETA)*1.E-13/(1.-ZTHETA)+
@@ -1780,14 +2039,28 @@ C ============================================================================
 C     ================  SUBROUTINE TMD ==================
       SUBROUTINE TMD(LAM,ELEV,Deq,AR,EPSX,
      &                 Saa,Sbb,Saaf,Sbbf)
-     
+      ! T-matrix + amplitudes for one elevation (kept for compatibility)
       ! in: LAM,ELEV,Deq,AR,EPSX
       ! out: Saa,Sbb,Saaf,Sbbf
+      REAL*8  LAM,ELEV,Deq,AR
+      COMPLEX*16 EPSX,Saa,Sbb,Saaf,Sbbf
+      INTEGER NMAX
+      CALL TMD_TMAT(LAM,Deq,AR,EPSX,NMAX)
+      CALL TMD_AMPL(LAM,ELEV,NMAX,Saa,Sbb,Saaf,Sbbf)
+      RETURN
+      END SUBROUTINE TMD
+
+C     ================  SUBROUTINE TMD_TMAT ==================
+      SUBROUTINE TMD_TMAT(LAM,Deq,AR,EPSX,NMAXOUT)
+      ! Computes the T-matrix of the particle (stored in COMMON /TMAT/)
+      ! in: LAM,Deq,AR,EPSX
+      ! out: NMAXOUT (size of the T-matrix, needed by TMD_AMPL)
 
 C    DECLARATION OF VARIABLES *******************************************
       IMPLICIT REAL*8 (A-H,O-Z)
       INCLUDE 'ampld.par.f'
-      REAL*8  LAM,ELEV,Deq,AR
+      REAL*8  LAM,Deq,AR
+      INTEGER NMAXOUT
       REAL*8  AXI,MRR,MRI
       REAL*8  X(NPNG2),W(NPNG2),S(NPNG2),SS(NPNG2),
      *        AN(NPN1),R(NPNG2),DR(NPNG2),ALPHA,BETA,THET,THET0,
@@ -1863,7 +2136,7 @@ c      IF(NP.EQ.-3) PRINT 7160
       IXXX=XEV+4.05D0*XEV**0.333333D0
       INM1=MAX0(4,IXXX)
       IF (INM1.GE.NPN1) WRITE(0,7333) NPN1
-      IF (INM1.GE.NPN1) STOP
+      IF (INM1.GE.NPN1) STOP 1
  7333 FORMAT('CONVERGENCE IS NOT OBTAINED FOR NPN1=',I3,  
      &       '.  EXECUTION TERMINATED')
       QEXT1=0D0
@@ -1873,7 +2146,7 @@ c      IF(NP.EQ.-3) PRINT 7160
          MMAX=1
          NGAUSS=NMAX*NDGS
          IF (NGAUSS.GT.NPNG1) WRITE(0,7340) NGAUSS
-         IF (NGAUSS.GT.NPNG1) STOP
+         IF (NGAUSS.GT.NPNG1) STOP 1
  7340    FORMAT('NGAUSS =',I3,' I.E. IS GREATER THAN NPNG1.',
      &          '  EXECUTION TERMINATED')
  !7334    FORMAT(' NMAX =', I3,'  DC2=',D8.2,'   DC1=',D8.2)
@@ -1902,7 +2175,7 @@ c      IF(NP.EQ.-3) PRINT 7160
 c        PRINT 7334, NMAX,DSCA,DEXT
          IF(DSCA.LE.DDELT.AND.DEXT.LE.DDELT) GO TO 55
          IF (NMA.EQ.NPN1) WRITE(0,7333) NPN1
-         IF (NMA.EQ.NPN1) STOP      
+         IF (NMA.EQ.NPN1) STOP 1
    50 CONTINUE
    55 NNNGGG=NGAUSS+1
       MMAX=NMAX
@@ -2018,6 +2291,19 @@ c        PRINT 7800,M,DABS(QXT),QSC,NMAX
  
 
 C     END CONVERGENCE TEST 
+      NMAXOUT=NMAX
+      RETURN
+      END SUBROUTINE TMD_TMAT
+
+C     ================  SUBROUTINE TMD_AMPL ==================
+      SUBROUTINE TMD_AMPL(LAM,ELEV,NMAX,Saa,Sbb,Saaf,Sbbf)
+      ! Amplitudes for one elevation, from the T-matrix computed by TMD_TMAT
+      ! in: LAM,ELEV,NMAX
+      ! out: Saa,Sbb,Saaf,Sbbf (backward a, b and forward a, b)
+      IMPLICIT REAL*8 (A-H,O-Z)
+      REAL*8  LAM,ELEV,ALPHA,BETA,THET,THET0
+      INTEGER NMAX
+      COMPLEX*16 Saa,Sab,Sba,Sbb,Saaf,Sabf,Sbaf,Sbbf
 
 C     INITIALISATION ------------------
 
@@ -2041,7 +2327,7 @@ C     INITIALISATION ------------------
       Sbb=-Sbb
        
       RETURN
-      END SUBROUTINE TMD!fin subroutine
+      END SUBROUTINE TMD_AMPL
 
 C    ============  END SUBROUTINE TMD  ===================
 
@@ -2077,7 +2363,7 @@ C     !                       HH = horizontal pol scattering coefficient)
      &    PL.LT.0D0.OR.PL.GT.360D0.OR.
      &    PL1.LT.0D0.OR.PL1.GT.360D0) THEN 
           WRITE (6,2000)
-          STOP
+          STOP 1
       ELSE
           CONTINUE
       ENDIF  
@@ -2498,7 +2784,7 @@ C**********************************************************************
            ZI(I)=V2
    10 CONTINUE
       IF (NMAX.GT.NPN1) PRINT 9000,NMAX,NPN1
-      IF (NMAX.GT.NPN1) STOP
+      IF (NMAX.GT.NPN1) STOP 1
  9000 FORMAT(' NMAX = ',I2,', i.e., greater than ',I3)
       TB=TA*DSQRT(MRR*MRR+MRI*MRI)
       TB=DMAX1(TB,DFLOAT(NMAX))

@@ -14,7 +14,7 @@ def mask_precipitations(contents:dict[str,np.ndarray],
     hydrometeors_model = link_keys_with_available_hydrometeors(hydrometeorMoments=hydrometeors_moments,
                                                                datatype='model',
                                                                )
-    total_content=np.sum(contents[h] for h in hydrometeors_model)
+    total_content=sum(contents[h] for h in hydrometeors_model)  # np.sum(generator) is an error in numpy >= 2.3
     mask_precip = (total_content>10**expMmin)  
     return mask_precip   
 

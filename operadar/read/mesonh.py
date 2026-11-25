@@ -60,16 +60,16 @@ def read_mesonh(filePath:Path,
     mnh_file = Dataset(filePath,'r')
     if verbose : print('\t\tLoaded file in',round(tm.time()-deb,3),'seconds'); deb=tm.time()
     
-    check_variable_is_in_dataset(mnh_file)
+    readnc.check_variable_is_in_dataset(mnh_file)
     
     if subDomain != None :
-        i_min, i_max, j_min, j_max = get_subdomain_indices(mnhFile=mnh_file,
+        i_min, i_max, j_min, j_max = readnc.get_subdomain_indices(mnhFile=mnh_file,
                                                            subDomain=subDomain,
                                                            real_case=real_case,
                                                            )
         if verbose : print('\t\tSubdomain indices extracted.'); deb=tm.time()
     else:
-        i_min, i_max, j_min, j_max = 0, -1, 0, -1
+        i_min, i_max, j_min, j_max = 0, None, 0, None  # None: up to the last point ([0:-1] dropped it)
         if verbose : print('\t\tNo subdomain provided, will use all the points.'); deb=tm.time()
 
     X, Y, Z, LAT, LON = readnc.get_geometry(mnhFile=mnh_file,
@@ -95,7 +95,7 @@ def read_mesonh(filePath:Path,
                      )
     if verbose : print('\t\tGot 3D contents in',round(tm.time()-deb,6),'seconds');deb=tm.time()
     
-    Nc = readnc.get_concentrations(mnhFile=mnh_file, microphysics_scheme=micro,
+    Nc = readnc.get_concentrations(mnhFile=mnh_file, hydrometeorMoments=hydrometeorMoments,
                             hydrometeors=hydromet_list, temperature=Tc, rho3D=rho3D,
                             i_min=i_min, i_max=i_max,
                             j_min=j_min, j_max=j_max,

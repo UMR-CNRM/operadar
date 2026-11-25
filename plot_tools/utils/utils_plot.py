@@ -4,6 +4,9 @@ import itertools
 import numpy as np
 import pandas as pd
 import matplotlib
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from .tables import read_table_params, read_table_dataframe, table_exists
 
 # ====== BASIC DEFINITIONS ====== #
 # Plot style
@@ -58,7 +61,7 @@ T_dict = {'ii':-30,
           'cs':5,
           'rr':10,
           'wg':10,
-          'hh':1,
+          'hh':0, # dry hail tables stop at 0 C
           'wh':10,
           }
 # Base configuration
@@ -174,7 +177,7 @@ def read_table(table_path,delim,axeX,method):
     dpol={'Tmatrix':{},'Rayleigh':{}}
     settings={}
     # reading table options (from config file)
-    df_param=pd.read_csv(table_path, sep=delim,nrows=1,engine='python')
+    df_param=pd.DataFrame([read_table_params(table_path)])
     settings['SIGBETA']=int(df_param['SIGBETA'][0])
     settings['ARfunc']=df_param['ARfunc'][0]
     settings['ARcnst']=df_param['ARcnst'][0]
@@ -183,7 +186,7 @@ def read_table(table_path,delim,axeX,method):
     settings['Frim']=df_param['Frim'][0]
     
     # reading table variables
-    df=pd.read_csv(table_path, sep=delim,skiprows=2, engine='c')
+    df=read_table_dataframe(table_path)  # NetCDF (<table>.nc) or text table
     Tcol=df['Tc'].to_numpy()
     ELEVcol=df['ELEV'].to_numpy()
     if (axeX=='M'): P3col=df['P3'].to_numpy()                            
@@ -311,6 +314,29 @@ def add_common_parameterization(hydro:str,axeX:str,param:dict,whichLegend,whichR
     return common_elements       
 
 
+def nearest_grid_value(col:np.ndarray, value:float, name:str='', log:bool=False) -> float:
+    """Value of the table grid (column col) closest to the requested value (in log10 if log=True,
+    e.g. for concentrations). Prints a warning when the requested value is not on the grid, so that
+    a change of grid step (e.g. Tcstep) does not silently give an empty curve."""
+    grid = np.unique(col)
+    dist = np.abs(np.log10(grid) - np.log10(value)) if log else np.abs(grid - value)
+    chosen = grid[np.argmin(dist)]
+    if not np.isclose(chosen, value, rtol=1e-3, atol=1e-6):
+        print(f'\t/!\\ {name}={value} is not in the table, using the closest value {name}={chosen}')
+    return chosen
+
+
+
+def select_rows(Tcol:np.ndarray, ELEVcol:np.ndarray, P3col:np.ndarray,
+                T:float, ELEV:float, P3:float, logP3:bool=False):
+    """Indices of the table rows at the grid values closest to (T, ELEV, P3)."""
+    Tsel = nearest_grid_value(Tcol, T, 'Tc')
+    ELEVsel = nearest_grid_value(ELEVcol, ELEV, 'ELEV')
+    P3sel = nearest_grid_value(P3col, P3, 'P3', log=logP3)
+    return np.where((Tcol == Tsel) & (ELEVcol == ELEVsel) & (P3col == P3sel))
+
+
+
 def plot_table(h:str, axeX:str, param:dict,
                which_dpolVar:list, figAx,
                method:str, color:str, moment:int,
@@ -337,16 +363,10 @@ def plot_table(h:str, axeX:str, param:dict,
         else :
             alpha=0.6
         
-    if axeX == 'D' :
-        rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
-    elif axeX == 'M' :
-        if moment == 1 :
-            if h=='ii':
-                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nii))
-            else :
-                rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Fw))
-        elif moment == 2 :
-            rows = np.where((Tcol == T_dict[h])&(ELEVcol == 0)&(P3col == Nc))
+    if axeX == 'M' and (moment == 2 or h == 'ii'):  # P3 is a concentration
+        rows = select_rows(Tcol, ELEVcol, P3col, T_dict[h], 0, Nc if moment == 2 else Nii, logP3=True)
+    else :  # P3 is the liquid water fraction
+        rows = select_rows(Tcol, ELEVcol, P3col, T_dict[h], 0, Fw)
     lgd_label = set_legend(whichLegend=legend, SIGBETA=SIGBETA,
                            ARfunc=ARfunc, ARcnst=ARcnst,
                            DSTYfunc=DSTYfunc, Frim=Frim,
@@ -503,7 +523,7 @@ def get_colors(dictParam:dict,
     elif type(asLegend) is list :
         nb_colors = 0
         for arf, ar, cant, dsty, Frim, diel in combinations :
-            if os.path.isfile(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
+            if table_exists(f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"):
                 nb_colors += 1
         nb_colors = nb_colors * len(Fw) * len(Nc)
     
@@ -530,7 +550,7 @@ def get_combinations(dictParam:dict,
     final_combinations = []
     for arf, ar, cant, dsty, Frim, diel in combinations :
         filepath = f"{tableDir}{hydrometeor}/{arf}_AR{ar:.2f}_CANT{cant}_{dsty}_Frim{Frim}_{diel}/{tableName}"
-        if os.path.isfile(filepath):
+        if table_exists(filepath):
             final_combinations += [(arf, ar, cant, dsty, Frim, diel)]
     if len(final_combinations) < 1 : sys.exit()
     return final_combinations

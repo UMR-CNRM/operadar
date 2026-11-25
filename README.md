@@ -35,7 +35,11 @@ Install `operadar` in a dedicated virtual environment: [Installation-tutorial](h
 1) To work properly, lookup tables should be generated **before** running `operadar` (unless you have a direct access to the tables).
 Steps to create the tables are available in [Generation of the lookup tables](https://github.com/UMR-CNRM/operadar/wiki/Generation-of-the-lookup-tables).<br>*--> If you already have access to the tables, you may skip this step.*
 2) A configuration file is red by `operadar` to compute the polarimetric fields, according to your chosen parameterization. See [Simulation configuration](https://github.com/UMR-CNRM/operadar/wiki/Simulation-configuration) for extended explanations.
-3) Finally, a shell executable is provided to launch the forward operator for one file at a time. However, `operadar` can be used within other algorithm, to loop on multiple files and eventually with varying configurations over files that share certain common parameters. Explanations are in [Execution of the forward operator](https://github.com/UMR-CNRM/operadar/wiki/Execution-of-the-forward-operator)
+3) Finally, a shell executable is provided to launch the forward operator for one file at a time. However, `operadar` can be used within other algorithm, to loop on multiple files and eventually with varying configurations over files that share certain common parameters. Explanations are in [Execution of the forward operator](https://github.com/UMR-CNRM/operadar/wiki/Execution-of-operadar)
+
+# Checking the lookup tables
+Plot scripts to look at the tables (curves and 2D maps of the full tables) and to analyse the operadar outputs (CFADs as in David et al. 2025, quick look and sanity checks, cross-sections, comparison of two runs, storm swaths) are in `plot_tools/`; see [plot_tools/README.md](plot_tools/README.md) and the wiki page [Plot tools](https://github.com/UMR-CNRM/operadar/wiki/Plot-tools).
+The changes made to the table generator in November 2026 are described in [docs/reports/2026-11_lookup_tables_update.md](docs/reports/2026-11_lookup_tables_update.md).
 
 # Contributing
 If you wish to contribute to the project, first, fork the code to create your own copy of the project (see https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#creating-your-own-copy-of-a-project).
@@ -49,13 +53,20 @@ You should also cite the Fortran 77 T-matrix code that is employed to generate t
 * Mishchenko, M. I., & Travis, L. D. (1994). T-matrix computations of light scattering by large spheroidal particles. Optics Communications, 109(1), 16–21. [http://www.sciencedirect.com/science/article/pii/0030401894907315](http://www.sciencedirect.com/science/article/pii/0030401894907315)
 
 # Testing
-- After installing environment, run:
+- After installing the environment (Python 3.12 or 3.13), run:
 ```bash
 python -c "import operadar; import epygram; print('operadar OK, epygram', getattr(epygram,'__version__','unknown'))"
+```
+- To run the tests (from the repository root):
+```bash
+pip install -e ".[dev]"
+pytest
 ```
 
 
 Before making changes to the project, you should create a new branch and check it out. Try to be self explanatory for the name of the branch. Then, install operadar as a package with the aforementioned procedure.
+**Documentation:** the wiki pages are generated from [docs/wiki/](docs/wiki/) (published to the wiki when master changes): edit them there, in the same pull request as the code. `tests/test_docs.py` checks that they stay consistent with the code (configuration options, `operadar()` arguments, files named, links, Python versions), and the tests run on GitHub for every push and pull request.
+
 To ask for integration of your modifications, please open a pull request following https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#making-a-pull-request.
 
 # License

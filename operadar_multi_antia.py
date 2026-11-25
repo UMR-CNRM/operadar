@@ -40,7 +40,7 @@ cases = [('FRANCE','2023-05-09','historic.arome.franmg-01km30+0000:00.fa'),
          ]
          
 
-TmatConfig='David2026PhD' # 'default'
+TmatConfig='David2026PhD' # 'David2025AMT'
 configFile=f'test_AROME_Antia_{TmatConfig}.py'
 
 

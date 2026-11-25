@@ -7,7 +7,7 @@
 import sys
 import time as tm
 import numpy as np
-import pandas as pd
+from operadar.read.table_io import table_path, read_table_params, read_table_columns
 from typing import Dict, List, Tuple
 
 
@@ -141,54 +141,36 @@ def read_and_extract_tables_content(band: str,
         else:
             hfile = h
         
-        nomfileCoefInt = f'{path_table}TmatCoefInt_{micro_for_table}_{moments[h]}M_{band}{hfile}'
-        
+        nomfileCoefInt = table_path(f'{path_table}TmatCoefInt_{micro_for_table}_{moments[h]}M_{band}{hfile}')
+
         if verbose: print("\tReading min/step/max for", h, "in", nomfileCoefInt)
-        df_params = pd.read_csv(nomfileCoefInt, sep=";", nrows=1)
-        
+        params = read_table_params(nomfileCoefInt)
         for value in parameters_to_retrieve:
-            # Ensure we capture the value safely
-            try:
-                table_dict[value][h] = np.copy(df_params[value])[0]
-            except KeyError:
+            if value in params:
+                table_dict[value][h] = params[value]
+            else:
                 print(f"Warning: Parameter '{value}' not found in header for {h}")
                 table_dict[value][h] = np.nan
-        
-        del df_params
-        
+
+        # Only the needed columns are read (NetCDF: only these variables are loaded)
         if verbose: print("\tRetrieving necessary columns in the table for", h)
-        # Read data
-        df_columns = pd.read_csv(
-            nomfileCoefInt, 
-            sep=";", 
-            skiprows=[0, 1], 
-            na_values=["Infinity", "-Infinity"],
-            low_memory=False
-        )
-        df_columns = df_columns.astype(float)
+        to_read = list(dict.fromkeys('P3' if c in ('Fw', 'N') else c for c in columns_to_retrieve))
+        columns = read_table_columns(nomfileCoefInt, to_read)  # 'Infinity' values are read as NaN
+        # float64 for the computations (products like sighh*sigvv underflow in float32)
+        columns = {c: v.astype(np.float64, copy=False) for c, v in columns.items()}
 
         for columnName in columns_to_retrieve:
             # ---- Logic for P3 (Fw or N) ----
-            if columnName == 'Fw' or columnName == 'N': 
-                # Note: Ensure moments[h] logic matches your table structure
-                if moments[h] == 1:
-                    if h == 'ii': 
-                        table_dict['N'][h] = df_columns['P3'].to_numpy()
-                    else: 
-                        table_dict['Fw'][h] = df_columns['P3'].to_numpy()
-                elif moments[h] == 2: 
-                    table_dict['N'][h] = df_columns['P3'].to_numpy()
-            # ------------------------------- 
-            else:
-                # Standard columns
-                if columnName in df_columns.columns:
-                    table_dict[columnName][h] = df_columns[columnName].to_numpy()
+            if columnName == 'Fw' or columnName == 'N':
+                if moments[h] == 1 and h != 'ii':
+                    table_dict['Fw'][h] = columns['P3']
                 else:
-                    # Fill with zeros or NaN if column missing
-                    table_dict[columnName][h] = np.zeros(len(df_columns))
-        
-        del df_columns
-    
+                    table_dict['N'][h] = columns['P3']
+            else:
+                table_dict[columnName][h] = columns[columnName]
+
+        del columns
+
     print("\t--> Done in", round(tm.time() - deb_timer, 2), "seconds")
     return table_dict, parameters_to_retrieve, columns_to_retrieve
 

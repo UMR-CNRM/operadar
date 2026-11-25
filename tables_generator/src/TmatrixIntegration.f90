@@ -39,8 +39,12 @@
 !           Mint va donc servir à corriger la distribution en taille des hydrométéores (étape 2)
 !
 ! Etape 2 : Calcul des variables radar
-!           La distribution en taille de l'espèce est modifiée par le facteur M/Mint pour assurer que l'intégration finale
-!           par somme de Riemman retombe sur le contenu initial M
+!           La distribution en taille de l'espèce est modifiée par le facteur M/Mint.
+!           NB (2026/11): Mint is computed in step 1 with the PSD corrected by M/M_ss (truncation),
+!           whereas step 2 uses the uncorrected PSD, so the factor M/Mint gives the PSD the mass
+!           that falls inside the diameter range of the table (Riemann sum M_ss), not M itself.
+!           This is now the same for all species (it was not for wg/ws): mass outside the diameter
+!           range of the table is not redistributed over the resolved diameters.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !====================
@@ -191,6 +195,9 @@ REAL*8 :: N_rr,N_ss !,N_rr_inf,N_s2r,N_r2s,N_ss,N_ss_inf,N_d ! rain
 REAL*8 :: N2, N_rr2,N_ss2
 REAL :: vtr,vts,vtm,M_liq,M_ss,M_rr,Mint,phi,RRint !,KAPPA
 REAL :: M_rr2, M_ss2,Mint2,RRint2
+REAL :: Mfrac ! fraction of the content M inside the diameter range of the table
+INTEGER :: idTcFirst, idTcLast
+character(len=32) :: arg
 
 ! Integrated coefficients and dual pol variables
 REAL :: sighhint,sigvvint
@@ -220,6 +227,10 @@ call get_command_argument(3, typeh)
 call get_command_argument(4, band)
 call get_command_argument(5, CCLOUD)
 call get_command_argument(6, MOMENT)
+! Optional arguments 7, 8: first and last temperature index (0-based) to compute,
+! 9: output file. The header always describes the full temperature range, so the
+! outputs of runs on consecutive index ranges can be concatenated (keeping the 3
+! header lines of the first one only).
 
 
 !**************************************************
@@ -231,7 +242,7 @@ testMode=.FALSE. !.TRUE.
 
 ! min/step/max values for the exponant of the hydromet content M (kg/m3):
 expMmin=-7.0 !-7.0
-expMstep=0.01 
+expMstep=0.02 ! 0.01 before 2026-11; 0.02 keeps Zh within 0.03 dB (grid study)
 expMmax=-1.5 !-1.5
 
 ! min/step/max values for the exponant of 2-moment species concentration(/m3)
@@ -257,6 +268,9 @@ ELSE
     Nmoments=1
   ELSE IF (MOMENT=='2M') THEN 
     Nmoments=2
+  ELSE
+    WRITE(0,*) ' ERROR: MOMENT must be 1M or 2M, got ',MOMENT
+    STOP 1
   ENDIF
 ENDIF
 
@@ -265,9 +279,18 @@ Hydromet_const_file = trim(exec_dir)//'/../param/'//CCLOUD//'_constants.txt'
 WRITE(0,*) ' Reading : ',trim(Hydromet_const_file)
 
 open(unit=333,file = trim(Hydromet_const_file),action="read",iostat=ios)
+IF (ios /= 0) THEN
+  WRITE(0,*) ' ERROR: cannot open ',trim(Hydromet_const_file)
+  STOP 1
+ENDIF
 read(333,*) ! Read the first line of the file
+espece='  '
 DO while(espece /= typeh) 
-  read(333,*) espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
+  read(333,*,iostat=ios) espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
+  IF (ios /= 0) THEN
+    WRITE(0,*) ' ERROR: type ',typeh,' not found in ',trim(Hydromet_const_file)
+    STOP 1
+  ENDIF
 ENDDO
 WRITE(0,*) '    PSD constants : ',espece,aj,bj,alphaj,nuj,Xj,Cj,ccj,ddj
 close(333)
@@ -275,9 +298,14 @@ close(333)
 !----- Reading of the rain constants 
 open(unit=333,file = trim(Hydromet_const_file),action="read",iostat=ios)
 read(333,*) ! Read the first line of the file
+espece_rr='  '
 DO while(espece_rr /= 'rr') 
-  read(333,*) espece_rr,aj_rr,bj_rr,alphaj_rr,nuj_rr,Xj_rr,Cj_rr,&
+  read(333,*,iostat=ios) espece_rr,aj_rr,bj_rr,alphaj_rr,nuj_rr,Xj_rr,Cj_rr,&
               ccj_rr,ddj_rr
+  IF (ios /= 0) THEN
+    WRITE(0,*) ' ERROR: type rr not found in ',trim(Hydromet_const_file)
+    STOP 1
+  ENDIF
 ENDDO
 close(333)
 
@@ -392,6 +420,7 @@ ENDIF
 
 IF (.not. testMode) THEN
     nomfileCoefInt = trim(exec_dir)//'/../tables/'//trim(repo)//'/TmatCoefInt_'//CCLOUD//'_'//MOMENT//'_'//trim(band)//typeh
+    IF (command_argument_count() >= 9) call get_command_argument(9, nomfileCoefInt)
     PRINT *,' Creation of ',trim(nomfileCoefInt)
     
     OPEN (6,FILE=trim(nomfileCoefInt))
@@ -418,7 +447,7 @@ IF (.not. testMode) THEN
                   'sighh;sigvv;REdeltaco;IMdeltaco;' &
                   'zhh;zdr;kdp;rhohv;Ah;Av;' &
                   'sighhR;sigvvR;REdeltacoR;IMdeltacoR;' &
-                  'zhhR;zdrR;kdpR;rhohvR;AhR;AvR')
+                  'zhhR;zdrR;kdpR;rhohvR;AhR;AvR;Mfrac')
 ENDIF
 
 !WRITE(0,*) '================== LAM=',LAM
@@ -430,8 +459,18 @@ IF (testMode) THEN
 ELSE
   nTcloop=nTc-1
 ENDIF
+idTcFirst=0
+idTcLast=nTcloop
+IF (command_argument_count() >= 8) THEN
+  call get_command_argument(7, arg)
+  read(arg,*) idTcFirst
+  call get_command_argument(8, arg)
+  read(arg,*) idTcLast
+  idTcFirst=MAX(idTcFirst,0)
+  idTcLast=MIN(idTcLast,nTcloop)
+ENDIF
 
-DO idTc=0,nTcloop
+DO idTc=idTcFirst,idTcLast
   Tc=Tcmin+idTc*Tcstep
   Tk=Tc+273.15 !T (°K) 
   
@@ -439,7 +478,7 @@ DO idTc=0,nTcloop
   FREQ=(LIGHTSPEED)/LAM
   call QEPSW(Tk,FREQ,EPSW)
   QMW=SQRT(EPSW)  
-  K2=((QMW**2-1.)/(QMW**2+2.))**2
+  K2=ABS((QMW**2-1.)/(QMW**2+2.))**2 ! |K|^2 (not Re(K^2))
   radar_cnst = (1E12*(LAM)**4)/(K2*(P**5D0)) !
 
 
@@ -459,10 +498,10 @@ DO idTc=0,nTcloop
       P3max=expCCmax 
       P3min=expCCmin 
       P3step=expCCstep 
-      nFw=1
+      ! nFw is NOT changed: it is the number of Fw values in the T-matrix file and is
+      ! needed to find the rows (kTmat); only the first Fw (Fwmin) is used for 2 moments
     ELSE ! 1-moment : P3 = Fw
       nP3=nint((Fwmax-Fwmin)/Fwstep)+1
-      nFw=nP3
       P3max=Fwmax
       P3min=Fwmin
       P3step=Fwstep
@@ -641,6 +680,10 @@ DO idTc=0,nTcloop
           if (testMode) WRITE(0,*) "N_ss,N_rr = ",N_ss,N_rr          
                     
         ENDDO !===== End loop over diameters step 0
+
+        ! Fraction of the content inside the diameter range of the table (1 = PSD fully
+        ! covered). Below ~0.99 the PSD is truncated and the radar variables are too low.
+        Mfrac=(M_ss2+M_rr2)/M
         
         IF (testMode) THEN
           WRITE(0,*) " ===== END STEP 0 : ================================="
@@ -902,10 +945,8 @@ DO idTc=0,nTcloop
               call PSD((1-Fw)*M,Dmrec,Tk,CCLOUD,P3,typeh,&
                         aj,bj,nuj,alphaj,Cj,Xj,mumax,Nmoments,lamj,N_ss)
               N_ss2=N_ss
-              IF(M_ss .GT. 0) THEN
-                N_ss=(((1-Fw)*M)/M_ss)*N_ss
-                N_ss2=(((1-Fw)*M)/M_ss2)*N_ss2
-              ENDIF
+              ! No (1-Fw)*M/M_ss correction here (unlike step 1): as for the other species,
+              ! the final PSD keeps the mass that falls inside the diameter range of the table
             ELSE
               N_ss=0
               N_ss2=0
@@ -916,10 +957,7 @@ DO idTc=0,nTcloop
               call PSD(Fw*M,Deqrmrec,Tk,CCLOUD,P3,'rr',&
                         aj_rr,bj_rr,nuj_rr,alphaj_rr,Cj_rr,Xj_rr,mumax,Nmoments,lamj,N_rr)
               N_rr2=N_rr
-              IF(M_rr .GT. 0) THEN
-                N_rr=((Fw*M)/M_rr)*N_rr
-                N_rr2=((Fw*M)/M_rr2)*N_rr2
-              ENDIF
+              ! No Fw*M/M_rr correction here either (see above)
             ELSE
               N_rr=0
               N_rr2=0
@@ -989,6 +1027,8 @@ DO idTc=0,nTcloop
           IMdeltacoint=0
           REdeltacoRint=0
           IMdeltacoRint=0
+          deltacoint=complex(0,0)
+          deltacoRint=complex(0,0)
         ENDIF
         
         
@@ -1005,13 +1045,13 @@ DO idTc=0,nTcloop
             WRITE (6,5006) Tc,ELEV,P3,M,RRint,sighhint,sigvvint,REAL(deltacoint),&
             IMAG(deltacoint),zhhint,zdrint,kdpint,rhohvint,Ahint,Avint,& 
             sighhRint,sigvvRint,REAL(deltacoRint),IMAG(deltacoRint),& 
-            zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint
+            zhhRint,zdrRint,kdpRint,rhohvRint,AhRint,AvRint,Mfrac
     
             5006 FORMAT (F5.1,';',F4.1,';',E9.3,';',E10.4,';',E10.4,';',E10.4,';',&
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&  
                           E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4,';',&
-                          E10.4,';',E10.4,';',E10.4,';',E10.4)
+                          E10.4,';',E10.4,';',E10.4,';',E10.4,';',E10.4)
         ENDIF                 
 
 
@@ -1161,8 +1201,8 @@ IF (CCLOUD=='ICE3') THEN
     No = P3
     lamb= (a*No*GAMMA(nu+b/alpha)/(M*GAMMA(nu)))**(1./b) !PSD LIMA
   ELSE
-    No   = c*(lamb**x)
     lamb = (M*GAMMA(nu)/(a*c*GAMMA(nu+b/alpha)))**(1./(x-b)) ! PSD ICE3
+    No   = c*(lamb**x)
   ENDIF
 
 ELSE IF (CCLOUD=='ICJW') THEN

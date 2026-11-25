@@ -101,15 +101,20 @@ def apply_mixed_phase_parametrization(contents:dict[str,np.ndarray],
      
     if parametrization == "Fw_pos":
         contents["wg"][Fw == 0] = 0
-        # 1. Calculate the new wet species FIRST, while 'rr' and 'gg' still have their values
-        if ('wh' in wet_species) and ('hh' in wet_species):
-            denom = contents["hh"][BB] + contents["gg"][BB]
-            denom[denom == 0] = 1e-12 # Safety
-            contents["wh"][BB] = contents["hh"][BB] + ((contents["rr"][BB] * contents["hh"][BB]) / denom[BB])
-        
-        # 2. Now perform the transfers/zeroing
-        contents["wg"][BB] = contents["gg"][BB] + contents["rr"][BB]
-        contents["rr"][BB] = 0        
+        if 'wh' in wet_species:
+            contents["wh"][Fw == 0] = 0
+            # The rain of the melting layer is shared between wet graupel and wet hail in proportion
+            # to the graupel and hail contents, so that both get the liquid fraction Fw = rr/(rr+gg+hh)
+            # and the total content is conserved.
+            denom = contents["gg"][BB] + contents["hh"][BB]
+            denom[denom == 0] = 1e-12  # safety (BB requires gg or hh, so denom > 0)
+            rain = contents["rr"][BB]
+            contents["wg"][BB] = contents["gg"][BB] + rain * contents["gg"][BB] / denom
+            contents["wh"][BB] = contents["hh"][BB] + rain * contents["hh"][BB] / denom
+            contents["hh"][BB] = 0  # in the mixed phase, there is no dry hail
+        else:
+            contents["wg"][BB] = contents["gg"][BB] + contents["rr"][BB]
+        contents["rr"][BB] = 0
         contents["gg"][BB] = 0
         
     if parametrization == "Fw_posg" :
@@ -117,7 +122,7 @@ def apply_mixed_phase_parametrization(contents:dict[str,np.ndarray],
         contents["wg"][BB] = contents["gg"][BB]
         contents["gg"][BB] = 0
        
-        if ('wh' in wet_species) and ('hh' in wet_species) :
+        if 'wh' in wet_species:  # wet_species only holds wet keys ('wg', 'wh'), never 'hh'
             contents["wh"][Fw == 0] = 0
             contents["wh"][BB] = contents["hh"][BB]
             contents["hh"][BB] = 0 # addition Clotilde (in the mixed phase, there is no dry hail)
