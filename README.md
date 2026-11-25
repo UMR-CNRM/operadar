@@ -44,6 +44,9 @@ The changes made to the table generator in November 2026 are described in [docs/
 # Contributing
 If you wish to contribute to the project, first, fork the code to create your own copy of the project (see https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project#creating-your-own-copy-of-a-project).
 
+# Use of AI tools
+Part of the November 2026 work (bug fixes and speed-up of the table generator, tests, verification reports, plot tools and documentation) was carried out with the help of Claude Code (Anthropic), an AI programming assistant. All changes were reviewed and validated by the authors.
+
 # How to cite
 If you use `operadar` in a published work, please cite the following papers:
 * Augros, C., Caumont, O., Ducrocq, V., Gaussiat, N., & Tabary, P. (2016). Comparisons between S, C, and X band polarimetric radar observations and convective-scale simulations of HyMeX first special observing period. Quarterly Journal of the Royal Meteorological Society, 142, Issue S1, 347–362. [https://doi.org/10.1002/qj.2572](https://doi.org/10.1002/qj.2572)
