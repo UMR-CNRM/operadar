@@ -97,6 +97,7 @@ REPO_PATH = re.compile(r"(?<![\w/])(?:\./)?((?:configFiles|plot_tools|tables_gen
                        r"/[\w./-]*[\w/])(?![\w<-])")
 # folders created by the user or at run time (not in the repository)
 USER_FOLDERS = {"modelFiles", "operadarFiles", "operadar_env", "log", "libFortran"}
+GENERATED = ("plot_tools/IMG",)   # output folders created by the scripts (in .gitignore, absent from a fresh clone)
 DOT_FOLDER = re.compile(r"(?<![\w.])\./([A-Za-z_][\w-]*)/")
 SCRIPTS = re.compile(r"(?<![\w/.-])([\w-]+\.sh|operadar_multi\w*\.py)\b")
 
@@ -107,7 +108,8 @@ def test_files_named_in_the_documentation_exist(page):
     base = page.parent if page.parent != WIKI else ROOT
     missing = []
     for path in set(REPO_PATH.findall(text)) | set(SCRIPTS.findall(text)):
-        if any(c in path for c in "<>*{}") or path.startswith("tables_generator/tables/") and path.count("/") > 3:
+        if any(c in path for c in "<>*{}") or path.startswith("tables_generator/tables/") and path.count("/") > 3 \
+                or path.startswith(GENERATED):
             continue                                         # placeholders and generated tables
         if not ((ROOT / path).exists() or (base / path).exists()
                 or (path.startswith("tables_generator/tables/") and (ROOT / "tables_generator/tables").exists())):
