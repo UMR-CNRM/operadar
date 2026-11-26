@@ -76,7 +76,6 @@ You should also cite the Fortran 77 T-matrix code that is employed to generate t
 
 ## November 2026
 Bug fixes and speed-up (x5, x13 in parallel) of the lookup-table generator, David2025AMT and David2026PhD configurations, NetCDF tables, wet hail, sensitivity threshold, MesoNH reader fixes, plot tools, tests and documentation.
-This work was done with the help of the AI programming assistant Claude Code (Anthropic); all changes were reviewed and validated by the authors.
 
 ## April 2026
 first release v1.0.0
